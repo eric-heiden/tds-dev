@@ -1,0 +1,23 @@
+{
+  "name": "tiny-differentiable-simulator",
+  "version-string": "0.1.0",
+  "dependencies": [
+    {"name": "ceres", "features": ["lapack"]},
+    "cpp-base64",
+    "cppzmq",
+    "crossguid",
+    "cxxopts",
+    "imgui",
+    "glad",
+    "hdf5",
+    "highfive",
+    "matplotlib-cpp",
+    "nlohmann-json",
+    "pthreads",
+    "pybind11",
+    "stb",
+    {"name": "tinyobjloader", "features": ["double"]},
+    "tinyxml2",
+    "zeromq"
+  ]
+}

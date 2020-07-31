@@ -17,12 +17,11 @@
 #ifndef MESHCAT_URDF_VISUALIZER_H
 #define MESHCAT_URDF_VISUALIZER_H
 
-#include <cpp_base64/base64.h>
-
 #include <iostream>
 #include <map>
 #include <string>
 
+#include "cpp-base64/base64.h"
 #include "meshcat_cube_data.h"
 #include "meshcat_zmq.h"
 #include "tiny_multi_body.h"

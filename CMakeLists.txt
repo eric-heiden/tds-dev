@@ -13,59 +13,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#Tiny Differentiable Simulator or TDS
+# Tiny Differentiable Simulator or TDS
 
 cmake_minimum_required(VERSION 2.4.3)
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For LLVM tooling
-set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
-
-cmake_policy(SET CMP0042 NEW)
-
-cmake_policy(SET CMP0017 NEW)
- if(COMMAND cmake_policy)
-      cmake_policy(SET CMP0003 NEW)
-    endif(COMMAND cmake_policy)
-    
-#this line has to appear before 'PROJECT' in order to be able to disable incremental linking
-SET(MSVC_INCREMENTAL_DEFAULT ON)
-
-PROJECT(DIFF_PHYSICS)
-
-#The core library consists of those headers
-FILE(GLOB TDS_HDRS "*.h" )
-
+set(CMAKE_BUILD_RPATH_USE_ORIGIN ON) # Relative RPATH make AppImage easier.
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(Eigen3)
-if (Eigen3_FOUND)
-    message("FOUND EIGEN")
-    add_definitions(-DUSE_EIGEN)
-    include_directories(${EIGEN3_INCLUDE_DIRS})
-endif (Eigen3_FOUND)
+if(COMMAND cmake_policy)
+  cmake_policy(SET CMP0003 NEW) # Absolute path libs
+  cmake_policy(SET CMP0011 NEW) # Automatic push and pop
+  cmake_policy(SET CMP0017 NEW) # Prefer files from CMake module dir
+  cmake_policy(SET CMP0028 NEW) # Double colon libraries
+  cmake_policy(SET CMP0042 NEW) # Enable MACOXS_RPATH
+endif(COMMAND cmake_policy)
 
+# This line has to appear before 'PROJECT' in order to be able to disable
+# incremental linking
+set(MSVC_INCREMENTAL_DEFAULT ON)
 
+project(DIFF_PHYSICS)
 
+# The core library consists of these headers
+# TODO(dmillard): Is this necessary?
+file(GLOB TDS_HDRS "*.h")
 
-IF(WIN32)
-	SET(BUILD_SHARED_LIBS OFF CACHE BOOL "Shared Libs" FORCE)
-ELSE(WIN32)
-	SET(BUILD_SHARED_LIBS ON CACHE BOOL "Shared Libs" FORCE)
-ENDIF(WIN32)
+if(WIN32)
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "Shared Libs" FORCE)
+else(WIN32)
+  set(BUILD_SHARED_LIBS ON CACHE BOOL "Shared Libs" FORCE)
+endif(WIN32)
 
+# TODO(dmillard): Is this necessary?
+add_definitions(-DSTATIC_LINK_SPD_PLUGIN)
 
+subdirs(examples)
 
-
-ADD_DEFINITIONS(-DSTATIC_LINK_SPD_PLUGIN)
-
-
-
-SUBDIRS(third_party/cpp_base64)
-
-SUBDIRS(examples)
-
-OPTION(BUILD_PYTHON_PLUGIN "Set when you want to build pydiffphys (Python bindings for tiny-differentiable-simulator)" OFF)
-IF(BUILD_PYTHON_PLUGIN)
-  SUBDIRS(python)
-ENDIF()
+option(BUILD_PYTHON_PLUGIN "Build python bindings?" OFF)
+if(BUILD_PYTHON_PLUGIN)
+  subdirs(python)
+endif()

@@ -2,11 +2,12 @@
 #ifndef B3_USE_GLFW
 
 #include "tiny_x11_opengl_window.h"
-#include "tiny_opengl_include.h"
 
+#include <glad/glad.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "glad/gl.h"
+
+#include "tiny_opengl_include.h"
 
 #ifdef GLEW_DYNAMIC_LOAD_ALL_GLX_FUNCTIONS
 #include "glad/glx.h"
@@ -26,12 +27,11 @@
 
 // defined in GL/glxew.h
 //#include<GL/glu.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#include <pthread.h>
 
 GLint att[] = {GLX_RGBA, GLX_DEPTH_SIZE,   24,  GLX_RED_SIZE,
                8,        GLX_GREEN_SIZE,   8,   GLX_BLUE_SIZE,
@@ -872,7 +872,8 @@ bool TinyX11OpenGLWindow::is_modifier_key_pressed(int key) {
       break;
     };
 
-    default: {}
+    default: {
+    }
   };
   return isPressed;
 }
@@ -899,7 +900,8 @@ void TinyX11OpenGLWindow::pump_message() {
           case TINY_KEY_CONTROL:
             m_data->m_modifierFlags |= MY_X11_CONTROL_KEY;
             break;
-          default: {}
+          default: {
+          }
         };
         if (m_data->m_keyboardCallback) {
           int state = 1;
@@ -924,7 +926,8 @@ void TinyX11OpenGLWindow::pump_message() {
           case TINY_KEY_CONTROL:
             m_data->m_modifierFlags &= ~MY_X11_CONTROL_KEY;
             break;
-          default: {}
+          default: {
+          }
         };
 
         if (m_data->m_keyboardCallback) {

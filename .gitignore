@@ -1,10 +1,11 @@
 .clangd
-build/
-build_*/
 compile_commands.json
-# .vscode
+build*/
+vcpkg_installed/
+TinyDiffSim*.AppImage
+
 *.dot
 logs/
+
 .gdb_history
 .vagrant/
-TinyDiffSim*.AppImage
