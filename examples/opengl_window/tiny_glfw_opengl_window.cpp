@@ -13,12 +13,13 @@
 // limitations under the License.
 
 #ifdef B3_USE_GLFW
+#include "glfw_opengl_window.h"
+
 #include <GLFW/glfw3.h>
-#include <glad/glad.h>
+#include <glad/gl.h>
+
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "glfw_opengl_window.h"
 
 struct GLFWOpenGLWindowInternalData {
   bool m_requestedExit;
@@ -271,8 +272,7 @@ void GLFWOpenGLWindow::keyboardCallbackInternal(int key, int state) {
         m_data->m_ctrlPressed = state != 0;
         break;
       }
-      default: {
-      }
+      default: {}
     }
 
     get_keyboard_callback()(btcode, btstate);
@@ -418,8 +418,7 @@ bool GLFWOpenGLWindow::is_modifier_key_pressed(int key) {
       result = m_data->m_ctrlPressed;
       break;
     }
-    default: {
-    }
+    default: {}
   }
   return result;
 }

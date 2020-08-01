@@ -23,8 +23,10 @@ bool useShadowMap = true;
 
 #include <assert.h>
 #include <stdio.h>
+
 #include <algorithm>  // std::sort
 #include <vector>
+
 #include "../tiny_min_max.h"
 #include "tiny_opengl_include.h"
 #include "tiny_window_interface.h"
@@ -67,36 +69,30 @@ struct caster2 {
 #endif
 #endif  //__APPLE__
 #endif  // B3_USE_GLFW
-#include "tiny_gl_instancing_renderer.h"
-
 #include <stdio.h>
 #include <string.h>
 
-#include "tiny_resizable_pool.h"
-
-#include "tiny_load_shader.h"
-
 #include "tiny_gl_instance_renderer_internal_data.h"
+#include "tiny_gl_instancing_renderer.h"
+#include "tiny_load_shader.h"
+#include "tiny_resizable_pool.h"
 
 // GLSL shader strings, embedded using build3/stringify
 #include "Shaders/createShadowMapInstancingPS.h"
 #include "Shaders/createShadowMapInstancingVS.h"
 #include "Shaders/instancingPS.h"
 #include "Shaders/instancingVS.h"
+#include "Shaders/linesPS.h"
+#include "Shaders/linesVS.h"
 #include "Shaders/pointSpritePS.h"
 #include "Shaders/pointSpriteVS.h"
 #include "Shaders/projectiveTextureInstancingPS.h"
 #include "Shaders/projectiveTextureInstancingVS.h"
-#include "Shaders/useShadowMapInstancingPS.h"
-#include "Shaders/useShadowMapInstancingVS.h"
-
 #include "Shaders/segmentationMaskInstancingPS.h"
 #include "Shaders/segmentationMaskInstancingVS.h"
-
-#include "Shaders/linesPS.h"
-#include "Shaders/linesVS.h"
-
-#include "stb_image/stb_image_write.h"
+#include "Shaders/useShadowMapInstancingPS.h"
+#include "Shaders/useShadowMapInstancingVS.h"
+#include "stb_image_write.h"
 #include "tiny_gl_render_to_texture.h"
 
 static const char* triangleVertexShaderText =
@@ -430,7 +426,8 @@ bool TinyGLInstancingRenderer::read_single_instance_transform_to_cpu(
 }
 
 void TinyGLInstancingRenderer::write_single_instance_transform_to_cpu(
-    const TinyVector3f& position, const TinyQuaternionf& orientation, int srcIndex2) {
+    const TinyVector3f& position, const TinyQuaternionf& orientation,
+    int srcIndex2) {
   TinyPublicGraphicsInstance* pg =
       m_data->m_publicGraphicsInstances.get_handle(srcIndex2);
   assert(pg);
@@ -866,8 +863,7 @@ void TinyGLInstancingRenderer::remove_graphics_instance(int instanceUid) {
 
 int TinyGLInstancingRenderer::register_graphics_instance_internal(
     int newUid, const TinyVector3f& position, const TinyQuaternionf& quaternion,
-    const TinyVector3f& color, const TinyVector3f& scaling,
-    float opacity) {
+    const TinyVector3f& color, const TinyVector3f& scaling, float opacity) {
   TinyPublicGraphicsInstance* pg =
       m_data->m_publicGraphicsInstances.get_handle(newUid);
   int shapeIndex = pg->m_shapeIndex;
@@ -902,8 +898,7 @@ int TinyGLInstancingRenderer::register_graphics_instance_internal(
     c.setInt(newUid);
     m_data->m_instance_scale_ptr[index * 4 + 3] = c.getFloat();
 
-    if (opacity < 1 && opacity > 0)
-    {
+    if (opacity < 1 && opacity > 0) {
       gfxObj->m_flags |= B3_INSTANCE_TRANSPARANCY;
     }
     gfxObj->m_numGraphicsInstances++;
@@ -932,7 +927,7 @@ int TinyGLInstancingRenderer::register_graphics_instance(
   } else {
     int srcIndex = m_data->m_totalNumInstances++;
     pg->m_internalInstanceIndex = srcIndex;
-    
+
     m_data->m_instance_positions_ptr[srcIndex * 4 + 0] = position[0];
     m_data->m_instance_positions_ptr[srcIndex * 4 + 1] = position[1];
     m_data->m_instance_positions_ptr[srcIndex * 4 + 2] = position[2];

@@ -1,28 +1,23 @@
+#include "imgui.h"
+#include "imgui_impl_opengl3.h"
 #include "opengl_window/tiny_opengl3_app.h"
 #include "utils/tiny_chrome_trace_util.h"
-#include "utils/tiny_logging.h"
 #include "utils/tiny_clock.h"
-
-#include "imgui.h"
-//#include "imgui_impl_glfw.h"
-#include "opengl3/imgui_impl_opengl3.h"
+#include "utils/tiny_logging.h"
 
 float g_MouseWheel = 0;
 float gMouseX = 0;
 float gMouseY = 0;
-int g_MousePressed[3] = { 0,0,0 };
+int g_MousePressed[3] = {0, 0, 0};
 
-
-void MyMouseMoveCallback(float x, float y)
-{
-    gMouseX = x;
-    gMouseY = y;
+void MyMouseMoveCallback(float x, float y) {
+  gMouseX = x;
+  gMouseY = y;
 }
-void MyMouseButtonCallback(int button, int state, float x, float y)
-{
-    gMouseX = x;
-    gMouseY = y;
-    g_MousePressed[button] = state;
+void MyMouseButtonCallback(int button, int state, float x, float y) {
+  gMouseX = x;
+  gMouseY = y;
+  g_MousePressed[button] = state;
 }
 
 int main(int argc, char* argv[]) {
@@ -79,19 +74,21 @@ int main(int argc, char* argv[]) {
 
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO(); (void)io;
-  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+  ImGuiIO& io = ImGui::GetIO();
+  (void)io;
+  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable
+  // Keyboard Controls io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; //
+  // Enable Gamepad Controls
 
   // Setup Dear ImGui style
-  //ImGui::StyleColorsDark();
+  // ImGui::StyleColorsDark();
   ImGui::StyleColorsClassic();
   const char* glsl_version = "#version 330";
-  
+
   // Setup Platform/Renderer bindings
   ImGui_ImplOpenGL3_Init(glsl_version);
   bool res = ImGui_ImplOpenGL3_CreateDeviceObjects();
-  
+
   while (!app.m_window->requested_exit()) {
     B3_PROFILE("mainloop");
     int upAxis = 2;
@@ -111,34 +108,36 @@ int main(int argc, char* argv[]) {
       app.m_renderer->render_scene();
     }
 
-    
-    float width = (float) app.m_window->get_width();
-    float height = (float) app.m_window->get_height();
+    float width = (float)app.m_window->get_width();
+    float height = (float)app.m_window->get_height();
 
     io.DisplaySize = ImVec2((float)width, (float)height);
-    io.DisplayFramebufferScale = ImVec2(app.m_window->get_retina_scale(), app.m_window->get_retina_scale());
+    io.DisplayFramebufferScale = ImVec2(app.m_window->get_retina_scale(),
+                                        app.m_window->get_retina_scale());
     double t = clock.get_time_seconds();
     float dt = t - prev_time;
     prev_time = t;
     io.DeltaTime = (float)dt;
     io.MousePos = ImVec2((float)gMouseX, (float)gMouseY);
-    io.RenderDrawListsFn = ImGui_ImplOpenGL3_RenderDrawData;// ImGui_ImplBullet_RenderDrawLists;
+    io.RenderDrawListsFn =
+        ImGui_ImplOpenGL3_RenderDrawData;  // ImGui_ImplBullet_RenderDrawLists;
 
-    for (int i = 0; i < 3; i++)
-    {
-        io.MouseDown[i] = g_MousePressed[i];
+    for (int i = 0; i < 3; i++) {
+      io.MouseDown[i] = g_MousePressed[i];
     }
     io.MouseWheel = g_MouseWheel;
-    
+
     ImGui::NewFrame();
     ImGui::Text("Hello, world!");
     static int counter = 0;
-    if (ImGui::Button("Button"))  // Buttons return true when clicked (NB: most widgets return true when edited/activated)
-        counter++;
+    if (ImGui::Button("Button"))  // Buttons return true when clicked (NB: most
+                                  // widgets return true when edited/activated)
+      counter++;
     ImGui::SameLine();
     ImGui::Text("counter = %d", counter);
 
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::ShowDemoWindow();
     ImGui::Render();
     ImGui::EndFrame();

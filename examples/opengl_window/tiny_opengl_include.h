@@ -27,9 +27,9 @@ misrepresented as being the original software.
 #else
 #ifdef B3_USE_GLFW
 #include <GLFW/glfw3.h>
-#include <glad/glad.h>
+#include <glad/gl.h>
 #else
-#include <glad/glad.h>
+#include "glad/gl.h"
 #endif  // B3_USE_GLFW
 #endif  // BT_NO_GLAD
 #endif  // TINY_OPENGL_INCLUDE_H

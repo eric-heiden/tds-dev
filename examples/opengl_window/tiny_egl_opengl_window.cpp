@@ -30,15 +30,16 @@
 
 #ifdef TINY_USE_EGL
 
-#include "tiny_egl_opengl_window.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "glad/egl.h"
-#include "glad/glad.h"
 #include "tiny_opengl_include.h"
+
+#include "glad/egl.h"
+#include "glad/gl.h"
+
+#include "tiny_egl_opengl_window.h"
 
 struct EGLInternalData2 {
   bool m_isInitialized;

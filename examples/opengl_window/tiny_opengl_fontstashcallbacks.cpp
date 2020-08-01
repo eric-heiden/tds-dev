@@ -14,15 +14,16 @@
 
 #ifndef NO_OPENGL3
 #include "tiny_opengl_fontstashcallbacks.h"
-#include "tiny_gl_prim_internal_data.h"
-#include "tiny_gl_primitive_renderer.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "stb_image/stb_image_write.h"
+
+#include "stb_image_write.h"
 #include "tiny_font_stash.h"
+#include "tiny_gl_prim_internal_data.h"
+#include "tiny_gl_primitive_renderer.h"
 #include "tiny_opengl_include.h"
 
 static unsigned int s_indexData[INDEX_COUNT];

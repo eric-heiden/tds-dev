@@ -46,15 +46,14 @@ find_package(Bullet)
 # TODO(dmillard): File bug on cpp-base64 vcpkg?
 add_library(cpp-base64 ../vcpkg_installed/x64-linux/include/cpp-base64/base64.cpp)
 
+# TODO(dmillard): These sections don't really belong here.
 add_library(meshcat INTERFACE)
 target_link_libraries(meshcat INTERFACE crossguid cpp-base64 ${ZeroMQ_STATIC_LIBRARY} Threads::Threads)
 
-# TODO(dmillard): This doesn't belong here.
 add_library(matplotlib-cpp INTERFACE)
 target_link_libraries(matplotlib-cpp INTERFACE Python3::Python)
 
-# TODO(dmillard): Re-enable this
-# subdirs(opengl_window)
+subdirs(opengl_window)
 
 add_library(pybullet_visualizer_api STATIC pybullet_visualizer_api.cpp)
 target_include_directories(pybullet_visualizer_api PUBLIC ${BULLET_INCLUDE_DIRS})
@@ -79,133 +78,127 @@ target_link_libraries(
   ${DL}
 )
 
-add_executable(billiard_opt_gui billiard_opt_gui.cpp ${TDS_HDRS})
+add_executable(billiard_opt_gui billiard_opt_gui.cpp)
 target_link_libraries(billiard_opt_gui pybullet_visualizer_api ${DL} ${CERES_LIBRARIES})
 target_compile_definitions(billiard_opt_gui PRIVATE STAN_MATH)
 
-add_executable(cartpole_opt cartpole_opt.cpp ${TDS_HDRS})
+add_executable(cartpole_opt cartpole_opt.cpp)
 target_link_libraries(cartpole_opt pybullet_visualizer_api ${DL} ${CERES_LIBRARIES})
 
-# add_executable(ceres_estimation ceres_estimation.cpp ${TDS_HDRS})
+# TODO(eric-heiden): Update source
+# add_executable(ceres_estimation ceres_estimation.cpp )
 # target_link_libraries(ceres_estimation pybullet_visualizer_api ${DL} ${CERES_LIBRARIES})
 
-# add_executable(ceres_estimation_real ceres_estimation_real.cpp ${TDS_HDRS})
+# TODO(eric-heiden): Update source
+# add_executable(ceres_estimation_real ceres_estimation_real.cpp )
 # target_compile_definitions(ceres_estimation_real PRIVATE -DUSE_MATPLOTLIB)
 # target_link_libraries(ceres_estimation_real pybullet_visualizer_api ${DL} ${CERES_LIBRARIES} matplotlib-cpp)
 
-add_executable(neural_pendulum neural_pendulum.cpp ${TDS_HDRS})
+add_executable(neural_pendulum neural_pendulum.cpp)
 target_link_libraries(neural_pendulum pybullet_visualizer_api ${DL} ${CERES_LIBRARIES})
 
-add_executable(neural_discovery neural_discovery.cpp ${TDS_HDRS})
+add_executable(neural_discovery neural_discovery.cpp)
 target_compile_definitions(neural_discovery PRIVATE -DNEURAL_SIM)
 target_link_libraries(neural_discovery pybullet_visualizer_api ${DL} ${CERES_LIBRARIES})
 
-# add_executable(neural_actuator neural_actuator.cpp ${TDS_HDRS})
+# TODO(eric-heiden): Update source
+# add_executable(neural_actuator neural_actuator.cpp )
 # target_link_libraries(neural_actuator pybullet_visualizer_api ${DL} ${CERES_LIBRARIES})
 
-add_executable(neural_wtf neural_wtf.cpp ${TDS_HDRS})
+add_executable(neural_wtf neural_wtf.cpp)
 target_link_libraries(neural_wtf pybullet_visualizer_api matplotlib-cpp ${DL} ${CERES_LIBRARIES})
 
-# add_executable(neural_joint neural_joint.cpp ${TDS_HDRS})
+# TODO(eric-heiden): Update source
+# add_executable(neural_joint neural_joint.cpp )
 # target_link_libraries(neural_joint pybullet_visualizer_api ${DL} ${CERES_LIBRARIES})
 
-# add_executable(neural_push neural_push.cpp ${TDS_HDRS})
+# add_executable(neural_push neural_push.cpp )
 # target_compile_features(neural_push PRIVATE cxx_std_17)
 # target_link_libraries(neural_push pybullet_visualizer_api ${DL} HighFive matplotlib-cpp ${CERES_LIBRARIES} -lstdc++fs)
 
-add_executable(neural_heightfield neural_heightfield.cpp ${TDS_HDRS})
+add_executable(neural_heightfield neural_heightfield.cpp)
 target_link_libraries(neural_heightfield pybullet_visualizer_api ${DL} matplotlib-cpp ${CERES_LIBRARIES})
 
-add_executable(policy_optimization policy_optimization.cpp ${TDS_HDRS})
+add_executable(policy_optimization policy_optimization.cpp)
 target_link_libraries(policy_optimization pybullet_visualizer_api ${DL} ${CERES_LIBRARIES})
 
-add_executable(contact_discovery contact_discovery.cpp ${TDS_HDRS})
+add_executable(contact_discovery contact_discovery.cpp)
 target_link_libraries(contact_discovery pybullet_visualizer_api ${DL} ${CERES_LIBRARIES})
 
-add_executable(laikago_example_gui laikago_example_gui.cpp ${TDS_HDRS})
+add_executable(laikago_example_gui laikago_example_gui.cpp)
 target_link_libraries(laikago_example_gui pybullet_visualizer_api)
 
-add_executable(laikago_footstep_ik laikago_footstep_ik.cpp ${TDS_HDRS})
+add_executable(laikago_footstep_ik laikago_footstep_ik.cpp)
 target_link_libraries(laikago_footstep_ik pybullet_visualizer_api)
 
 add_executable(pendulum_ik_gui pendulum_ik_gui.cpp)
 target_link_libraries(pendulum_ik_gui pybullet_visualizer_api)
 
-add_executable(generic_urdf_collision generic_urdf_collision.cpp ${TDS_HDRS})
+add_executable(generic_urdf_collision generic_urdf_collision.cpp)
 target_link_libraries(generic_urdf_collision pybullet_visualizer_api)
 
-add_executable(gravity_compensation gravity_compensation.cpp ${TDS_HDRS})
+add_executable(gravity_compensation gravity_compensation.cpp)
 target_link_libraries(gravity_compensation pybullet_visualizer_api)
 
-add_executable(laikago_meshcat_example laikago_meshcat_example.cpp ${TDS_HDRS})
+add_executable(laikago_meshcat_example laikago_meshcat_example.cpp)
 target_link_libraries(laikago_meshcat_example pybullet_visualizer_api meshcat)
 
-add_executable(experiment_neural_swimmer experiment_neural_swimmer.cpp ${TDS_HDRS})
+add_executable(experiment_neural_swimmer experiment_neural_swimmer.cpp)
 target_link_libraries(experiment_neural_swimmer ${CERES_LIBRARIES} tinyxml2)
 
-add_executable(tiny_urdf_parser_meshcat_example tiny_urdf_parser_meshcat_example.cpp ${TDS_HDRS})
+add_executable(tiny_urdf_parser_meshcat_example tiny_urdf_parser_meshcat_example.cpp)
 target_link_libraries(tiny_urdf_parser_meshcat_example tinyxml2 meshcat)
 
-add_executable(meshcat_zmq_example meshcat_zmq_example.cpp ${TDS_HDRS})
+add_executable(meshcat_zmq_example meshcat_zmq_example.cpp)
 target_link_libraries(meshcat_zmq_example meshcat)
 
-add_executable(tiny_urdf_parser_example tiny_urdf_parser_example.cpp ${TDS_HDRS})
+add_executable(tiny_urdf_parser_example tiny_urdf_parser_example.cpp)
 target_link_libraries(tiny_urdf_parser_example tinyxml2)
 
-# add_executable(neural_contact neural_contact.cpp ${TDS_HDRS})
-# target_link_libraries(
-#   neural_contact
-#   opengl_window
-#   ${DL}
-#   ${CERES_LIBRARIES}
-#   ${MESHCAT_LIBRARIES}
-#   python2.7
-#   tinyxml2
-# )
+add_executable(neural_contact neural_contact.cpp)
+target_link_libraries(neural_contact opengl_window ${DL} ${CERES_LIBRARIES} pybullet_visualizer_api tinyxml2 meshcat)
 
-add_executable(world_example world_example.cpp ${TDS_HDRS})
+add_executable(world_example world_example.cpp)
 
-add_executable(test_xarm test_xarm.cpp ${TDS_HDRS})
+add_executable(test_xarm test_xarm.cpp)
 
-#add_executable(
-#  pendulum_example_gui
-#  pendulum_example_gui.cpp
-#  utils/tiny_clock.cpp
-#  utils/tiny_chrome_trace_util.cpp
-#  utils/tiny_logging.cpp
-#  ${TDS_HDRS}
-#)
-#target_link_libraries(pendulum_example_gui opengl_window)
-#
-#add_executable(
-#  opengl_test
-#  opengl_test.cpp
-#  utils/tiny_clock.cpp
-#  utils/tiny_chrome_trace_util.cpp
-#  utils/tiny_logging.cpp
-#  ${TDS_HDRS}
-#)
-#
-# add_executable(
-#   tiny_urdf_parser_opengl_example
-#   tiny_urdf_parser_opengl_example.cpp
-#   utils/tiny_clock.cpp
-#   utils/tiny_chrome_trace_util.cpp
-#   utils/tiny_logging.cpp
-#   ${TDS_HDRS}
-# )
-# target_include_directories(tiny_urdf_parser_opengl_example PRIVATE ${TINYOBJLOADER_INCLUDE_DIRS} ${Stb_INCLUDE_DIR})
-# target_link_libraries(tiny_urdf_parser_opengl_example tinyxml2 opengl_window)
+add_executable(pendulum_example_gui pendulum_example_gui.cpp utils/tiny_clock.cpp utils/tiny_chrome_trace_util.cpp utils/tiny_logging.cpp)
+target_link_libraries(pendulum_example_gui opengl_window)
 
-# add_executable(
-#   opengl_imgui_test
-#   opengl_imgui_test.cpp
-#   utils/tiny_clock.cpp
-#   utils/tiny_chrome_trace_util.cpp
-#   utils/tiny_logging.cpp
-#   ${TDS_HDRS}
-# )
-# target_link_libraries(opengl_imgui_test opengl_window imgui::imgui)
+add_executable(
+  opengl_test
+  opengl_test.cpp
+  utils/tiny_clock.cpp
+  utils/tiny_chrome_trace_util.cpp
+  utils/tiny_logging.cpp
+)
+include(CMakePrintHelpers)
+cmake_print_variables(TINYOBJLOADER_LIBRARIES)
+target_include_directories(opengl_test PRIVATE ${TINYOBJLOADER_INCLUDE_DIRS} ${Stb_INCLUDE_DIR})
+# TODO(dmillard): find_package should return absolute path?
+target_link_directories(opengl_test PRIVATE ../vcpkg_installed/x64-linux/lib)
+target_link_libraries(opengl_test opengl_window ${TINYOBJLOADER_LIBRARIES})
+
+add_executable(
+  tiny_urdf_parser_opengl_example
+  tiny_urdf_parser_opengl_example.cpp
+  utils/tiny_clock.cpp
+  utils/tiny_chrome_trace_util.cpp
+  utils/tiny_logging.cpp
+)
+target_include_directories(tiny_urdf_parser_opengl_example PRIVATE ${TINYOBJLOADER_INCLUDE_DIRS} ${Stb_INCLUDE_DIR})
+# TODO(dmillard): find_package should return absolute path?
+target_link_directories(tiny_urdf_parser_opengl_example PRIVATE ../vcpkg_installed/x64-linux/lib)
+target_link_libraries(tiny_urdf_parser_opengl_example tinyxml2 opengl_window ${TINYOBJLOADER_LIBRARIES})
+
+add_executable(
+  opengl_imgui_test
+  opengl_imgui_test.cpp
+  utils/tiny_clock.cpp
+  utils/tiny_chrome_trace_util.cpp
+  utils/tiny_logging.cpp
+)
+target_link_libraries(opengl_imgui_test opengl_window imgui::imgui)
 
 if(ct_core_FOUND AND ct_optcon_FOUND AND Eigen3_FOUND)
   # Activate CppAD (with CodeGen) and HPIPM for Control Toolbox
@@ -215,19 +208,19 @@ if(ct_core_FOUND AND ct_optcon_FOUND AND Eigen3_FOUND)
   include_directories(${ct_optcon_INCLUDE_DIRS})
   include_directories(${EIGEN3_INCLUDE_DIRS})
 
-  add_executable(ct_cartpole ct_cartpole.cpp ${TDS_HDRS})
+  add_executable(ct_cartpole ct_cartpole.cpp)
   target_link_libraries(
     ct_cartpole
     pybullet_visualizer_api ${DL} Threads::Threads hpipm blasfeo
   )
 
-  add_executable(ct_contact_trajopt ct_contact_trajopt.cpp ${TDS_HDRS})
+  add_executable(ct_contact_trajopt ct_contact_trajopt.cpp)
   target_link_libraries(
     ct_contact_trajopt
     pybullet_visualizer_api ${DL} Threads::Threads hpipm blasfeo
   )
 
-  add_executable(ct_laikago_tracking ct_laikago_tracking.cpp ${TDS_HDRS})
+  add_executable(ct_laikago_tracking ct_laikago_tracking.cpp)
   target_link_libraries(
     ct_laikago_tracking
     pybullet_visualizer_api ${DL} Threads::Threads hpipm blasfeo

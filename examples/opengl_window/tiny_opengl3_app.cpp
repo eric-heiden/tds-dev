@@ -15,6 +15,7 @@
 #ifndef NO_OPENGL3
 
 #include "tiny_opengl3_app.h"
+
 #include "tiny_shape_data.h"
 
 #ifdef BT_USE_EGL
@@ -39,11 +40,12 @@
 #endif              //__APPLE__
 #endif              // B3_USE_GLFW
 
-#include <stdio.h>
-
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>  //memset
+
 #include <vector>
+
 #include "tiny_float_utils.h"
 #include "tiny_font_stash.h"
 #include "tiny_fonts.h"
@@ -1061,7 +1063,7 @@ void TinyOpenGL3App::get_screen_pixels(unsigned char* rgbaBuffer,
 }
 
 //#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image/stb_image_write.h"
+#include "stb_image_write.h"
 static void writeTextureToFile(int textureWidth, int textureHeight,
                                const char* fileName, FILE* ffmpegVideo) {
   int numComponents = 4;

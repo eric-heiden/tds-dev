@@ -1,5 +1,3 @@
-find_package(glad REQUIRED)
-
 file(GLOB OpenGLWindow_HDRS "*.h")
 
 file(GLOB OpenGLWindowMac_CPP "tiny_mac*.cpp")
@@ -16,32 +14,42 @@ list(REMOVE_ITEM OpenGLWindowCommon_CPP tiny_x11_opengl_window.cpp)
 list(REMOVE_ITEM OpenGLWindowCommon_CPP tiny_mac_opengl_window.cpp)
 
 if(WIN32)
-  set(OpenGLWindow_SRCS ${OpenGLWindowWin32_CPP} ${OpenGLWindowCommon_CPP})
+  set(OpenGLWindow_SRCS ./third_party/glad/gl.c ${OpenGLWindowWin32_CPP} ${OpenGLWindowCommon_CPP})
   add_definitions(-DGLEW_STATIC)
 else()
   if(APPLE)
     message("APPLE!")
-    set(OpenGLWindow_SRCS ${OpenGLWindowMac_CPP} ${OpenGLWindowMacObjC_CPP} ${OpenGLWindowCommon_CPP})
+    set(OpenGLWindow_SRCS ${OpenGLWindowMac_CPP} ./third_party/glad/gl.c ${OpenGLWindowMacObjC_CPP} ${OpenGLWindowCommon_CPP})
   else()
     message("LINUX!")
-    set(OpenGLWindow_SRCS ${OpenGLWindowLinux_CPP} ${OpenGLWindowCommon_CPP})
+    set(OpenGLWindow_SRCS ${OpenGLWindowLinux_CPP} ${OpenGLWindowCommon_CPP} ./third_party/glad/gl.c)
   endif()
 endif(WIN32)
 
-#no Linux detection?
+# No Linux detection?
 if(NOT WIN32 AND NOT APPLE)
+  include_directories(
+    ./third_party/glad
+    ./third_party/optionalX11
+  )
   add_definitions("-DGLEW_STATIC")
   add_definitions("-DGLEW_INIT_OPENGL11_FUNCTIONS=1")
   add_definitions("-DGLEW_DYNAMIC_LOAD_ALL_GLX_FUNCTIONS=1")
   add_definitions("-DDYNAMIC_LOAD_X11_FUNCTIONS=1")
 
-  set(OpenGLWindow_SRCS ${OpenGLWindowLinux_CPP} ${OpenGLWindowCommon_CPP})
+  set(
+    OpenGLWindow_SRCS
+    ${OpenGLWindowLinux_CPP}
+    ${OpenGLWindowCommon_CPP}
+    ./third_party/glad/gl.c
+    ./third_party/glad/glx.c
+  )
 endif()
 
 message(${OpenGLWindowCommon_CPP})
 
 if(BUILD_EGL)
-  set(OpenGLWindow_SRCS ${OpenGLWindow_SRCS})
+  set(OpenGLWindow_SRCS ${OpenGLWindow_SRCS} ./third_party/glad/egl.c)
 endif(BUILD_EGL)
 
 set(OpenGLWindow_SRCS ${OpenGLWindow_SRCS})
@@ -49,6 +57,13 @@ set(OpenGLWindow_SRCS ${OpenGLWindow_SRCS})
 message("OpenGLWindow_SRCS=${OpenGLWindow_SRCS}")
 
 add_library(opengl_window ${OpenGLWindow_SRCS} ${OpenGLWindow_HDRS})
+target_include_directories(
+  opengl_window
+  PRIVATE
+  ./third_party/glad
+  ${Stb_INCLUDE_DIR}
+)
+
 if(UNIX AND NOT APPLE)
   target_link_libraries(opengl_window ${DL})
 elseif(APPLE)
@@ -57,7 +72,6 @@ elseif(APPLE)
 endif()
 
 if(BUILD_SHARED_LIBS)
-  #target_link_libraries(opengl_window )
   if(WIN32 OR APPLE)
     target_link_libraries(opengl_window ${OPENGL_gl_LIBRARY})
   else()
@@ -65,6 +79,7 @@ if(BUILD_SHARED_LIBS)
     find_package(Threads)
     target_link_libraries(opengl_window ${CMAKE_THREAD_LIBS_INIT})
     target_compile_definitions(opengl_window PUBLIC DYNAMIC_LOAD_X11_FUNCTIONS PRIVATE DYNAMIC_LOAD_X11_FUNCTIONS)
+
   endif()
 endif()
 
@@ -72,8 +87,6 @@ if(APPLE)
   find_package(OpenGL)
   target_link_libraries(opengl_window ${COCOA} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY})
 endif()
-
-#target_link_libraries(opengl_window ${OPENGL_gl_LIBRARY})
 
 install(
   TARGETS opengl_window
