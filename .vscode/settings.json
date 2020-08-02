@@ -81,5 +81,8 @@
         "filesystem": "cpp"
     },
     "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+    "cmake.configureArgs": [
+        "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/tools/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    ]
 }
