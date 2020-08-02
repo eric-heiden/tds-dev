@@ -112,12 +112,12 @@ target_link_libraries(neural_wtf pybullet_visualizer_api matplotlib-cpp ${DL} ${
 # add_executable(neural_joint neural_joint.cpp )
 # target_link_libraries(neural_joint pybullet_visualizer_api ${DL} ${CERES_LIBRARIES})
 
-# add_executable(neural_push neural_push.cpp )
+# add_executable(neural_push neural_push.cpp)
 # target_compile_features(neural_push PRIVATE cxx_std_17)
 # target_link_libraries(neural_push pybullet_visualizer_api ${DL} HighFive matplotlib-cpp ${CERES_LIBRARIES} -lstdc++fs)
 
 add_executable(neural_heightfield neural_heightfield.cpp)
-target_link_libraries(neural_heightfield pybullet_visualizer_api ${DL} matplotlib-cpp ${CERES_LIBRARIES})
+target_link_libraries(neural_heightfield pybullet_visualizer_api matplotlib-cpp ${DL} ${CERES_LIBRARIES})
 
 add_executable(policy_optimization policy_optimization.cpp)
 target_link_libraries(policy_optimization pybullet_visualizer_api ${DL} ${CERES_LIBRARIES})
@@ -200,6 +200,7 @@ add_executable(
 )
 target_link_libraries(opengl_imgui_test opengl_window imgui::imgui)
 
+# TODO(dmillard): Get CT into vcpkg
 if(ct_core_FOUND AND ct_optcon_FOUND AND Eigen3_FOUND)
   # Activate CppAD (with CodeGen) and HPIPM for Control Toolbox
   add_definitions(-DCPPAD -DCPPADCG -DHPIPM)
@@ -209,10 +210,7 @@ if(ct_core_FOUND AND ct_optcon_FOUND AND Eigen3_FOUND)
   include_directories(${EIGEN3_INCLUDE_DIRS})
 
   add_executable(ct_cartpole ct_cartpole.cpp)
-  target_link_libraries(
-    ct_cartpole
-    pybullet_visualizer_api ${DL} Threads::Threads hpipm blasfeo
-  )
+  target_link_libraries(ct_cartpole pybullet_visualizer_api ${DL} Threads::Threads hpipm blasfeo)
 
   add_executable(ct_contact_trajopt ct_contact_trajopt.cpp)
   target_link_libraries(
