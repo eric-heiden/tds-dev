@@ -26,6 +26,7 @@ find_package(HDF5 REQUIRED)
 find_package(HighFive REQUIRED)
 find_package(ZeroMQ REQUIRED)
 find_package(cppzmq REQUIRED)
+find_package(GLEW REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(tinyobjloader CONFIG REQUIRED)
 find_package(Stb REQUIRED)
@@ -198,7 +199,7 @@ add_executable(
   utils/tiny_chrome_trace_util.cpp
   utils/tiny_logging.cpp
 )
-target_link_libraries(opengl_imgui_test opengl_window imgui::imgui)
+target_link_libraries(opengl_imgui_test opengl_window imgui::imgui GLEW::GLEW)
 
 # TODO(dmillard): Get CT into vcpkg
 if(ct_core_FOUND AND ct_optcon_FOUND AND Eigen3_FOUND)

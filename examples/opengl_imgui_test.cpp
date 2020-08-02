@@ -5,6 +5,8 @@
 #include "utils/tiny_clock.h"
 #include "utils/tiny_logging.h"
 
+#include <GL/glew.h>
+
 float g_MouseWheel = 0;
 float gMouseX = 0;
 float gMouseY = 0;
@@ -71,6 +73,8 @@ int main(int argc, char* argv[]) {
   app.m_renderer->register_graphics_instance(shape, pos, orn, color, scaling);
 
   app.m_renderer->write_transforms();
+
+  GLenum err = glewInit();
 
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
