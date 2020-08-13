@@ -7,3 +7,6 @@
 [submodule "third_party/HighFive"]
 	path = third_party/HighFive
 	url = https://github.com/BlueBrain/HighFive
+[submodule "third_party/enoki"]
+	path = third_party/enoki
+	url = https://github.com/mitsuba-renderer/enoki
