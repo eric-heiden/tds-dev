@@ -151,8 +151,9 @@ struct EigenAlgebraT
     return Matrix3::Identity();
   }
   EIGEN_ALWAYS_INLINE static void set_identity(Quaternion &quat) {
-    // This constructor exist: Quaternion(x, y, z, w);
-    quat = Quaternion(0., 0., 0., 1.);
+    // This constructor exist: Quaternion(w, x, y, z);
+    // The order is different from Enoki
+    quat = Quaternion(1., 0., 0., 0.);
   }
 
   EIGEN_ALWAYS_INLINE static Scalar zero() { return 0; }
@@ -199,7 +200,7 @@ struct EigenAlgebraT
   }
   EIGEN_ALWAYS_INLINE static Matrix3 quat_to_matrix(const Scalar &x, const Scalar &y,
                                              const Scalar &z, const Scalar &w) {
-    return Quaternion(x, y, z, w).toRotationMatrix();
+    return Quaternion(w, x, y, z).toRotationMatrix();
   }
   EIGEN_ALWAYS_INLINE static Quaternion matrix_to_quat(const Matrix3 &m) {
     return Quaternion(m);
@@ -211,8 +212,181 @@ struct EigenAlgebraT
     return Quaternion(Eigen::AngleAxis(angle, axis));
   }
 
-  // TODO: Continue from rotation_x_matrix
+  EIGEN_ALWAYS_INLINE static Matrix3 rotation_x_matrix(const Scalar &angle) {
+    Scalar c = std::cos(angle);
+    Scalar s = std::sin(angle);
+    Matrix3 temp;
+    temp << 1, 0, 0, 
+            0, c, s,
+            0, -s, c;
+    return temp;
+  }
 
+  EIGEN_ALWAYS_INLINE static Matrix3 rotation_y_matrix(const Scalar &angle) {
+    Scalar c = std::cos(angle);
+    Scalar s = std::sin(angle);
+    Matrix3 temp;
+    temp << c, 0, -s, 
+            0, 1, 0,
+            s, 0, c;
+    return temp;
+  }
+
+  EIGEN_ALWAYS_INLINE static Matrix3 rotation_z_matrix(const Scalar &angle) {
+    Scalar c = std::cos(angle);
+    Scalar s = std::sin(angle);
+    Matrix3 temp;
+    temp << c, s, 0, 
+            -s, c, 0,
+            0, 0, 1;
+    return temp;
+  }
+
+  static Matrix3 rotation_zyx_matrix(const Scalar &r, const Scalar &p,
+                                     const Scalar &y) {
+    Scalar ci(std::cos(r));
+    Scalar cj(std::cos(p));
+    Scalar ch(std::cos(y));
+    Scalar si(std::sin(r));
+    Scalar sj(std::sin(p));
+    Scalar sh(std::sin(y));
+    Scalar cc = ci * ch;
+    Scalar cs = ci * sh;
+    Scalar sc = si * ch;
+    Scalar ss = si * sh;
+    return Matrix3(cj * ch, sj * sc - cs, sj * cc + ss, cj * sh, sj * ss + cc,
+                   sj * cs - sc, -sj, cj * si, cj * ci);
+
+    Matrix3 tmp;
+    tmp << cj * ch, sj * sc - cs, sj * cc + ss,
+           cj * sh, sj * ss + cc, sj * cs - sc,
+           -sj,     cj * si,      cj * ci;
+    return tmp;
+  }
+
+  EIGEN_ALWAYS_INLINE static Vector3 rotate(const Quaternion &q, const Vector3 &v) {
+    // NOTE: Eigen supports direct concatenation of quaternions and vector
+    return q * v;
+  }
+
+  /**
+   * Computes the quaternion delta given current rotation q, angular velocity w,
+   * time step dt.
+   */
+  EIGEN_ALWAYS_INLINE static Quaternion quat_velocity(const Quaternion &q,
+                                               const Vector3 &w,
+                                               const Scalar &dt) {
+    Quaternion delta((-q[0] * w[0] - q[1] * w[1] - q[2] * w[2]) * (0.5 * dt),
+                     (q[3] * w[0] + q[1] * w[2] - q[2] * w[1]) * (0.5 * dt),
+                     (q[3] * w[1] + q[2] * w[0] - q[0] * w[2]) * (0.5 * dt),
+                     (q[3] * w[2] + q[0] * w[1] - q[1] * w[0]) * (0.5 * dt)
+                    );
+    // Broadcast not supported
+    // delta *= 0.5 * dt;
+    return delta;
+  }
+
+  EIGEN_ALWAYS_INLINE static const Scalar &quat_x(const Quaternion &q) { return q.x(); }
+  EIGEN_ALWAYS_INLINE static const Scalar &quat_y(const Quaternion &q) { return q.y(); }
+  EIGEN_ALWAYS_INLINE static const Scalar &quat_z(const Quaternion &q) { return q.z(); }
+  EIGEN_ALWAYS_INLINE static const Scalar &quat_w(const Quaternion &q) { return q.w(); }
+
+  template <std::size_t Size>
+  EIGEN_ALWAYS_INLINE static void set_zero(enoki::Matrix<Scalar, Size> &m) {
+    m.setConstant(m);
+  }
+  template <std::size_t Size>
+  EIGEN_ALWAYS_INLINE static void set_zero(enoki::Array<Scalar, Size> &v) {
+    v.setZero();
+  }
+  EIGEN_ALWAYS_INLINE static void set_zero(MotionVector &v) {
+    v.top.setZero();
+    v.bottom.setZero();
+  }
+  EIGEN_ALWAYS_INLINE static void set_zero(ForceVector &v) {
+    v.top.setZero();
+    v.bottom.setZero();
+  }
+
+  // TODO: Eigen's equivalent operation for enoki::is_array
+  EIGEN_ALWAYS_INLINE static double to_double(const Scalar &s) {
+    if constexpr (std::is_arithmetic_v<Scalar>) {
+      return static_cast<double>(s);
+    } else if constexpr (enoki::is_array<Scalar>::value) {
+      return static_cast<double>(s[0]);
+    }
+  }
+
+  /**
+   * Non-differentiable comparison operator.
+   */
+  EIGEN_ALWAYS_INLINE static bool less_than(const Scalar &a, const Scalar &b) {
+    if constexpr (std::is_arithmetic_v<Scalar>) {
+      return a < b;
+    } else if constexpr (enoki::is_array<Scalar>::value) {
+      return enoki::all(a < b);
+    }
+  }
+
+  /**
+   * Non-differentiable comparison operator.
+   */
+  EIGEN_ALWAYS_INLINE static bool less_than_zero(const Scalar &a) {
+    if constexpr (std::is_arithmetic_v<Scalar>) {
+      return a < 0.;
+    } else if constexpr (enoki::is_array<Scalar>::value) {
+      return enoki::all(a < 0.);
+    }
+  }
+
+  /**
+   * Non-differentiable comparison operator.
+   */
+  EIGEN_ALWAYS_INLINE static bool greater_than_zero(const Scalar &a) {
+    if constexpr (std::is_arithmetic_v<Scalar>) {
+      return a > 0.;
+    } else if constexpr (enoki::is_array<Scalar>::value) {
+      return enoki::all(a > 0.);
+    }
+  }
+
+  /**
+   * Non-differentiable comparison operator.
+   */
+  EIGEN_ALWAYS_INLINE static bool greater_than(const Scalar &a, const Scalar &b) {
+    if constexpr (std::is_arithmetic_v<Scalar>) {
+      return a > b;
+    } else if constexpr (enoki::is_array<Scalar>::value) {
+      return enoki::all(a > b);
+    }
+  }
+
+  /**
+   * Non-differentiable comparison operator.
+   */
+  EIGEN_ALWAYS_INLINE static bool equals(const Scalar &a, const Scalar &b) {
+    if constexpr (std::is_arithmetic_v<Scalar>) {
+      return a == b;
+    } else if constexpr (enoki::is_array<Scalar>::value) {
+      return enoki::all(a == b);
+    }
+  }
+
+  template <std::size_t Size>
+  static void print(const std::string &title, enoki::Matrix<Scalar, Size> &m) {
+    std::cout << title << "\n" << m << std::endl;
+  }
+  template <std::size_t Size>
+  static void print(const std::string &title, enoki::Array<Scalar, Size> &v) {
+    std::cout << title << "\n" << v << std::endl;
+  }
+  static void print(const std::string &title, const Scalar &v) {
+    std::cout << title << "\n" << to_double(v) << std::endl;
+  }
+  template <typename T>
+  static void print(const std::string &title, const T &abi) {
+    abi.print(title.c_str());
+  }
 };
 
 } // end namespace tds
