@@ -310,66 +310,42 @@ struct EigenAlgebraT
 
   // TODO: Eigen's equivalent operation for enoki::is_array
   EIGEN_ALWAYS_INLINE static double to_double(const Scalar &s) {
-    if constexpr (std::is_arithmetic_v<Scalar>) {
-      return static_cast<double>(s);
-    } else if constexpr (enoki::is_array<Scalar>::value) {
-      return static_cast<double>(s[0]);
-    }
+    return static_cast<double>(s);
   }
 
   /**
    * Non-differentiable comparison operator.
    */
   EIGEN_ALWAYS_INLINE static bool less_than(const Scalar &a, const Scalar &b) {
-    if constexpr (std::is_arithmetic_v<Scalar>) {
-      return a < b;
-    } else if constexpr (enoki::is_array<Scalar>::value) {
-      return enoki::all(a < b);
-    }
+    return a < b;
   }
 
   /**
    * Non-differentiable comparison operator.
    */
   EIGEN_ALWAYS_INLINE static bool less_than_zero(const Scalar &a) {
-    if constexpr (std::is_arithmetic_v<Scalar>) {
-      return a < 0.;
-    } else if constexpr (enoki::is_array<Scalar>::value) {
-      return enoki::all(a < 0.);
-    }
+    return a < 0.;
   }
 
   /**
    * Non-differentiable comparison operator.
    */
   EIGEN_ALWAYS_INLINE static bool greater_than_zero(const Scalar &a) {
-    if constexpr (std::is_arithmetic_v<Scalar>) {
-      return a > 0.;
-    } else if constexpr (enoki::is_array<Scalar>::value) {
-      return enoki::all(a > 0.);
-    }
+    return a > 0.;
   }
 
   /**
    * Non-differentiable comparison operator.
    */
   EIGEN_ALWAYS_INLINE static bool greater_than(const Scalar &a, const Scalar &b) {
-    if constexpr (std::is_arithmetic_v<Scalar>) {
-      return a > b;
-    } else if constexpr (enoki::is_array<Scalar>::value) {
-      return enoki::all(a > b);
-    }
+    return a > b;
   }
 
   /**
    * Non-differentiable comparison operator.
    */
   EIGEN_ALWAYS_INLINE static bool equals(const Scalar &a, const Scalar &b) {
-    if constexpr (std::is_arithmetic_v<Scalar>) {
-      return a == b;
-    } else if constexpr (enoki::is_array<Scalar>::value) {
-      return enoki::all(a == b);
-    }
+    return a == b;
   }
 
   template <std::size_t Size>
