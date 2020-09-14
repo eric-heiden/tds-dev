@@ -17,6 +17,8 @@ struct EigenAlgebraT
   using VectorX = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
   using Matrix3 = Eigen::Matrix<Scalar, 3, 3>;
   using Matrix6 = Eigen::Matrix<Scalar, 6, 6>;
+  using Matrix3X = Eigen::Matrix<Scalar, 3, Eigen::Dynamic>;
+  using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
   using Quaternion = Eigen::Quaternion<Scalar>;
   using SpatialVector = tds::SpatialVector<EigenAlgebra>;
   using MotionVector = tds::MotionVector<EigenAlgebra>;
@@ -363,6 +365,25 @@ struct EigenAlgebraT
   static void print(const std::string &title, const T &abi) {
     abi.print(title.c_str());
   }
+
+  template <typename T>
+  TINY_INLINE static auto sin(const T &s) {
+    return std::sin(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto cos(const T &s) {
+    return std::cos(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto abs(const T &s) {
+    return std::abs(s);
+  }
+
+  EigenAlgebraT<Scalar>() = delete;
 };
+
+typedef EigenAlgebraT<double> EigenAlgebra;
 
 } // end namespace tds
