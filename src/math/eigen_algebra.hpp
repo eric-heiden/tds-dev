@@ -1,7 +1,9 @@
 #pragma once
 
-#include "third_party/eigen3/Eigen/Core"
 
+#include <iostream>
+
+#include "third_party/eigen3/Eigen/Core"
 #include "spatial_vector.hpp"
 
 namespace tds
@@ -174,24 +176,24 @@ struct EigenAlgebraT
   EIGEN_ALWAYS_INLINE static Vector3 unit3_y() { return Vector3(0, 1, 0); }
   EIGEN_ALWAYS_INLINE static Vector3 unit3_z() { return Vector3(0, 0, 1); }
 
-  template <std::size_t Size1, std::size_t Size2>
+  template <int Size1, int Size2>
   EIGEN_ALWAYS_INLINE static void assign_block(
       Eigen::Matrix<Scalar, Size1, Size1> &output,
-      const Eigen::Matrix<Scalar, Size2, Size2> &input, std::size_t i, std::size_t j,
-      std::size_t m = Size2, std::size_t n = Size2, std::size_t input_i = 0,
-      std::size_t input_j = 0) {
+      const Eigen::Matrix<Scalar, Size2, Size2> &input, int i, int j,
+      int m = Size2, int n = Size2, int input_i = 0,
+      int input_j = 0) {
     assert(i + m <= Size1 && j + n <= Size1);
     assert(input_i + m <= Size2 && input_j + n <= Size2);
-    for (std::size_t ii = 0; ii < m; ++ii) {
-      for (std::size_t jj = 0; jj < n; ++jj) {
+    for (int ii = 0; ii < m; ++ii) {
+      for (int jj = 0; jj < n; ++jj) {
         output(ii + i, jj + j) = input(ii + input_i, jj + input_j);
       }
     }
   }
 
-  template <std::size_t Size>
+  template <int Size>
   EIGEN_ALWAYS_INLINE static void assign_column(Eigen::Matrix<Scalar, Size, Size> &m,
-                                         std::size_t i,
+                                         Index i,
                                          const Eigen::Array<Scalar, Size, 1> &v) {
     m.col(i) = v;
   }
@@ -292,13 +294,21 @@ struct EigenAlgebraT
   EIGEN_ALWAYS_INLINE static const Scalar &quat_y(const Quaternion &q) { return q.y(); }
   EIGEN_ALWAYS_INLINE static const Scalar &quat_z(const Quaternion &q) { return q.z(); }
   EIGEN_ALWAYS_INLINE static const Scalar &quat_w(const Quaternion &q) { return q.w(); }
+  EIGEN_ALWAYS_INLINE static const Quaternion quat_from_xyzw(const Scalar& x,
+                                                             const Scalar& y,
+                                                             const Scalar& z,
+                                                             const Scalar& w)
+  {
+    // Eigen specific constructor coefficient order
+    return Quaternion(w, x, y, z);
+  }
 
-  template <std::size_t Size>
-  EIGEN_ALWAYS_INLINE static void set_zero(enoki::Matrix<Scalar, Size> &m) {
+  template <int Size1, int Size2>
+  EIGEN_ALWAYS_INLINE static void set_zero(Eigen::Matrix<Scalar, Size1, Size2> &m) {
     m.setConstant(m);
   }
-  template <std::size_t Size>
-  EIGEN_ALWAYS_INLINE static void set_zero(enoki::Array<Scalar, Size> &v) {
+  template <int Size1, int Size2 = 1>
+  EIGEN_ALWAYS_INLINE static void set_zero(Eigen::Array<Scalar, Size1, Size2> &v) {
     v.setZero();
   }
   EIGEN_ALWAYS_INLINE static void set_zero(MotionVector &v) {
@@ -308,11 +318,6 @@ struct EigenAlgebraT
   EIGEN_ALWAYS_INLINE static void set_zero(ForceVector &v) {
     v.top.setZero();
     v.bottom.setZero();
-  }
-
-  // TODO: Eigen's equivalent operation for enoki::is_array
-  EIGEN_ALWAYS_INLINE static double to_double(const Scalar &s) {
-    return static_cast<double>(s);
   }
 
   /**
@@ -350,12 +355,21 @@ struct EigenAlgebraT
     return a == b;
   }
 
-  template <std::size_t Size>
-  static void print(const std::string &title, enoki::Matrix<Scalar, Size> &m) {
+  TINY_INLINE static double to_double(const Scalar& s) {
+    return static_cast<double>(s);
+  }
+
+  TINY_INLINE static Scalar from_double(double s) {
+    return static_cast<Scalar>(s);
+  }
+
+
+  template <int Size1, int Size2>
+  static void print(const std::string &title, Eigen::Matrix<Scalar, Size1, Size2> &m) {
     std::cout << title << "\n" << m << std::endl;
   }
-  template <std::size_t Size>
-  static void print(const std::string &title, enoki::Array<Scalar, Size> &v) {
+  template <int Size1, int Size2 = 1>
+  static void print(const std::string &title, Eigen::Array<Scalar, Size1, Size2> &v) {
     std::cout << title << "\n" << v << std::endl;
   }
   static void print(const std::string &title, const Scalar &v) {
