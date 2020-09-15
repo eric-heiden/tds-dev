@@ -32,8 +32,8 @@ struct TinyVector3 {
 
   int m_size{3};
 
-  // TODO(ericheiden) remove unused rows argument (used for MatrixXxX)
-  explicit TinyVector3(int unused = 0) {}
+  TinyVector3() = default;
+  explicit TinyVector3(int) {}
 
   TinyVector3(const TinyVector3& rhs) {
     m_x = rhs.m_x;

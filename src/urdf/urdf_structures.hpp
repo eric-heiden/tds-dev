@@ -145,8 +145,8 @@ struct UrdfVisual {
   typedef tds::UrdfGeometry<Algebra> UrdfGeometry;
   typedef tds::VisualMaterial<Algebra> VisualMaterial;
   UrdfVisual()
-      : origin_xyz(Algebra::zero3()),
-        origin_rpy(Algebra::zero3()),
+      : origin_rpy(Algebra::zero3()),
+        origin_xyz(Algebra::zero3()),
         has_local_material(false),
         sync_visual_body_id(-1)
 

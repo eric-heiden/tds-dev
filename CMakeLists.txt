@@ -37,8 +37,6 @@ PROJECT(DIFF_PHYSICS)
 #The core library consists of those headers
 FILE(GLOB TDS_HDRS "*.h" )
 
-set(CMAKE_CXX_STANDARD 17)
-
 find_package(Eigen3 CONFIG)
 if (Eigen3_FOUND)
     message("FOUND EIGEN")

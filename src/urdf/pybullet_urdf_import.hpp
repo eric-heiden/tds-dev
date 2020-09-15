@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "SharedMemory/b3RobotSimulatorClientAPI_NoDirect.h"
 #include "multi_body.hpp"
+#include "pybullet_visualizer_api.h"
 #include "urdf_structures.hpp"
 
 namespace tds {
@@ -28,13 +28,13 @@ struct PyBulletUrdfImport {
   using Quaternion = typename Algebra::Quaternion;
   typedef tds::Transform<Algebra> Transform;
 
-  static void extract_urdf_structs(
-      UrdfStructures& urdf_structures, int body_unique_id,
-      class b3RobotSimulatorClientAPI_NoDirect& sim_api,
-      class b3RobotSimulatorClientAPI_NoDirect& viz_api) {
+  static void extract_urdf_structs(UrdfStructures& urdf_structures,
+                                   int body_unique_id,
+                                   PyBulletVisualizerAPI* sim_api,
+                                   PyBulletVisualizerAPI* viz_api) {
     btVector3 basePos;
     btQuaternion baseOrn;
-    sim_api.getBasePositionAndOrientation(body_unique_id, basePos, baseOrn);
+    sim_api->getBasePositionAndOrientation(body_unique_id, basePos, baseOrn);
     {
       int base_link_index = -1;
       UrdfLink<Algebra> base_link;
@@ -44,14 +44,14 @@ struct PyBulletUrdfImport {
       urdf_structures.base_links.push_back(base_link);
     }
 
-    int num_joints = sim_api.getNumJoints(body_unique_id);
+    int num_joints = sim_api->getNumJoints(body_unique_id);
     for (int link_index = 0; link_index < num_joints; link_index++) {
       UrdfLink<Algebra> child_link;
       extract_link(urdf_structures, body_unique_id, link_index, sim_api,
                    viz_api, child_link);
 
       b3JointInfo jointInfo;
-      sim_api.getJointInfo(body_unique_id, link_index, &jointInfo);
+      sim_api->getJointInfo(body_unique_id, link_index, &jointInfo);
 
       UrdfJoint<Algebra> joint;
 
@@ -89,7 +89,7 @@ struct PyBulletUrdfImport {
 
       } else {
         b3JointInfo parentJointInfo;
-        sim_api.getJointInfo(body_unique_id, jointInfo.m_parentIndex,
+        sim_api->getJointInfo(body_unique_id, jointInfo.m_parentIndex,
                              &parentJointInfo);
         joint.parent_name = parentJointInfo.m_linkName;
         urdf_structures.links[jointInfo.m_parentIndex]
@@ -98,7 +98,7 @@ struct PyBulletUrdfImport {
       child_link.parent_index = jointInfo.m_parentIndex;
 
       b3DynamicsInfo dynamics_info_child;
-      sim_api.getDynamicsInfo(body_unique_id, link_index, &dynamics_info_child);
+      sim_api->getDynamicsInfo(body_unique_id, link_index, &dynamics_info_child);
       btVector3 childInertiaPos(dynamics_info_child.m_localInertialFrame[0],
                                 dynamics_info_child.m_localInertialFrame[1],
                                 dynamics_info_child.m_localInertialFrame[2]);
@@ -117,7 +117,7 @@ struct PyBulletUrdfImport {
       btTransform tmp_ = childInertia * parentCom2Joint;
       btTransform tmpInv = tmp_.inverse();
       b3DynamicsInfo dynamics_info_parent;
-      sim_api.getDynamicsInfo(body_unique_id, jointInfo.m_parentIndex,
+      sim_api->getDynamicsInfo(body_unique_id, jointInfo.m_parentIndex,
                               &dynamics_info_parent);
       btVector3 parentInertiaPos(dynamics_info_parent.m_localInertialFrame[0],
                                  dynamics_info_parent.m_localInertialFrame[1],
@@ -146,9 +146,8 @@ struct PyBulletUrdfImport {
     }
   }
 
-  static void sync_graphics_transforms(
-      const MultiBody<Algebra>* body,
-      class b3RobotSimulatorClientAPI_NoDirect& viz_api) {
+  static void sync_graphics_transforms(const MultiBody<Algebra>* body,
+                                       PyBulletVisualizerAPI* viz_api) {
     for (std::size_t v = 0; v < body->visual_ids().size(); v++) {
       int visual_id = body->visual_ids()[v];
       Quaternion rot;
@@ -161,7 +160,7 @@ struct PyBulletUrdfImport {
       btQuaternion base_orn(
           Algebra::to_double(rot.getX()), Algebra::to_double(rot.getY()),
           Algebra::to_double(rot.getZ()), Algebra::to_double(rot.getW()));
-      viz_api.resetBasePositionAndOrientation(visual_id, base_pos, base_orn);
+      viz_api->resetBasePositionAndOrientation(visual_id, base_pos, base_orn);
     }
 
     for (std::size_t l = 0; l < body->size(); l++) {
@@ -176,28 +175,27 @@ struct PyBulletUrdfImport {
         btQuaternion base_orn(
             Algebra::to_double(rot.getX()), Algebra::to_double(rot.getY()),
             Algebra::to_double(rot.getZ()), Algebra::to_double(rot.getW()));
-        viz_api.resetBasePositionAndOrientation(visual_id, base_pos, base_orn);
+        viz_api->resetBasePositionAndOrientation(visual_id, base_pos, base_orn);
       }
     }
   }
   static void extract_link(UrdfStructures& urdf_structures, int body_unique_id,
-                           int linkIndex,
-                           class b3RobotSimulatorClientAPI_NoDirect& sim_api,
-                           class b3RobotSimulatorClientAPI_NoDirect& viz_api,
+                           int linkIndex, PyBulletVisualizerAPI* sim_api,
+                           PyBulletVisualizerAPI* viz_api,
                            UrdfLink<Algebra>& urdfLink) {
     b3BodyInfo bodyInfo;
-    sim_api.getBodyInfo(body_unique_id, &bodyInfo);
+    sim_api->getBodyInfo(body_unique_id, &bodyInfo);
 
     if (linkIndex == -1) {
       urdfLink.link_name = bodyInfo.m_baseName;
     } else {
       b3JointInfo jointInfo;
-      sim_api.getJointInfo(body_unique_id, linkIndex, &jointInfo);
+      sim_api->getJointInfo(body_unique_id, linkIndex, &jointInfo);
       urdfLink.link_name = jointInfo.m_linkName;
     }
 
     b3DynamicsInfo dyn;
-    sim_api.getDynamicsInfo(body_unique_id, linkIndex, &dyn);
+    sim_api->getDynamicsInfo(body_unique_id, linkIndex, &dyn);
 
     urdfLink.urdf_inertial.mass = Algebra::from_double(dyn.m_mass);
     urdfLink.urdf_inertial.inertia_xxyyzz.setValue(
@@ -208,7 +206,7 @@ struct PyBulletUrdfImport {
         Algebra::from_double(dyn.m_localInertialFrame[0]),
         Algebra::from_double(dyn.m_localInertialFrame[1]),
         Algebra::from_double(dyn.m_localInertialFrame[2]));
-    btVector3 rpy = sim_api.getEulerFromQuaternion(
+    btVector3 rpy = sim_api->getEulerFromQuaternion(
         btQuaternion(dyn.m_localInertialFrame[3], dyn.m_localInertialFrame[4],
                      dyn.m_localInertialFrame[5], dyn.m_localInertialFrame[6]));
     urdfLink.urdf_inertial.origin_rpy.setValue(Algebra::from_double(rpy[0]),
@@ -217,7 +215,8 @@ struct PyBulletUrdfImport {
 
     // visual shapes
     b3VisualShapeInformation visualShapeInfo;
-    sim_api.getVisualShapeData(body_unique_id, visualShapeInfo);
+    visualShapeInfo.m_visualShapeData = new b3VisualShapeData;
+    sim_api->getVisualShapeData(body_unique_id, visualShapeInfo);
 
     for (int i = 0; i < visualShapeInfo.m_numVisualShapes; i++) {
       const b3VisualShapeData& visual = visualShapeInfo.m_visualShapeData[i];
@@ -228,7 +227,7 @@ struct PyBulletUrdfImport {
             Algebra::from_double(visual.m_localVisualFrame[0]),
             Algebra::from_double(visual.m_localVisualFrame[1]),
             Algebra::from_double(visual.m_localVisualFrame[2]));
-        btVector3 rpy = sim_api.getEulerFromQuaternion(btQuaternion(
+        btVector3 rpy = sim_api->getEulerFromQuaternion(btQuaternion(
             visual.m_localVisualFrame[3], visual.m_localVisualFrame[4],
             visual.m_localVisualFrame[5], visual.m_localVisualFrame[6]));
         viz.origin_rpy.setValue(Algebra::from_double(rpy[0]),
@@ -293,7 +292,7 @@ struct PyBulletUrdfImport {
     convert_visuals(urdf_structures, urdfLink, viz_api);
     // collision shapes, only convert spheres for now
     b3CollisionShapeInformation collisionShapeInfo;
-    sim_api.getCollisionShapeData(body_unique_id, linkIndex,
+    sim_api->getCollisionShapeData(body_unique_id, linkIndex,
                                   collisionShapeInfo);
 
     for (int i = 0; i < collisionShapeInfo.m_numCollisionShapes; i++) {
@@ -376,9 +375,9 @@ struct PyBulletUrdfImport {
     }
   }
 
-  static void convert_visuals(
-      UrdfStructures& urdf_structures, UrdfLink<Algebra>& link,
-      class b3RobotSimulatorClientAPI_NoDirect& viz_api) {
+  static void convert_visuals(UrdfStructures& urdf_structures,
+                              UrdfLink<Algebra>& link,
+                              PyBulletVisualizerAPI* viz_api) {
     for (std::size_t v = 0; v < link.urdf_visual_shapes.size(); v++) {
       UrdfVisual<Algebra>& visual_shape = link.urdf_visual_shapes[v];
       b3RobotSimulatorCreateVisualShapeArgs args;
@@ -389,14 +388,14 @@ struct PyBulletUrdfImport {
         case TINY_SPHERE_TYPE: {
           args.m_radius =
               Algebra::to_double(visual_shape.geometry.sphere.radius);
-          int vizShape = viz_api.createVisualShape(GEOM_SPHERE, args);
+          int vizShape = viz_api->createVisualShape(GEOM_SPHERE, args);
           if (vizShape < 0) {
             printf("Couldn't create sphere shape\n");
           }
           b3RobotSimulatorCreateMultiBodyArgs args2;
           args2.m_baseVisualShapeIndex = vizShape;
           args2.m_baseMass = 0;
-          int viz_uid = viz_api.createMultiBody(args2);
+          int viz_uid = viz_api->createMultiBody(args2);
           visual_shape.sync_visual_body_id = viz_uid;
           break;
         }
@@ -406,14 +405,14 @@ struct PyBulletUrdfImport {
           args.m_height =
               Algebra::to_double(visual_shape.geometry.capsule.length);
 
-          int vizShape = viz_api.createVisualShape(GEOM_CAPSULE, args);
+          int vizShape = viz_api->createVisualShape(GEOM_CAPSULE, args);
           if (vizShape < 0) {
             printf("Couldn't create capsule shape\n");
           }
           b3RobotSimulatorCreateMultiBodyArgs args2;
           args2.m_baseVisualShapeIndex = vizShape;
           args2.m_baseMass = 0;
-          int viz_uid = viz_api.createMultiBody(args2);
+          int viz_uid = viz_api->createMultiBody(args2);
           visual_shape.sync_visual_body_id = viz_uid;
           break;
         }
@@ -424,11 +423,11 @@ struct PyBulletUrdfImport {
             args.m_halfExtents.setValue(Algebra::to_double(he[0]),
                                         Algebra::to_double(he[1]),
                                         Algebra::to_double(he[2]));
-            int vizShape = viz_api.createVisualShape(GEOM_BOX, args);
+            int vizShape = viz_api->createVisualShape(GEOM_BOX, args);
             b3RobotSimulatorCreateMultiBodyArgs args2;
             args2.m_baseVisualShapeIndex = vizShape;
             args2.m_baseMass = 0;
-            int viz_uid = viz_api.createMultiBody(args2);
+            int viz_uid = viz_api->createMultiBody(args2);
             visual_shape.sync_visual_body_id = viz_uid;
             break;
           }
@@ -441,7 +440,7 @@ struct PyBulletUrdfImport {
                 Algebra::to_double(visual_shape.geometry.mesh.scale[1]),
                 Algebra::to_double(visual_shape.geometry.mesh.scale[2]));
 
-            int vizShape = viz_api.createVisualShape(GEOM_MESH, args);
+            int vizShape = viz_api->createVisualShape(GEOM_MESH, args);
             if (vizShape < 0) {
               printf("Couldn't create sphere shape: %s\n", args.m_fileName);
             }
@@ -451,14 +450,14 @@ struct PyBulletUrdfImport {
             args2.m_baseVisualShapeIndex = vizShape;
             args2.m_baseMass = 0;
 
-            int viz_uid = viz_api.createMultiBody(args2);
+            int viz_uid = viz_api->createMultiBody(args2);
             {
               b3RobotSimulatorChangeVisualShapeArgs args_change;
               args_change.m_objectUniqueId = viz_uid;
               args_change.m_linkIndex = -1;
               args_change.m_hasRgbaColor = true;
               args_change.m_rgbaColor.setValue(1, 1, 1, 1);
-              viz_api.changeVisualShape(args_change);
+              viz_api->changeVisualShape(args_change);
             }
             visual_shape.sync_visual_body_id = viz_uid;
             break;

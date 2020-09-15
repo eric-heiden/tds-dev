@@ -40,7 +40,7 @@ struct SystemConstructor {
                   MultiBody<Algebra>** system, bool clear_cache = false) const {
     static UrdfCache<Algebra> cache;
     if (clear_cache) {
-      cache.data.clear();
+      cache.clear();
     }
 
     b3RobotSimulatorLoadUrdfFileArgs args;

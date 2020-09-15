@@ -89,8 +89,6 @@ int main(int argc, char *argv[]) {
   int grav_id = sim->addUserDebugParameter("gravity", -10, 10, -2.);
 #endif
 
-  // int rotateCamera = 0;
-
   tds::World<Algebra> world;
   MultiBody *system = nullptr;
 
@@ -98,11 +96,11 @@ int main(int argc, char *argv[]) {
     system = world.create_multi_body();
     tds::SystemConstructor constructor(urdf_filename, plane_filename);
     constructor.is_floating = floating_base;
-    VisualizerAPI *sim_ = new VisualizerAPI();
-    sim_->connect(eCONNECT_DIRECT);
 #if BULLET_VISUALIZER
     constructor(sim2, sim, world, &system);
 #else
+    VisualizerAPI *sim_ = new VisualizerAPI();
+    sim_->connect(eCONNECT_DIRECT);
     constructor(sim_, sim_, world, &system);
 #endif
   } else {
@@ -125,8 +123,8 @@ int main(int argc, char *argv[]) {
   }
 #endif
 
-  world.set_mb_constraint_solver(
-      new tds::MultiBodyConstraintSolverSpring<Algebra>);
+  // world.set_mb_constraint_solver(
+  //     new tds::MultiBodyConstraintSolverSpring<Algebra>);
 
   fflush(stdout);
 
@@ -180,7 +178,7 @@ int main(int argc, char *argv[]) {
     }
 
 #if BULLET_VISUALIZER
-    tds::PyBulletUrdfImport<Algebra>::sync_graphics_transforms(system, *sim);
+    tds::PyBulletUrdfImport<Algebra>::sync_graphics_transforms(system, sim);
 #else
     if (step % 10 == 0) {
       auto &mb = *system;

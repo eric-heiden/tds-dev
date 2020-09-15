@@ -66,6 +66,8 @@ class MultiBodyConstraintSolver {
   // Number of friction force directions
   int num_friction_dir_{1};
 
+  virtual ~MultiBodyConstraintSolver() = default;
+
  private:
   /**
    * Projected Gauss-Seidel solver for a MLCP defined by coefficient matrix A
@@ -113,16 +115,14 @@ class MultiBodyConstraintSolver {
         if (hi && x[i] > (*hi)[i] * s) {
           x[i] = (*hi)[i] * s;
         }
-        Scalar diff = x[i] - x_old;
-        //        least_squares_residual += Algebra::getDouble(diff *
-        //        diff);
+        // Scalar diff = x[i] - x_old;
+        // least_squares_residual += Algebra::getDouble(diff * diff);
       }
-      //      if (least_squares_residual < least_squares_residual_threshold) {
-      //        printf("PGS converged: residual %f < %f at iteration %i /
-      //        %i.\n",
-      //               least_squares_residual, least_squares_residual_threshold,
-      //               k + 1, num_iterations);
-      //      }
+      // if (least_squares_residual < least_squares_residual_threshold) {
+      //   printf("PGS converged: residual %f < %f at iteration %i / % i.\n ",
+      //          least_squares_residual, least_squares_residual_threshold, k + 1,
+      //          num_iterations);
+      // }
     }
   }
 

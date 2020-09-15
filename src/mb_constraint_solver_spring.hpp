@@ -283,9 +283,8 @@ class MultiBodyConstraintSolverSpring
   // cps: contact points
   // dt : delta time (in seconds)
   virtual void resolve_collision(const std::vector<ContactPoint>& cps,
-                                 const Scalar& dt) {
+                                 const Scalar& /*dt*/) {
     if (cps.empty()) return;
-    const int n_c = static_cast<int>(cps.size());
 
     const ContactPoint& cp0 = cps[0];
 

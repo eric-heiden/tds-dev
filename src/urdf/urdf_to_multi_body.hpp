@@ -171,7 +171,7 @@ struct UrdfToMultiBody {
         Matrix3 inertia_C = rot * inertia_diag;
         l.rbi = RigidBodyInertia(mass, com, inertia_C);
 
-        for (int i = 0; i < link.urdf_visual_shapes.size(); i++) {
+        for (std::size_t i = 0; i < link.urdf_visual_shapes.size(); i++) {
           const UrdfVisual<Algebra>& visual_shape = link.urdf_visual_shapes[i];
 
           l.visual_ids.push_back(visual_shape.sync_visual_body_id);
