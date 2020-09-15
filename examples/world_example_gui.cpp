@@ -14,162 +14,135 @@
 
 #include <stdio.h>
 
-#include "LinearMath/btQuaternion.h"
-#include "SharedMemory/PhysicsClientC_API.h"
-#include "SharedMemory/PhysicsDirectC_API.h"
-#include "SharedMemory/b3RobotSimulatorClientAPI_InternalData.h"
-#include "SharedMemory/b3RobotSimulatorClientAPI_NoDirect.h"
-#include "assert.h"
-#include "tiny_world.h"
-#include "xarm.h"
-// DoubleScalar
-// FixedPointScalar
-#include "fix64_scalar.h"
-#include "tiny_dual.h"
-#include "tiny_matrix3x3.h"
-#include "tiny_quaternion.h"
-#include "tiny_vector3.h"
-typedef TinyDual<double> TinyDualDouble;
+#include <cassert>
 #include <chrono>  // std::chrono::seconds
 #include <thread>  // std::this_thread::sleep_for
 
-#include "tiny_double_utils.h"
-#include "tiny_dual_double_utils.h"
-#include "tiny_multi_body.h"
-#include "tiny_pose.h"
-#include "tiny_rigid_body.h"
+#include "math/pose.hpp"
+#include "math/tiny/tiny_double_utils.h"
+#include "multi_body.hpp"
+#include "pybullet_visualizer_api.h"
+#include "rigid_body.hpp"
+#include "utils/file_utils.hpp"
+#include "world.hpp"
 
-typedef TinyVector3<TinyDualDouble, TinyDualDoubleUtils> tinydualvec3;
-typedef TinyVector3<double, DoubleUtils> dvec3;
-typedef TinyVector3<Fix64Scalar, Fix64Scalar> fvec;
-typedef TinyMatrix3x3<double, DoubleUtils> dmat3;
-
-b3RobotSimulatorClientAPI_NoDirect visualizer;
-
-void MyTinySubmitProfileTiming(const std::string& profileName) {
-  visualizer.submitProfileTiming(profileName);
-}
+typedef PyBulletVisualizerAPI VisualizerAPI;
+typedef TinyAlgebra<double, DoubleUtils> Algebra;
+typedef typename Algebra::Vector3 Vector3;
 
 int main(int argc, char* argv[]) {
-  Fix64Scalar x = -Fix64Scalar::one() / Fix64Scalar::ten();
-  Fix64Scalar res = Fix64Scalar::sin1(x);
+  std::string connection_mode = "gui";
+  auto* visualizer = new VisualizerAPI;
+  visualizer->setTimeOut(1e30);
+  printf("\nmode=%s\n", const_cast<char*>(connection_mode.c_str()));
+  int mode = eCONNECT_GUI;
+  if (connection_mode == "direct") mode = eCONNECT_DIRECT;
+  if (connection_mode == "shared_memory") {
+    mode = eCONNECT_SHARED_MEMORY;
+    printf(
+        "Shared memory mode: Ensure you have visualizer server running (e.g. "
+        "python -m pybullet_utils.runServer)\n");
+  }
+  visualizer->connect(mode);
 
-  // b3PhysicsClientHandle sm = b3ConnectPhysicsDirect();
-  b3PhysicsClientHandle sm = b3ConnectSharedMemory(SHARED_MEMORY_KEY);
-  b3RobotSimulatorClientAPI_InternalData data;
-  data.m_physicsClientHandle = sm;
-  data.m_guiHelper = 0;
-  visualizer.setInternalData(&data);
-  if (visualizer.canSubmitCommand()) {
-    int logId = visualizer.startStateLogging(STATE_LOGGING_PROFILE_TIMINGS,
-                                             "/tmp/fileName.json");
-    visualizer.resetSimulation();
+  visualizer->resetSimulation();
 
+  tds::World<Algebra> world;
+
+  {
+    double mass = 0.0;
+    std::string filename;
+    tds::FileUtils::find_file("plane_implicit.urdf", filename);
+    visualizer->loadURDF(filename);
+    const tds::Geometry<Algebra>* geom = world.create_plane();
+    tds::RigidBody<Algebra>* body = world.create_rigid_body(mass, geom);
+  }
+  std::vector<tds::RigidBody<Algebra>*> bodies;
+  std::vector<int> visuals;
+
+  // MultiBody<Algebra>* mb = world.create_multi_body();
+  // init_xarm6<Algebra>(*mb);
+
+  {
+    std::string filename;
+    tds::FileUtils::find_file("sphere2.urdf", filename);
+    int sphereId = visualizer->loadURDF(filename);
+    double mass = 0.0;
+    double radius = 0.5;
+    const tds::Geometry<Algebra>* geom = world.create_sphere(radius);
+    tds::RigidBody<Algebra>* body = world.create_rigid_body(mass, geom);
+    body->world_pose().position = Vector3(0, 0, 0.5);
+    bodies.push_back(body);
+    visuals.push_back(sphereId);
+  }
+  {
+    std::string filename;
+    tds::FileUtils::find_file("sphere2.urdf", filename);
+    int sphereId = visualizer->loadURDF(filename);
+    double mass = 1.0;
+
+    double radius = 0.5;
+    const tds::Geometry<Algebra>* geom = world.create_sphere(radius);
+    tds::RigidBody<Algebra>* body = world.create_rigid_body(mass, geom);
+    body->world_pose().position = Vector3(0, 0.22, 1.5);
+    bodies.push_back(body);
+    visuals.push_back(sphereId);
+  }
+
+  // std::vector<double> q;
+  // std::vector<double> qd;
+  // std::vector<double> tau;
+  // std::vector<double> qdd;
+  // Vector3<Algebra> gravity(0., 0., -9.81);
+
+  // for (int i = 0; i < mb->m_links.size(); i++) {
+  //   q.push_back(DoubleUtils::fraction(1, 10) +
+  //               DoubleUtils::fraction(1, 10) * DoubleUtils::fraction(i,
+  //               1));
+  //   qd.push_back(DoubleUtils::fraction(3, 10) +
+  //                DoubleUtils::fraction(1, 10) *
+  //                    DoubleUtils::fraction(i, 1));
+  //   tau.push_back(DoubleUtils::zero());
+  //   qdd.push_back(DoubleUtils::zero());
+  // }
+
+  double dt = 1. / 60.;
+  for (int i = 0; i < 300; i++) {
     {
-      TinyWorld<double, DoubleUtils> world;
-      // world.m_profileTimingFunc = MyTinySubmitProfileTiming;
-      typedef TinyRigidBody<double, DoubleUtils> TinyRigidBodyDouble;
-
-      {
-        double mass = 0.0;
-        visualizer.loadURDF("plane.urdf");
-        const TinyGeometry<double, DoubleUtils>* geom = world.create_plane();
-        TinyRigidBody<double, DoubleUtils>* body =
-            world.create_rigid_body(mass, geom);
-      }
-      std::vector<TinyRigidBody<double, DoubleUtils>*> bodies;
-      std::vector<int> visuals;
-
-      TinyMultiBody<double, DoubleUtils>* mb = world.create_multi_body();
-      init_xarm6<double, DoubleUtils>(*mb);
-
-      {
-        int sphereId = visualizer.loadURDF("sphere2.urdf");
-        double mass = 0.0;
-        double radius = 0.5;
-        const TinyGeometry<double, DoubleUtils>* geom =
-            world.create_sphere(radius);
-        TinyRigidBody<double, DoubleUtils>* body =
-            world.create_rigid_body(mass, geom);
-        body->m_world_pose.m_position =
-            TinyVector3<double, DoubleUtils>::create(0, 0, 0.5);
-        bodies.push_back(body);
-        visuals.push_back(sphereId);
-      }
-      {
-        int sphereId = visualizer.loadURDF("sphere2.urdf");
-        double mass = 1.0;
-
-        double radius = 0.5;
-        const TinyGeometry<double, DoubleUtils>* geom =
-            world.create_sphere(radius);
-        TinyRigidBody<double, DoubleUtils>* body =
-            world.create_rigid_body(mass, geom);
-        body->m_world_pose.m_position =
-            TinyVector3<double, DoubleUtils>::create(0, 0.22, 1.5);
-        bodies.push_back(body);
-        visuals.push_back(sphereId);
-      }
-
-      std::vector<double> q;
-      std::vector<double> qd;
-      std::vector<double> tau;
-      std::vector<double> qdd;
-      TinyVector3<double, DoubleUtils> gravity(0., 0., -9.81);
-
-      for (int i = 0; i < mb->m_links.size(); i++) {
-        q.push_back(DoubleUtils::fraction(1, 10) +
-                    DoubleUtils::fraction(1, 10) * DoubleUtils::fraction(i, 1));
-        qd.push_back(DoubleUtils::fraction(3, 10) +
-                     DoubleUtils::fraction(1, 10) *
-                         DoubleUtils::fraction(i, 1));
-        tau.push_back(DoubleUtils::zero());
-        qdd.push_back(DoubleUtils::zero());
-      }
-
-      double dt = 1. / 60.;
-      for (int i = 0; i < 300; i++) {
-        {
-          visualizer.submitProfileTiming("world.step");
-          world.step(dt);
-          visualizer.submitProfileTiming("");
-        }
-        {
-            // visualizer.submitProfileTiming("xarm_fk");
-            // mb->forwardKinematics(q, qd);
-            // visualizer.submitProfileTiming("");
-        }
-
-        {
-          visualizer.submitProfileTiming("xarm_aba");
-          mb->forward_dynamics(q, qd, tau, gravity, qdd);
-          visualizer.submitProfileTiming("");
-        }
-        {
-          visualizer.submitProfileTiming("xarm_aba");
-          mb->integrate(q, qd, qdd, dt);
-          visualizer.submitProfileTiming("");
-        }
-        if (1) {
-          std::this_thread::sleep_for(std::chrono::duration<double>(dt));
-          // sync transforms
-          for (int b = 0; b < bodies.size(); b++) {
-            const TinyRigidBody<double, DoubleUtils>* body = bodies[b];
-            int sphereId = visuals[b];
-            btVector3 base_pos(body->m_world_pose.m_position.getX(),
-                               body->m_world_pose.m_position.getY(),
-                               body->m_world_pose.m_position.getZ());
-            btQuaternion base_orn(body->m_world_pose.m_orientation.getX(),
-                                  body->m_world_pose.m_orientation.getY(),
-                                  body->m_world_pose.m_orientation.getZ(),
-                                  body->m_world_pose.m_orientation.getW());
-            visualizer.resetBasePositionAndOrientation(sphereId, base_pos,
-                                                       base_orn);
-          }
-        }
-      }
+      visualizer->submitProfileTiming("world.step");
+      world.step(dt);
+      visualizer->submitProfileTiming("");
     }
-    visualizer.stopStateLogging(logId);
+    //   {
+    //       // visualizer->submitProfileTiming("xarm_fk");
+    //       // mb->forwardKinematics(q, qd);
+    //       // visualizer->submitProfileTiming("");
+    //   }
+
+    //   {
+    //     visualizer->submitProfileTiming("xarm_aba");
+    //     mb->forward_dynamics(q, qd, tau, gravity, qdd);
+    //     visualizer->submitProfileTiming("");
+    //   }
+    //   {
+    //     visualizer->submitProfileTiming("xarm_aba");
+    //     mb->integrate(q, qd, qdd, dt);
+    //     visualizer->submitProfileTiming("");
+    //   }
+    std::this_thread::sleep_for(std::chrono::duration<double>(dt));
+    // sync transforms
+    for (std::size_t b = 0; b < bodies.size(); b++) {
+      const tds::RigidBody<Algebra>* body = bodies[b];
+      int sphereId = visuals[b];
+      btVector3 base_pos(body->world_pose().position.getX(),
+                         body->world_pose().position.getY(),
+                         body->world_pose().position.getZ());
+      btQuaternion base_orn(body->world_pose().orientation.getX(),
+                            body->world_pose().orientation.getY(),
+                            body->world_pose().orientation.getZ(),
+                            body->world_pose().orientation.getW());
+      visualizer->resetBasePositionAndOrientation(sphereId, base_pos, base_orn);
+    }
   }
 
   return 0;

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef TINY_CERES_ESTIMATOR_H
-#define TINY_CERES_ESTIMATOR_H
+#pragma once
 
 #include <ceres/ceres.h>
 
@@ -28,41 +27,20 @@
 
 #include "math/tiny/ceres_utils.h"
 #include "math/tiny/tiny_double_utils.h"
+#include "parameter.hpp"
 
-#define USE_MATPLOTLIB 1
+// #define USE_MATPLOTLIB 1
 
 #ifdef USE_MATPLOTLIB
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 namespace plt = matplotlibcpp;
 #endif
 
-struct EstimationParameter {
-  std::string name{"unnamed_param"};
-  double value{1.0};
-  double minimum{-std::numeric_limits<double>::infinity()};
-  double maximum{std::numeric_limits<double>::infinity()};
-
-  // coefficient of L1 regularization for this parameter
-  double l1_regularization{0.};
-
-  // coefficient of L2 regularization for this parameter
-  double l2_regularization{0.};
-
-  EstimationParameter &operator=(double rhs) {
-    value = rhs;
-    return *this;
-  }
-  explicit operator double() const { return value; }
-
-  double random_value() const {
-    return minimum + (double(rand()) / RAND_MAX * (maximum - minimum));
-  };
-};
-
+namespace tds {
 enum ResidualMode { RES_MODE_1D, RES_MODE_STATE };
 
 template <int ParameterDim, int StateDim, ResidualMode ResMode = RES_MODE_1D>
-class TinyCeresEstimator : ceres::IterationCallback {
+class CeresEstimator : ceres::IterationCallback {
  public:
   static const int kParameterDim = ParameterDim;
   static const int kStateDim = StateDim;
@@ -73,9 +51,6 @@ class TinyCeresEstimator : ceres::IterationCallback {
   static_assert(kStateDim >= 1);
 
   typedef ceres::Jet<double, kParameterDim> ADScalar;
-
-  typedef TinyCeresEstimator<kParameterDim, kStateDim, kResidualMode>
-      CeresEstimator;
 
   std::array<EstimationParameter, kParameterDim> parameters;
 
@@ -131,7 +106,7 @@ class TinyCeresEstimator : ceres::IterationCallback {
 
   ceres::Solver::Options options;
 
-  TinyCeresEstimator(double dt) : dt(dt) {
+  CeresEstimator(double dt) : dt(dt) {
     options.minimizer_progress_to_stdout = true;
     options.callbacks.push_back(this);
   }
@@ -153,6 +128,10 @@ class TinyCeresEstimator : ceres::IterationCallback {
 
     if (cost_function_) {
       delete cost_function_;
+    }
+
+    if (target_times.size() != target_trajectories.size()) {
+      target_times.resize(target_trajectories.size(), {});
     }
 
     if (use_finite_diff) {
@@ -237,7 +216,7 @@ class TinyCeresEstimator : ceres::IterationCallback {
 
   const double *vars() const { return vars_; }
 
-  virtual ~TinyCeresEstimator() {
+  virtual ~CeresEstimator() {
     if (vars_) {
       delete[] vars_;
       vars_ = nullptr;
@@ -366,7 +345,7 @@ class TinyCeresEstimator : ceres::IterationCallback {
 
         if (target_times.empty() && n_rollout != n_target) {
           fprintf(stderr,
-                  "If no target_times are provided to TinyCeresEstimator, the "
+                  "If no target_times are provided to CeresEstimator, the "
                   "number of target_trajectories (%i) must match the number of "
                   "roll-out states (%i).\n",
                   n_target, n_rollout);
@@ -680,5 +659,4 @@ class BasinHoppingEstimator {
 
   double best_cost_;
 };
-
-#endif  // TINY_CERES_ESTIMATOR_H
+}  // namespace tds

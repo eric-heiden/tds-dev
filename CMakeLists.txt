@@ -15,7 +15,8 @@
 
 #Tiny Differentiable Simulator or TDS
 
-cmake_minimum_required(VERSION 2.4.3)
+cmake_minimum_required(VERSION 3.13)
+
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For LLVM tooling
@@ -152,14 +153,14 @@ OPTION(USE_ENOKI "Use Enoki" OFF)
 IF(USE_ENOKI)
   set(ENOKI_AUTODIFF ON CACHE BOOL "Use enoki with autodiff" FORCE)
   set(ENOKI_CUDA ON CACHE BOOL "Use enoki with CUDA" FORCE)
-  add_subdirectory(third_party/enoki)
+  add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/enoki)
   enoki_set_compile_flags()
   enoki_set_native_flags()
   get_directory_property(ENOKI_COMPILE_OPTIONS     COMPILE_OPTIONS)
   get_directory_property(ENOKI_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
   set_property(DIRECTORY . PROPERTY COMPILE_OPTIONS     ${ENOKI_COMPILE_OPTIONS})
   set_property(DIRECTORY . PROPERTY COMPILE_DEFINITIONS ${ENOKI_COMPILE_DEFINITIONS})
-  set(ENOKI_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/enoki/include)
+  set(ENOKI_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/third_party/enoki/include)
   include_directories(${ENOKI_INCLUDE_DIRS})
   set(CMAKE_CXX_STANDARD_LIBRARIES ${CMAKE_CXX_STANDARD_LIBRARIES})
   # set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
@@ -169,16 +170,14 @@ ENDIF(USE_ENOKI)
 OPTION (USE_RBDL "Compare against RBDL" ON)
 message("USE_RBDL? " ${USE_RBDL})
 if(USE_RBDL)
-  SUBDIRS(third_party/rbdl)
+  SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/third_party/rbdl)
 endif(USE_RBDL)
 
+SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/third_party/cpp_base64)
 
-
-SUBDIRS(third_party/cpp_base64)
-
-SUBDIRS(examples)
+SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/examples)
 
 OPTION(BUILD_PYTHON_PLUGIN "Set when you want to build pydiffphys (Python bindings for tiny-differentiable-simulator)" OFF)
 IF(BUILD_PYTHON_PLUGIN)
-  SUBDIRS(python)
+  SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/python)
 ENDIF()

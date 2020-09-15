@@ -8,10 +8,10 @@
 #include <thread>
 
 #include "motion_import.h"
-#include "neural_augmentation.h"
+#include "utils/neural_augmentation.hpp"
 #include "pybullet_urdf_import.h"
 #include "pybullet_visualizer_api.h"
-#include "tiny_ceres_estimator.h"
+#include "utils/ceres_estimator.hpp"
 #include "tiny_double_utils.h"
 #include "utils/file_utils.hpp"
 #include "tiny_inverse_kinematics.h"
