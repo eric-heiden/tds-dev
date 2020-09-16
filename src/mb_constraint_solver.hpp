@@ -197,8 +197,8 @@ class MultiBodyConstraintSolver {
 
     MatrixX mass_matrix_inv(n_ab, n_ab);
     Algebra::set_zero(mass_matrix_inv);
-    Algebra::assign_block(mass_matrix_a_inv, mass_matrix_inv, 0, 0);
-    Algebra::assign_block(mass_matrix_b_inv, mass_matrix_inv, n_a, n_a);
+    Algebra::assign_block(mass_matrix_inv, mass_matrix_a_inv, 0, 0);
+    Algebra::assign_block(mass_matrix_inv, mass_matrix_b_inv, n_a, n_a);
     // mass_matrix_inv.print("Mass matrix (a and b combined)");
 
     // Assemble constraint Jacobian J_C for a and b

@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
   app.m_renderer->get_active_camera()->set_camera_pitch(-30);
   app.m_renderer->get_active_camera()->set_camera_target_position(0, 0, 0);
   // install ffmpeg in path and uncomment, to enable video recording
-  // app.dump_frames_to_video("test.mp4");
+  app.dump_frames_to_video("test.mp4");
 
   // Set NaN trap
   tds::activate_nan_trap();
