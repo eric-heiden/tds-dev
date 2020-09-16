@@ -134,9 +134,10 @@ struct ArticulatedBodyInertia {
 
   Matrix6 matrix() const {
     Matrix6 m;
+    Matrix3 Ht = Algebra::transpose(H);
     Algebra::assign_block(m, I, 0, 0);
     Algebra::assign_block(m, H, 0, 3);
-    Algebra::assign_block(m, Algebra::transpose(H), 3, 0);
+    Algebra::assign_block(m, Ht, 3, 0);
     Algebra::assign_block(m, M, 3, 3);
     return m;
   }
@@ -253,7 +254,8 @@ struct ArticulatedBodyInertia {
     Matrix3 Ainv = Algebra::inverse(I);
     Matrix3 B = H;
     Matrix3 C = -B;
-    if (Algebra::is_zero(Algebra::determinant(M - C * Ainv * B))) {
+    Matrix3 MCAinvB = M - C * Ainv * B;
+    if (Algebra::is_zero(Algebra::determinant(MCAinvB))) {
       return false;
     }
     return true;
@@ -267,7 +269,8 @@ struct ArticulatedBodyInertia {
     Matrix3 Ainv = Algebra::inverse(I);
     Matrix3 B = H;
     Matrix3 C = -B;
-    Matrix3 DCAB = Algebra::inverse(M - C * Ainv * B);
+    Matrix3 MCAinvB = M - C * Ainv * B;
+    Matrix3 DCAB = Algebra::inverse(MCAinvB);
     Matrix3 AinvBDCAB = Ainv * B * DCAB;
 
     ArticulatedBodyInertia abi;

@@ -34,14 +34,15 @@ void mass_matrix(MultiBody<Algebra> &mb, const typename Algebra::VectorX &q,
 
   forward_kinematics(mb, q);
 
-  M->set_zero();
+  Algebra::set_zero(*M);
   for (int i = n - 1; i >= 0; --i) {
     const Link &link = mb[i];
     int parent = link.parent_index;
     const ArticulatedBodyInertia &Ic = link.abi;
     const Transform &Xp = link.X_parent;
     // ArticulatedBodyInertia delta_I = Xp.apply_transpose(Ic);  // shift(Xp, Ic)
-    ArticulatedBodyInertia delta_I = Xp.matrix_transpose() * Ic.matrix() * Xp.matrix();
+    Matrix6 xix = Xp.matrix_transpose() * Ic.matrix() * Xp.matrix();
+    ArticulatedBodyInertia delta_I = xix;
     // ArticulatedBodyInertia delta_I = Xp.matrix() * Ic.matrix() * Xp.matrix_transpose();
     if (parent >= 0) {
       mb[parent].abi += delta_I;
@@ -71,11 +72,12 @@ void mass_matrix(MultiBody<Algebra> &mb, const typename Algebra::VectorX &q,
     }
   }
   if (mb.is_floating()) {
+    Matrix3 Ht = Algebra::transpose(mb.base_abi().H);
     // assign Ic_0 to M(0:6, 0:6)
-    M->assign_matrix(0, 0, mb.base_abi().I);
-    M->assign_matrix(0, 3, mb.base_abi().H);
-    M->assign_matrix(3, 0, Algebra::transpose(mb.base_abi().H));
-    M->assign_matrix(3, 3, mb.base_abi().M);
+    Algebra::assign_block(*M, mb.base_abi().I, 0, 0);
+    Algebra::assign_block(*M, mb.base_abi().H, 0, 3);
+    Algebra::assign_block(*M, Ht, 3, 0);
+    Algebra::assign_block(*M, mb.base_abi().M, 3, 3);
   }
 
   // Algebra::print("Mass matrix", *M);

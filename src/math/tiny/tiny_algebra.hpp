@@ -57,6 +57,15 @@ struct TinyAlgebra {
     return MatrixX(num_rows, num_cols);
   }
 
+  TINY_INLINE static int num_rows(const Vector3 &v) {
+    return 3;
+  }
+  TINY_INLINE static int num_rows(const VectorX &v) {
+    return v.m_size;
+  }
+  TINY_INLINE static int num_rows(const SpatialVector &v) {
+    return 6;
+  }
   template <typename T>
   TINY_INLINE static int num_rows(const T &matrix) {
     return matrix.m_rows;
@@ -65,6 +74,16 @@ struct TinyAlgebra {
   template <typename T>
   TINY_INLINE static int num_cols(const T &matrix) {
     return matrix.m_cols;
+  }
+
+  /**
+   * Returns true if the matrix `mat` is positive-definite, and assigns
+   * `mat_inv` to the inverse of mat.
+   * `mat` must be a symmetric matrix.
+   */
+  TINY_INLINE static bool symmetric_inverse(const MatrixX &mat,
+                                            MatrixX &mat_inv) {
+    return mat.inversed(mat_inv);
   }
 
   /**
@@ -103,6 +122,13 @@ struct TinyAlgebra {
   template <typename T1, typename T2>
   TINY_INLINE static auto dot(const T1 &vector_a, const T2 &vector_b) {
     return vector_a.dot(vector_b);
+  }
+
+  template <template <typename, typename> typename ColumnType>
+  TINY_INLINE static VectorX mul_transpose(
+      const TinyMatrixXxX_<TinyScalar, TinyConstants, ColumnType> &mat,
+      const ColumnType<TinyScalar, TinyConstants> &vec) {
+    return mat.mul_transpose(vec);
   }
 
   TINY_INLINE static Scalar norm(const MotionVector &v) {
@@ -189,6 +215,30 @@ struct TinyAlgebra {
     return TinyConstants::scalar_from_string(s);
   }
 
+  TINY_INLINE static VectorX segment(const VectorX &vec, int start_index,
+                                     int length) {
+    return vec.segment(start_index, length);
+  }
+
+  TINY_INLINE static MatrixX block(const MatrixX &mat, int start_row_index,
+                                   int start_col_index, int rows, int cols) {
+    return mat.block(start_row_index, start_col_index, rows, cols);
+  }
+
+  template <template <typename, typename> typename VectorType>
+  TINY_INLINE static void assign_horizontal(
+      MatrixX &mat, const VectorType<TinyScalar, TinyConstants> &vec,
+      int start_row_index, int start_col_index) {
+    mat.assign_vector_horizontal(start_row_index, start_col_index, vec);
+  }
+
+  template <template <typename, typename> typename VectorType>
+  TINY_INLINE static void assign_vertical(
+      MatrixX &mat, const VectorType<TinyScalar, TinyConstants> &vec,
+      int start_row_index, int start_col_index) {
+    mat.assign_vector_vertical(start_row_index, start_col_index, vec);
+  }
+
   TINY_INLINE static void assign_block(Matrix3 &output, const Matrix6 &input,
                                        Index i, Index j, Index m = 3,
                                        Index n = 3, Index input_i = 0,
@@ -238,6 +288,31 @@ struct TinyAlgebra {
     }
   }
 
+  template <template <typename, typename> typename ColumnType>
+  TINY_INLINE static void assign_block(
+      TinyMatrixXxX_<TinyScalar, TinyConstants, ColumnType> &output,
+      const TinyMatrixXxX_<TinyScalar, TinyConstants, ColumnType> &input,
+      Index i, Index j, Index m, Index n, Index input_i = 0,
+      Index input_j = 0) {
+    for (int ii = 0; ii < m; ++ii) {
+      for (int jj = 0; jj < n; ++jj) {
+        output(ii + i, jj + j) = input(ii + input_i, jj + input_j);
+      }
+    }
+  }
+
+  template <template <typename, typename> typename ColumnType>
+  TINY_INLINE static void assign_block(
+      TinyMatrixXxX_<TinyScalar, TinyConstants, ColumnType> &output,
+      const TinyMatrixXxX_<TinyScalar, TinyConstants, ColumnType> &input,
+      Index i, Index j) {
+    for (int ii = 0; ii < input.m_rows; ++ii) {
+      for (int jj = 0; jj < input.m_cols; ++jj) {
+        output(ii + i, jj + j) = input(ii, jj);
+      }
+    }
+  }
+
   TINY_INLINE static void assign_column(Matrix3 &m, Index i, const Vector3 &v) {
     m[i] = v;
   }
@@ -252,6 +327,14 @@ struct TinyAlgebra {
       TinyMatrixXxX_<TinyScalar, TinyConstants, ColumnType> &m, Index i,
       const SpatialVector &v) {
     for (int j = 0; j < 6; ++j) {
+      m(j, i) = v[j];
+    }
+  }
+  template <template <typename, typename> typename ColumnType>
+  TINY_INLINE static void assign_column(
+      TinyMatrixXxX_<TinyScalar, TinyConstants, ColumnType> &m, Index i,
+      const ColumnType<TinyScalar, TinyConstants> &v) {
+    for (int j = 0; j < num_rows(v); ++j) {
       m(j, i) = v[j];
     }
   }
@@ -343,6 +426,10 @@ struct TinyAlgebra {
     // delta *= half() * dt;
     // print("delta quat", delta);
     // return delta;
+  }
+
+  TINY_INLINE static void quat_increment(Quaternion &a, const Quaternion &b) {
+    a += b;
   }
 
   TINY_INLINE static const Scalar &quat_x(const Quaternion &q) { return q.x(); }

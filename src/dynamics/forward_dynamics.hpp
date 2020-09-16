@@ -108,8 +108,9 @@ void forward_dynamics(MultiBody<Algebra> &mb,
 #endif
     // ArticulatedBodyInertia delta_I = link.X_parent.apply(Ia);
     // ArticulatedBodyInertia delta_I = link.X_parent.apply_transpose(Ia);
-    ArticulatedBodyInertia delta_I =
+    Matrix6 xix =
         link.X_parent.matrix_transpose() * Ia.matrix() * link.X_parent.matrix();
+    ArticulatedBodyInertia delta_I = xix;
     if (parent >= 0) {
       // Algebra::print(
       //     ("TDS ABI at parent of " + std::to_string(link.index) +
@@ -123,15 +124,15 @@ void forward_dynamics(MultiBody<Algebra> &mb,
       mb[parent].pA += delta_pA;
       mb[parent].abi += delta_I;
 #ifdef DEBUG
-      Algebra::print("pa update", links[parent].pA);
-      Algebra::print("mIA", links[parent].abi);
+      Algebra::print("pa update", mb[parent].pA);
+      Algebra::print("mIA", mb[parent].abi);
 #endif
     } else if (mb.is_floating()) {
       mb.base_bias_force() += delta_pA;
       mb.base_abi() += delta_I;
 #ifdef DEBUG
-      Algebra::print("base_abi", base_abi);
-      Algebra::print("base_bias_force", base_bias_force);
+      Algebra::print("base_abi", mb.base_abi());
+      Algebra::print("base_bias_force", mb.base_bias_force());
       Algebra::print("delta_I", delta_I);
       Algebra::print("delta_pA", delta_pA);
 #endif
@@ -189,7 +190,6 @@ void forward_dynamics(MultiBody<Algebra> &mb,
       assert(!std::isnan(Algebra::to_double(qdd_val)));
       qdd[link.qd_index] = qdd_val;
       link.a += link.S * qdd_val;
-      // link.a = link.S * qdd_val;
     }
 #if DEBUG
     Algebra::print("a", link.a);

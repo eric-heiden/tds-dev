@@ -153,7 +153,7 @@ class TinyMatrixXxX_ {
    */
   template <template <typename, typename> typename VectorType>
   TinyVectorX<TinyScalar, TinyConstants> mul_transpose(
-      const VectorType<TinyScalar, TinyConstants>& rhs) {
+      const VectorType<TinyScalar, TinyConstants>& rhs) const {
     TinyConstants::FullAssert(m_rows == rhs.m_size);
     TinyVectorX<TinyScalar, TinyConstants> res(m_cols);
     for (int i = 0; i < m_cols; ++i) {

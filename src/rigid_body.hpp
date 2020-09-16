@@ -60,9 +60,7 @@ class RigidBody {
   }
 
   TINY_INLINE Pose& world_pose() { return world_pose_; }
-  TINY_INLINE const Pose& world_pose() const {
-    return world_pose_;
-  }
+  TINY_INLINE const Pose& world_pose() const { return world_pose_; }
 
   const Geometry* geometry() const { return geometry_; }
 
@@ -103,11 +101,9 @@ class RigidBody {
 
   void integrate(const Scalar& dt) {
     world_pose_.position += linear_velocity_ * dt;
-    // world_pose_.orientation +=
-    //     (angular_velocity_ * world_pose_.orientation) * (dt *
-    //     Algebra::half());
-    world_pose_.orientation +=
-        Algebra::quat_velocity(world_pose_.orientation, angular_velocity_, dt);
+    Algebra::quat_increment(
+        world_pose_.orientation,
+        Algebra::quat_velocity(world_pose_.orientation, angular_velocity_, dt));
     world_pose_.orientation = Algebra::normalize(world_pose_.orientation);
   }
 };

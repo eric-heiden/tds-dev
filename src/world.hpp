@@ -230,7 +230,7 @@ class World {
                     mb_b->collision_transforms(jj)[jjj];
                 Transform tr_b = world_transform_b * local_b;
                 pose_b.position = tr_b.translation;
-                tr_b.rotation.getRotation(pose_b.orientation);
+                Algebra::matrix_to_quat(tr_b.rotation);
 
                 // printf("\tworld_transform_b: %.3f  %.3f  %.3f\n",
                 // world_transform_b.translation[0],

@@ -86,17 +86,18 @@ class MultiBodyConstraintSolver {
                  int num_iterations, double least_squares_residual_threshold,
                  const VectorX* lo = nullptr,
                  const VectorX* hi = nullptr) const {
-    assert(A.m_rows == Algebra::size(b));
-    assert(A.m_cols == Algebra::size(x));
+    assert(Algebra::num_rows(A) == Algebra::size(b));
+    assert(Algebra::num_cols(A) == Algebra::size(x));
 
     Scalar delta;
     double least_squares_residual;
     for (int k = 0; k < num_iterations; ++k) {
       least_squares_residual = 0;
-      for (int i = 0; i < A.m_rows; ++i) {
+      for (int i = 0; i < Algebra::num_rows(A); ++i) {
         delta = Algebra::zero();
         for (int j = 0; j < i; j++) delta += A(i, j) * x[j];
-        for (int j = i + 1; j < A.m_rows; j++) delta += A(i, j) * x[j];
+        for (int j = i + 1; j < Algebra::num_rows(A); j++)
+          delta += A(i, j) * x[j];
 
         Scalar a_diag = A(i, i);
         Scalar x_old = x[i];
@@ -120,8 +121,8 @@ class MultiBodyConstraintSolver {
       }
       // if (least_squares_residual < least_squares_residual_threshold) {
       //   printf("PGS converged: residual %f < %f at iteration %i / % i.\n ",
-      //          least_squares_residual, least_squares_residual_threshold, k + 1,
-      //          num_iterations);
+      //          least_squares_residual, least_squares_residual_threshold, k +
+      //          1, num_iterations);
       // }
     }
   }
@@ -164,19 +165,25 @@ class MultiBodyConstraintSolver {
     bool is_positive_definite_a = true;
     bool is_positive_definite_b = true;
 
-    MatrixX mass_matrix_a_inv(mass_matrix_a.m_rows, mass_matrix_a.m_cols);
-    if (mass_matrix_a.m_cols * mass_matrix_a.m_rows > 0) {
+    MatrixX mass_matrix_a_inv(Algebra::num_rows(mass_matrix_a),
+                              Algebra::num_cols(mass_matrix_a));
+    if (Algebra::num_cols(mass_matrix_a) * Algebra::num_rows(mass_matrix_a) >
+        0) {
       submit_profile_timing("inverse_mass_matrix_a");
-      is_positive_definite_a = mass_matrix_a.inversed(mass_matrix_a_inv);
+      is_positive_definite_a =
+          Algebra::symmetric_inverse(mass_matrix_a, mass_matrix_a_inv);
       submit_profile_timing("");
     }
 
     MatrixX mass_matrix_b(n_b, n_b);
     mass_matrix(*mb_b, &mass_matrix_b);
-    MatrixX mass_matrix_b_inv(mass_matrix_b.m_rows, mass_matrix_b.m_cols);
-    if (mass_matrix_b.m_cols * mass_matrix_b.m_rows > 0) {
+    MatrixX mass_matrix_b_inv(Algebra::num_rows(mass_matrix_b),
+                              Algebra::num_cols(mass_matrix_b));
+    if (Algebra::num_cols(mass_matrix_b) * Algebra::num_rows(mass_matrix_b) >
+        0) {
       submit_profile_timing("inverse_mass_matrix_b");
-      is_positive_definite_b = mass_matrix_b.inversed(mass_matrix_b_inv);
+      is_positive_definite_b =
+          Algebra::symmetric_inverse(mass_matrix_b, mass_matrix_b_inv);
       submit_profile_timing("");
     }
     if (!is_positive_definite_a) {
@@ -190,8 +197,8 @@ class MultiBodyConstraintSolver {
 
     MatrixX mass_matrix_inv(n_ab, n_ab);
     Algebra::set_zero(mass_matrix_inv);
-    mass_matrix_inv.assign_matrix(0, 0, mass_matrix_a_inv);
-    mass_matrix_inv.assign_matrix(n_a, n_a, mass_matrix_b_inv);
+    Algebra::assign_block(mass_matrix_a_inv, mass_matrix_inv, 0, 0);
+    Algebra::assign_block(mass_matrix_b_inv, mass_matrix_inv, n_a, n_a);
     // mass_matrix_inv.print("Mass matrix (a and b combined)");
 
     // Assemble constraint Jacobian J_C for a and b
@@ -214,8 +221,8 @@ class MultiBodyConstraintSolver {
 
       const Vector3& world_point_a = cp.world_point_on_a;
       Matrix3X jac_a = point_jacobian(*mb_a, cp.link_a, world_point_a);
-      VectorX jac_a_i = jac_a.mul_transpose(cp.world_normal_on_b);
-      jac_con.assign_vector_horizontal(i, 0, jac_a_i);
+      VectorX jac_a_i = Algebra::mul_transpose(jac_a, cp.world_normal_on_b);
+      Algebra::assign_horizontal(jac_con, jac_a_i, i, 0);
 
       const Vector3& world_point_b = cp.world_point_on_b;
 
@@ -224,7 +231,7 @@ class MultiBodyConstraintSolver {
       //     point_jacobian_fd(*mb_b, mb_b->m_q, cp.link_b,
       //     world_point_b);
       // jac_b.print("jac_b");
-      VectorX jac_b_i = jac_b.mul_transpose(cp.world_normal_on_b);
+      VectorX jac_b_i = Algebra::mul_transpose(jac_b, cp.world_normal_on_b);
       // jac_b_i.print("jac_b_i");
 
       std::vector<Scalar> qd_empty;
@@ -243,7 +250,7 @@ class MultiBodyConstraintSolver {
       //    cp.multi_body_b->m_q, qd_empty, tau_jac, qdd_delta_unit_impulse,
       //    Algebra::fraction(100, 10));  // Algebra::zero());
 
-      jac_con.assign_vector_horizontal(i, n_a, jac_b_i);
+      Algebra::assign_horizontal(jac_con, jac_b_i, i, n_a);
 
       VectorX qd_a(cp.multi_body_a->qd());
       VectorX qd_b(cp.multi_body_b->qd());
@@ -253,7 +260,7 @@ class MultiBodyConstraintSolver {
       Vector3 vel_b = jac_b * qd_b;
       Vector3 rel_vel = vel_a - vel_b;
       //      rel_vel.print("rel_vel");
-      Scalar normal_rel_vel = cp.world_normal_on_b.dot(rel_vel);
+      Scalar normal_rel_vel = Algebra::dot(cp.world_normal_on_b, rel_vel);
       // printf("normal_rel_vel: %.4f\n", normal_rel_vel);
 
       // Baumgarte stabilization
@@ -282,26 +289,26 @@ class MultiBodyConstraintSolver {
         fr_direction2 = Algebra::cross(fr_direction1, cp.world_normal_on_b);
       }
 
-      Scalar l1 = fr_direction1.dot(rel_vel);
+      Scalar l1 = Algebra::dot(fr_direction1, rel_vel);
       lcp_b[n_c + i] = -l1;
       // printf("l1=%f\n", l1);
       if (num_friction_dir_ > 1) {
-        Scalar l2 = fr_direction2.dot(rel_vel);
+        Scalar l2 = Algebra::dot(fr_direction2, rel_vel);
         lcp_b[2 * n_c + i] = -l2;
         // printf("l2=%f\n", l2);
       }
 
       //      fr_direction1.print("friction direction 1");
       //      fr_direction2.print("friction direction 2");
-      VectorX jac_a_i_fr1 = jac_a.mul_transpose(fr_direction1);
-      jac_con.assign_vector_horizontal(n_c + i, 0, jac_a_i_fr1);
-      VectorX jac_b_i_fr1 = jac_b.mul_transpose(fr_direction1);
-      jac_con.assign_vector_horizontal(n_c + i, n_a, jac_b_i_fr1);
+      VectorX jac_a_i_fr1 = Algebra::mul_transpose(jac_a, fr_direction1);
+      Algebra::assign_horizontal(jac_con, jac_a_i_fr1, n_c + i, 0);
+      VectorX jac_b_i_fr1 = Algebra::mul_transpose(jac_b, fr_direction1);
+      Algebra::assign_horizontal(jac_con, jac_b_i_fr1, n_c + i, n_a);
       if (num_friction_dir_ > 1) {
-        VectorX jac_a_i_fr2 = jac_a.mul_transpose(fr_direction2);
-        jac_con.assign_vector_horizontal(2 * n_c + i, 0, jac_a_i_fr2);
-        VectorX jac_b_i_fr2 = jac_b.mul_transpose(fr_direction2);
-        jac_con.assign_vector_horizontal(2 * n_c + i, n_a, jac_b_i_fr2);
+        VectorX jac_a_i_fr2 = Algebra::mul_transpose(jac_a, fr_direction2);
+        Algebra::assign_horizontal(jac_con, jac_a_i_fr2, 2 * n_c + i, 0);
+        VectorX jac_b_i_fr2 = Algebra::mul_transpose(jac_b, fr_direction2);
+        Algebra::assign_horizontal(jac_con, jac_b_i_fr2, 2 * n_c + i, n_a);
       }
     }
 
@@ -362,48 +369,53 @@ class MultiBodyConstraintSolver {
     //    lcp_p.print("MLCP impulse solution");
 
     if (n_a > 0) {
-      VectorX p_a = lcp_p.segment(0, n_c);
-      MatrixX jac_con_a = jac_con.block(0, 0, n_c, n_a);
-      VectorX delta_qd_a = mass_matrix_a_inv * jac_con_a.mul_transpose(p_a);
+      VectorX p_a = Algebra::segment(lcp_p, 0, n_c);
+      MatrixX jac_con_a = Algebra::block(jac_con, 0, 0, n_c, n_a);
+      VectorX delta_qd_a =
+          mass_matrix_a_inv * Algebra::mul_transpose(jac_con_a, p_a);
       // add friction impulse
-      VectorX p_a_fr = lcp_p.segment(0, n_c);
-      MatrixX jac_con_a_fr = jac_con.block(n_c, 0, n_c, n_a);
+      VectorX p_a_fr = Algebra::segment(lcp_p, 0, n_c);
+      MatrixX jac_con_a_fr = Algebra::block(jac_con, n_c, 0, n_c, n_a);
       //      p_a_fr.print("Friction impulse a");
-      delta_qd_a += mass_matrix_a_inv * jac_con_a_fr.mul_transpose(p_a_fr);
+      delta_qd_a +=
+          mass_matrix_a_inv * Algebra::mul_transpose(jac_con_a_fr, p_a_fr);
       // delta_qd_a.print("delta qd for multi body a:");
       for (int i = 0; i < n_a; ++i) {
         mb_a->qd(i) += delta_qd_a[i];
       }
     }
     if (n_b > 0) {
-      VectorX p_b = lcp_p.segment(0, n_c);
-      MatrixX jac_con_b = jac_con.block(0, n_a, n_c, n_b);
+      VectorX p_b = Algebra::segment(lcp_p, 0, n_c);
+      MatrixX jac_con_b = Algebra::block(jac_con, 0, n_a, n_c, n_b);
 
       // p_b[0] = 1;
-      VectorX delta_qd_b = mass_matrix_b_inv * jac_con_b.mul_transpose(p_b);
+      VectorX delta_qd_b =
+          mass_matrix_b_inv * Algebra::mul_transpose(jac_con_b, p_b);
 
       // add friction impulse
       if (1) {
         // friction direction 1
-        VectorX p_b_fr = lcp_p.segment(n_c, n_c);
-        MatrixX jac_con_b_fr = jac_con.block(n_c, n_a, n_c, n_b);
+        VectorX p_b_fr = Algebra::segment(lcp_p, n_c, n_c);
+        MatrixX jac_con_b_fr = Algebra::block(jac_con, n_c, n_a, n_c, n_b);
         //        p_b_fr.print("Friction 1 impulse b");
         // MatrixX imp = jac_con_b_fr * mass_matrix_b_inv;
         // VectorX fr_qd =
-        //    imp.mul_transpose(p_b_fr);
-        VectorX fr_qd = mass_matrix_b_inv * jac_con_b_fr.mul_transpose(p_b_fr);
+        //    Algebra::mul_transpose(imp, p_b_fr);
+        VectorX fr_qd =
+            mass_matrix_b_inv * Algebra::mul_transpose(jac_con_b_fr, p_b_fr);
         // fr_qd.print("Friction 1 contribution on q delta for b");
         delta_qd_b += fr_qd;
       }
       if (num_friction_dir_ > 1) {
         // friction direction 2
-        VectorX p_b_fr = lcp_p.segment(2 * n_c, n_c);
-        MatrixX jac_con_b_fr = jac_con.block(2 * n_c, n_a, n_c, n_b);
+        VectorX p_b_fr = Algebra::segment(lcp_p, 2 * n_c, n_c);
+        MatrixX jac_con_b_fr = Algebra::block(jac_con, 2 * n_c, n_a, n_c, n_b);
         //        p_b_fr.print("Friction 2 impulse b");
         // MatrixX imp = mass_matrix_b_inv* jac_con_b_fr;
         // VectorX fr_qd =
-        //    imp.mul_transpose(p_b_fr);
-        VectorX fr_qd = mass_matrix_b_inv * jac_con_b_fr.mul_transpose(p_b_fr);
+        //    Algebra::mul_transpose(imp, p_b_fr);
+        VectorX fr_qd =
+            mass_matrix_b_inv * Algebra::mul_transpose(jac_con_b_fr, p_b_fr);
         //        fr_qd.print("Friction 2 contribution on q delta for b");
         delta_qd_b -= fr_qd;
       }

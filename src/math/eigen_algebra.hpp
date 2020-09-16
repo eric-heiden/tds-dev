@@ -52,7 +52,7 @@ struct EigenAlgebraT {
   static inline MotionVector cross(const MotionVector &a,
                                    const MotionVector &b) {
     return MotionVector(a.top.cross(b.top),
-                        a.top.cross(b.top) + a.bottom.cross(b.bottom));
+                        a.top.cross(b.bottom) + a.bottom.cross(b.top));
   }
 
   /**
@@ -62,10 +62,48 @@ struct EigenAlgebraT {
    */
   static inline ForceVector cross(const MotionVector &a, const ForceVector &b) {
     return ForceVector(a.top.cross(b.top) + a.bottom.cross(b.bottom),
-                       a.top.cross(b.top));
+                       a.top.cross(b.bottom));
   }
 
   EIGEN_ALWAYS_INLINE static Index size(const VectorX &v) { return v.size(); }
+
+  EIGEN_ALWAYS_INLINE static Matrix3X create_matrix_3x(int num_cols) {
+    return Matrix3X(3, num_cols);
+  }
+  EIGEN_ALWAYS_INLINE static MatrixX create_matrix_x(int num_rows,
+                                                     int num_cols) {
+    return MatrixX(num_rows, num_cols);
+  }
+
+  template <typename T>
+  EIGEN_ALWAYS_INLINE static int num_rows(const T &matrix) {
+    return matrix.rows();
+  }
+
+  template <typename T>
+  EIGEN_ALWAYS_INLINE static int num_cols(const T &matrix) {
+    return matrix.cols();
+  }
+
+  template <int Rows, int Cols>
+  EIGEN_ALWAYS_INLINE static Scalar determinant(
+      const Eigen::Matrix<Scalar, Rows, Cols> &m) {
+    return m.determinant();
+  }
+
+  /**
+   * Returns true if the matrix `mat` is positive-definite, and assigns
+   * `mat_inv` to the inverse of mat.
+   * `mat` must be a symmetric matrix.
+   */
+  static bool symmetric_inverse(const MatrixX &mat, MatrixX &mat_inv) {
+    Eigen::LLT<MatrixX> llt(mat);
+    if (llt.info() == Eigen::NumericalIssue) {
+      return false;
+    }
+    mat_inv = mat.inverse();
+    return true;
+  }
 
   /**
    * V = mv(w, v)
@@ -75,7 +113,6 @@ struct EigenAlgebraT {
   EIGEN_ALWAYS_INLINE static Scalar dot(const MotionVector &a,
                                         const ForceVector &b) {
     return a.top.dot(b.top) + a.bottom.dot(b.bottom);
-    // return enoki::dot(a.top, b.top) + enoki::dot(a.bottom, b.bottom);
   }
   EIGEN_ALWAYS_INLINE static Scalar dot(const ForceVector &a,
                                         const MotionVector &b) {
@@ -114,7 +151,7 @@ struct EigenAlgebraT {
 
   EIGEN_ALWAYS_INLINE static Matrix3 cross_matrix(const Vector3 &v) {
     Matrix3 tmp;
-    tmp << 0., -v(2, 0), v(1, 0), v(2, 0), 0., -v(0, 0), -v(1, 0), v(0, 0), 0.;
+    tmp << 0., -v[2], v[1], v[2], 0., -v[0], -v[1], v[0], 0.;
     return tmp;
   }
 
@@ -125,9 +162,8 @@ struct EigenAlgebraT {
   }
 
   EIGEN_ALWAYS_INLINE static Matrix3 diagonal3(const Vector3 &v) {
-    return Matrix3(v[0], 0, 0, 0, v[1], 0, 0, 0, v[2]);
     Matrix3 tmp;
-    tmp << v(0, 0), 0, 0, 0, v(1, 0), 0, 0, 0, v(2, 0);
+    tmp << v[0], 0, 0, 0, v[1], 0, 0, 0, v[2];
     return tmp;
   }
 
@@ -139,8 +175,6 @@ struct EigenAlgebraT {
 
   EIGEN_ALWAYS_INLINE static Matrix3 eye3() { return Matrix3::Identity(); }
   EIGEN_ALWAYS_INLINE static void set_identity(Quaternion &quat) {
-    // This constructor exist: Quaternion(w, x, y, z);
-    // The order is different from Enoki
     quat = Quaternion(1., 0., 0., 0.);
   }
 
@@ -157,18 +191,32 @@ struct EigenAlgebraT {
     return std::stod(s);
   }
 
-  EIGEN_ALWAYS_INLINE static Vector3 zero3() { return Vector3(0); }
+  EIGEN_ALWAYS_INLINE static Vector3 zero3() { return Vector3::Zero(); }
   EIGEN_ALWAYS_INLINE static Vector3 unit3_x() { return Vector3(1, 0, 0); }
   EIGEN_ALWAYS_INLINE static Vector3 unit3_y() { return Vector3(0, 1, 0); }
   EIGEN_ALWAYS_INLINE static Vector3 unit3_z() { return Vector3(0, 0, 1); }
 
-  template <int Size1, int Size2>
+  EIGEN_ALWAYS_INLINE static VectorX segment(const VectorX &vec,
+                                             int start_index, int length) {
+    return vec.segment(start_index, length);
+  }
+
+  EIGEN_ALWAYS_INLINE static MatrixX block(const MatrixX &mat,
+                                           int start_row_index,
+                                           int start_col_index, int rows,
+                                           int cols) {
+    return mat.block(start_row_index, start_col_index, rows, cols);
+  }
+
+  template <int Rows1, int Cols1, int Rows2, int Cols2>
   EIGEN_ALWAYS_INLINE static void assign_block(
-      Eigen::Matrix<Scalar, Size1, Size1> &output,
-      const Eigen::Matrix<Scalar, Size2, Size2> &input, int i, int j,
-      int m = Size2, int n = Size2, int input_i = 0, int input_j = 0) {
-    assert(i + m <= Size1 && j + n <= Size1);
-    assert(input_i + m <= Size2 && input_j + n <= Size2);
+      Eigen::Matrix<Scalar, Rows1, Cols1> &output,
+      const Eigen::Matrix<Scalar, Rows2, Cols2> &input, int i, int j,
+      int m = -1, int n = -1, int input_i = 0, int input_j = 0) {
+    if (m < 0) m = input.rows();
+    if (n < 0) n = input.cols();
+    assert(i + m <= output.rows() && j + n <= output.cols());
+    assert(input_i + m <= input.rows() && input_j + n <= input.cols());
     for (int ii = 0; ii < m; ++ii) {
       for (int jj = 0; jj < n; ++jj) {
         output(ii + i, jj + j) = input(ii + input_i, jj + input_j);
@@ -176,11 +224,61 @@ struct EigenAlgebraT {
     }
   }
 
-  template <int Size>
+  template <int Rows, int Cols>
   EIGEN_ALWAYS_INLINE static void assign_column(
-      Eigen::Matrix<Scalar, Size, Size> &m, Index i,
-      const Eigen::Array<Scalar, Size, 1> &v) {
+      Eigen::Matrix<Scalar, Rows, Cols> &m, Index i,
+      const Eigen::Matrix<Scalar, Rows, 1> &v) {
     m.col(i) = v;
+  }
+  template <int Rows, int Cols>
+  EIGEN_ALWAYS_INLINE static void assign_column(
+      Eigen::Matrix<Scalar, Rows, Cols> &m, Index i, const SpatialVector &v) {
+    m.block(0, i, 3, 1) = v.top;
+    m.block(3, i, 3, 1) = v.bottom;
+  }
+  template <int Rows, int Cols, typename Derived>
+  EIGEN_ALWAYS_INLINE static void assign_column(
+      Eigen::Matrix<Scalar, Rows, Cols> &m, Index i,
+      const Eigen::DenseBase<Derived> &v) {
+    assign_column(m, i, v.eval());
+  }
+
+  template <int Rows, int Cols>
+  EIGEN_ALWAYS_INLINE static void assign_row(
+      Eigen::Matrix<Scalar, Rows, Cols> &m, Index i,
+      const Eigen::Matrix<Scalar, Cols, 1> &v) {
+    m.row(i) = v;
+  }
+  template <int Rows, int Cols>
+  EIGEN_ALWAYS_INLINE static void assign_row(
+      Eigen::Matrix<Scalar, Rows, Cols> &m, Index i, const SpatialVector &v) {
+    m.block(i, 0, 1, 3) = v.top;
+    m.block(i, 3, 1, 3) = v.bottom;
+  }
+
+  template <int Rows>
+  EIGEN_ALWAYS_INLINE static void assign_horizontal(
+      MatrixX &mat, const Eigen::Matrix<Scalar, Rows, 1> &vec,
+      int start_row_index, int start_col_index) {
+    mat.block(start_row_index, start_col_index, 1, vec.cols()) = vec;
+  }
+
+  template <int Rows>
+  EIGEN_ALWAYS_INLINE static void assign_vertical(
+      MatrixX &mat, const Eigen::Matrix<Scalar, Rows, 1> &vec,
+      int start_row_index, int start_col_index) {
+    mat.block(start_row_index, start_col_index, vec.cols(), 1) = vec;
+  }
+
+  template <int Rows, int Cols>
+  TINY_INLINE static VectorX mul_transpose(
+      const Eigen::Matrix<Scalar, Rows, Cols> &mat,
+      const Eigen::Matrix<Scalar, Cols, 1> &vec) {
+    return mat.transpose() * vec;
+  }
+  TINY_INLINE static VectorX mul_transpose(const MatrixX &mat,
+                                           const VectorX &vec) {
+    return mat.transpose() * vec;
   }
 
   EIGEN_ALWAYS_INLINE static Matrix3 quat_to_matrix(const Quaternion &quat) {
@@ -250,7 +348,6 @@ struct EigenAlgebraT {
 
   EIGEN_ALWAYS_INLINE static Vector3 rotate(const Quaternion &q,
                                             const Vector3 &v) {
-    // NOTE: Eigen supports direct concatenation of quaternions and vector
     return q * v;
   }
 
@@ -261,13 +358,19 @@ struct EigenAlgebraT {
   EIGEN_ALWAYS_INLINE static Quaternion quat_velocity(const Quaternion &q,
                                                       const Vector3 &w,
                                                       const Scalar &dt) {
-    Quaternion delta((-q[0] * w[0] - q[1] * w[1] - q[2] * w[2]) * (0.5 * dt),
-                     (q[3] * w[0] + q[1] * w[2] - q[2] * w[1]) * (0.5 * dt),
-                     (q[3] * w[1] + q[2] * w[0] - q[0] * w[2]) * (0.5 * dt),
-                     (q[3] * w[2] + q[0] * w[1] - q[1] * w[0]) * (0.5 * dt));
-    // Broadcast not supported
-    // delta *= 0.5 * dt;
+    Quaternion delta((-q.x() * w[0] - q.y() * w[1] - q.z() * w[2]) * (0.5 * dt),
+                     (q.w() * w[0] + q.y() * w[2] - q.z() * w[1]) * (0.5 * dt),
+                     (q.w() * w[1] + q.z() * w[0] - q.x() * w[2]) * (0.5 * dt),
+                     (q.w() * w[2] + q.x() * w[1] - q.y() * w[0]) * (0.5 * dt));
     return delta;
+  }
+
+  EIGEN_ALWAYS_INLINE static void quat_increment(Quaternion &a,
+                                                 const Quaternion &b) {
+    a.x() += b.x();
+    a.y() += b.y();
+    a.z() += b.z();
+    a.w() += b.w();
   }
 
   EIGEN_ALWAYS_INLINE static const Scalar &quat_x(const Quaternion &q) {
@@ -293,7 +396,7 @@ struct EigenAlgebraT {
   template <int Size1, int Size2>
   EIGEN_ALWAYS_INLINE static void set_zero(
       Eigen::Matrix<Scalar, Size1, Size2> &m) {
-    m.setConstant(m);
+    m.setZero();
   }
   template <int Size1, int Size2 = 1>
   EIGEN_ALWAYS_INLINE static void set_zero(
@@ -308,6 +411,11 @@ struct EigenAlgebraT {
     v.top.setZero();
     v.bottom.setZero();
   }
+
+  /**
+   * Non-differentiable comparison operator.
+   */
+  TINY_INLINE static bool is_zero(const Scalar &a) { return a == zero(); }
 
   /**
    * Non-differentiable comparison operator.
@@ -384,6 +492,11 @@ struct EigenAlgebraT {
   template <typename T>
   TINY_INLINE static auto abs(const T &s) {
     return std::abs(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto sqrt(const T &s) {
+    return std::sqrt(s);
   }
 
   EigenAlgebraT<Scalar>() = delete;

@@ -52,6 +52,8 @@ struct FloatUtils {
     return (float)v;
   }
 
+  static float scalar_from_double(double v) { return (float)v; }
+
   template <class T>
   static float convert(T) = delete;  // C++11
 
@@ -89,8 +91,9 @@ typedef ::TinyQuaternion<float, FloatUtils> TinyQuaternionf;
 typedef ::TinyMatrix3x3<float, FloatUtils> TinyMatrix3x3f;
 
 namespace tds {
-typedef tds::Pose<TinyAlgebra<float, FloatUtils>> Posef;
-}
+typedef TinyAlgebra<float, FloatUtils> TinyAlgebraf;
+typedef tds::Pose<TinyAlgebraf> Posef;
+}  // namespace tds
 
 inline void setFromOpenGLMatrix(tds::Posef& tr, const float* m) {
   TinyMatrix3x3f mat;

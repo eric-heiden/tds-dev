@@ -25,7 +25,7 @@ typename Algebra::Matrix3X point_jacobian(
   assert(Algebra::size(q) == mb.dof());
   assert(link_index < static_cast<int>(mb.size()));
   Matrix3X jac(3, mb.dof_qd());
-  jac.set_zero();
+  Algebra::set_zero(jac);
   std::vector<Transform> links_X_world;
   std::vector<Transform> links_X_base;
   Transform base_X_world;
@@ -37,7 +37,7 @@ typename Algebra::Matrix3X point_jacobian(
   if (mb.is_floating()) {
     // convert start point in world coordinates to base frame
     const Vector3 base_point =  // world_point - base_X_world.translation;
-        // base_X_world.translation - world_point;
+                                // base_X_world.translation - world_point;
         mb.empty() ? base_X_world.apply_inverse(world_point)
                    : links_X_world[link_index].apply_inverse(world_point);
     // see (Eq. 2.238) in
@@ -45,9 +45,9 @@ typename Algebra::Matrix3X point_jacobian(
     Matrix3 cr = Algebra::cross_matrix(base_point);
     // Matrix3 cr = Algebra::transpose(Algebra::cross_matrix(base_point));
     Algebra::assign_block(jac, cr, 0, 0);
-    jac[3][0] = Algebra::one();
-    jac[4][1] = Algebra::one();
-    jac[5][2] = Algebra::one();
+    jac(3, 0) = Algebra::one();
+    jac(4, 1) = Algebra::one();
+    jac(5, 2) = Algebra::one();
   } else {
     point_tf.translation = world_point;
   }
@@ -59,7 +59,7 @@ typename Algebra::Matrix3X point_jacobian(
       if (body->joint_type != JOINT_FIXED) {
         MotionVector st = links_X_world[i].apply_inverse(body->S);
         MotionVector xs = point_tf.apply(st);
-        jac[body->qd_index] = xs.bottom;
+        Algebra::assign_column(jac, body->qd_index, xs.bottom);
       }
       if (body->parent_index < 0) break;
       body = &mb[body->parent_index];
