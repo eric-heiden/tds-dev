@@ -22,8 +22,12 @@ class TinyDual {
  public:
   explicit TinyDual(Scalar real = Scalar(), Scalar dual = Scalar())
       : m_real(real), m_dual(dual) {}
-  Scalar real() const { return m_real; }
-  Scalar dual() const { return m_dual; }
+      
+  const Scalar& real() const { return m_real; }
+  const Scalar& dual() const { return m_dual; }
+
+  Scalar& real() { return m_real; }
+  Scalar& dual() { return m_dual; }
 
   inline friend TinyDual operator+(const TinyDual& lhs, const TinyDual& rhs) {
     return TinyDual(lhs.real() + rhs.real(), lhs.dual() + rhs.dual());

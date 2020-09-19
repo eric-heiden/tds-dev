@@ -507,12 +507,12 @@ int main(int argc, char **argv) {
 
     {
       std::string urdf_filename;
-      // bool is_floating = false;
-      // FileUtils::find_file("swimmer/swimmer05/swimmer05.urdf",
-      // urdf_filename); FileUtils::find_file("pendulum5.urdf", urdf_filename);
+      bool is_floating = false;
+      FileUtils::find_file("swimmer/swimmer05/swimmer05.urdf", urdf_filename);
+      // FileUtils::find_file("pendulum5.urdf", urdf_filename);
       // FileUtils::find_file("sphere8cube.urdf", urdf_filename);
-      FileUtils::find_file("laikago/laikago.urdf", urdf_filename);
-      bool is_floating = true;
+      // FileUtils::find_file("laikago/laikago.urdf", urdf_filename);
+      // bool is_floating = true;
       mb = cache.construct(urdf_filename, world, false, is_floating);
 
       // mb->base_X_world().translation = Algebra::unit3_z();

@@ -174,6 +174,7 @@ endif(USE_RBDL)
 SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/third_party/cpp_base64)
 
 SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/examples)
+SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/test)
 
 OPTION(BUILD_PYTHON_PLUGIN "Set when you want to build pydiffphys (Python bindings for tiny-differentiable-simulator)" OFF)
 IF(BUILD_PYTHON_PLUGIN)

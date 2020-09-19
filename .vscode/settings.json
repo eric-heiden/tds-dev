@@ -108,5 +108,8 @@
     },
     "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
     "git.ignoreLimitWarning": true,
-    "cmake.configureOnOpen": true
+    "cmake.configureOnOpen": true,
+    "cmake.configureSettings": {
+		"CMAKE_TOOLCHAIN_FILE" : "${workspaceFolder}/tools/vcpkg/scripts/buildsystems/vcpkg.cmake"
+	}
 }

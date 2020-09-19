@@ -23,7 +23,7 @@
 #include "dynamics/forward_dynamics.hpp"
 #include "dynamics/integrator.hpp"
 #include "dynamics/kinematics.hpp"
-#include "math/conversion.hpp"
+#include "utils/conversion.hpp"
 #include "math/eigen_algebra.hpp"
 #include "math/tiny/fix64_scalar.h"
 #include "math/tiny/tiny_double_utils.h"
