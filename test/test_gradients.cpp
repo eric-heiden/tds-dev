@@ -42,3 +42,22 @@ TEST(Differentiation, DualSimple) {
     EXPECT_NEAR(grad[i], 2. * x[i], kEpsilon);
   }
 }
+
+TEST(Differentiation, StanReverseSimple) {
+  std::vector<double> x{0.2, -0.5, 0.1, 123.45};
+  std::vector<double> grad;
+  tds::compute_gradient<tds::DIFF_STAN_REVERSE>(l2<stan::math::var>(), x, grad);
+  for (std::size_t i = 0; i < x.size(); ++i) {
+    EXPECT_NEAR(grad[i], 2. * x[i], kEpsilon);
+  }
+}
+
+TEST(Differentiation, StanForwardSimple) {
+  std::vector<double> x{0.2, -0.5, 0.1, 123.45};
+  std::vector<double> grad;
+  tds::compute_gradient<tds::DIFF_STAN_FORWARD>(l2<stan::math::fvar<double>>(),
+                                                x, grad);
+  for (std::size_t i = 0; i < x.size(); ++i) {
+    EXPECT_NEAR(grad[i], 2. * x[i], kEpsilon);
+  }
+}

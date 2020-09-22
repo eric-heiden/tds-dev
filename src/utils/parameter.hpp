@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstdlib>
+#include <limits>
+#include <string>
+
 namespace tds {
 struct EstimationParameter {
   std::string name{"unnamed_param"};
@@ -20,7 +24,7 @@ struct EstimationParameter {
   explicit operator double() const { return value; }
 
   double random_value() const {
-    return minimum + (double(rand()) / RAND_MAX * (maximum - minimum));
+    return minimum + (double(std::rand()) / RAND_MAX * (maximum - minimum));
   };
 };
 }  // namespace tds

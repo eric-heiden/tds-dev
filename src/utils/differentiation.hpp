@@ -1,15 +1,26 @@
 #pragma once
 
-#include <ceres/autodiff_cost_function.h>
-
 #include <cmath>
 #include <limits>
+
+// clang-format off
+// Stan Math needs to be included first to get its Eigen plugins
+#include <stan/math.hpp>
+#include <stan/math/fwd.hpp>
+#include <ceres/autodiff_cost_function.h>
+// clang-format on
 
 #include "base.hpp"
 #include "math/tiny/tiny_dual.h"
 
 namespace tds {
-enum DiffMethod { DIFF_NUMERICAL, DIFF_CERES, DIFF_DUAL };
+enum DiffMethod {
+  DIFF_NUMERICAL,
+  DIFF_CERES,
+  DIFF_DUAL,
+  DIFF_STAN_REVERSE,
+  DIFF_STAN_FORWARD
+};
 
 /**
  * Central difference for scalar-valued function `f` given vector `x`.
@@ -89,6 +100,48 @@ static std::enable_if_t<Method == DIFF_DUAL, void> compute_gradient(
     Dual fx = f(x_dual);
     dfx[i] = fx.dual();
     x_dual[i].dual() = 0.;
+  }
+}
+
+/**
+ * Reverse-mode AD using Stan Math.
+ */
+template <DiffMethod Method, typename F>
+static std::enable_if_t<Method == DIFF_STAN_REVERSE, void> compute_gradient(
+    F f, const std::vector<double>& x, std::vector<double>& dfx) {
+  dfx.resize(x.size());
+
+  std::vector<stan::math::var> x_var(x.size());
+  for (std::size_t i = 0; i < x.size(); ++i) {
+    x_var[i] = x[i];
+  }
+
+  stan::math::var fx = f(x_var);
+  stan::math::grad(fx.vi_);
+
+  for (std::size_t i = 0; i < x.size(); ++i) {
+    dfx[i] = x_var[i].adj();
+  }
+}
+
+/**
+ * Forward-mode AD using Stan Math.
+ */
+template <DiffMethod Method, typename F, typename Scalar = double>
+static std::enable_if_t<Method == DIFF_STAN_FORWARD, void> compute_gradient(
+    F f, const std::vector<Scalar>& x, std::vector<Scalar>& dfx) {
+  typedef stan::math::fvar<Scalar> Dual;
+  dfx.resize(x.size());
+
+  std::vector<Dual> x_dual(x.size());
+  for (std::size_t i = 0; i < x.size(); ++i) {
+    x_dual[i].val_ = x[i];
+  }
+  for (std::size_t i = 0; i < x.size(); ++i) {
+    x_dual[i].d_ = 1.;
+    Dual fx = f(x_dual);
+    dfx[i] = fx.d_;
+    x_dual[i].d_ = 0.;
   }
 }
 }  // namespace tds
