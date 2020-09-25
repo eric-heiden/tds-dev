@@ -1,9 +1,9 @@
 #pragma once
 
 #include <iostream>
+#include <Eigen/Core>
 
 #include "spatial_vector.hpp"
-#include "third_party/eigen3/Eigen/Core"
 
 namespace tds {
 

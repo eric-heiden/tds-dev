@@ -1,13 +1,16 @@
 #include <fstream>
 
 #include "utils/neural_augmentation.hpp"
-#include "neural_scalar.h"
-#include "pendulum.h"
+#include "math/tiny/neural_scalar.hpp"
+#include "pendulum.hpp"
 #include "pybullet_visualizer_api.h"
 #include "utils/ceres_estimator.hpp"
 #include "utils/file_utils.hpp"
-#include "multi_body.hpp
-#include "world.hpp
+#include "utils/neural_augmentation.hpp"
+#include "multi_body.hpp"
+#include "world.hpp"
+
+using namespace tds;
 
 // whether to use Parallel Basin Hopping
 #define USE_PBH false
@@ -44,9 +47,9 @@ void visualize_trajectory(const std::vector<std::vector<T>> &states,
   typedef PyBulletVisualizerAPI VisualizerAPI;
   VisualizerAPI *visualizer = new VisualizerAPI();
   std::string plane_filename;
-  TinyFileUtils::find_file("plane_implicit.urdf", plane_filename);
+  FileUtils::find_file("plane_implicit.urdf", plane_filename);
   char path[TINY_MAX_EXE_PATH_LEN];
-  TinyFileUtils::extract_path(plane_filename.c_str(), path,
+  FileUtils::extract_path(plane_filename.c_str(), path,
                               TINY_MAX_EXE_PATH_LEN);
   std::string search_path = path;
   visualizer->connect(eCONNECT_GUI);
@@ -54,8 +57,8 @@ void visualize_trajectory(const std::vector<std::vector<T>> &states,
   if (visualizer->canSubmitCommand()) {
     visualizer->resetSimulation();
   }
-  TinyWorld<T, Utils> world;
-  TinyMultiBody<T, Utils> *mb = world.create_multi_body();
+  World<T, Utils> world;
+  MultiBody<T, Utils> *mb = world.create_multi_body();
   std::vector<T> link_lengths(params.begin(), params.begin() + 2);
   std::vector<T> masses(2);
   for (int i = 0; i < 2; ++i) {
@@ -89,7 +92,7 @@ void visualize_trajectory(const std::vector<std::vector<T>> &states,
     for (int l = 0; l < mb->m_links.size(); l++) {
       int sphereId = mbvisuals[visual_index++];
       TinyQuaternion<T, Utils> rot;
-      const TinySpatialTransform<T, Utils> &geom_X_world =
+      const Transform<T, Utils> &geom_X_world =
           mb->m_links[l].m_X_world * mb->m_links[l].m_X_visuals[0];
       btVector3 base_pos(Utils::getDouble(geom_X_world.m_translation.getX()),
                          Utils::getDouble(geom_X_world.m_translation.getY()),

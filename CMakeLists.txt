@@ -193,8 +193,8 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/opencl_2
 include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/sundials_5.2.0/include)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/tbb_2019_U8/include)
 
-# SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/examples)
 SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/test)
+SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/examples)
 
 OPTION(BUILD_PYTHON_PLUGIN "Set when you want to build pydiffphys (Python bindings for tiny-differentiable-simulator)" OFF)
 IF(BUILD_PYTHON_PLUGIN)
