@@ -3,6 +3,9 @@ enable_testing()
 find_package(GTest CONFIG REQUIRED)
 find_package(Ceres CONFIG REQUIRED)
 
+link_directories(test_rbdl . .. ${CMAKE_SOURCE_DIR}/examples ${CMAKE_SOURCE_DIR}/src)
+
+
 if (USE_STAN)
 add_executable(test_gradients test_gradients.cpp)
 target_link_libraries(test_gradients PRIVATE GTest::gtest GTest::gtest_main ${STAN_LIBRARIES} ${CERES_LIBRARIES})
@@ -21,3 +24,17 @@ target_link_libraries(test_gradients PRIVATE GTest::gtest GTest::gtest_main ${ST
 
 add_test(GradientTests test_gradients)
 endif(USE_STAN)
+
+if (USE_RBDL)
+add_executable(test_rbdl test_rbdl.cpp)
+set_target_properties(test_rbdl PROPERTIES FOLDER autodiff)
+# target_link_libraries(test_rbdl PRIVATE opengl_window tinyxml2 ${PYTHON_LIBRARIES})
+target_link_libraries(test_rbdl PUBLIC pybullet_visualizer_api)
+target_link_libraries(test_rbdl PRIVATE tinyxml2 ${PYTHON_LIBRARIES})
+target_link_libraries(test_rbdl PRIVATE GTest::gtest GTest::gtest_main rbdl-static)
+target_include_directories(test_rbdl PUBLIC ${BULLET_INCLUDE_DIR})
+target_compile_definitions(test_rbdl PUBLIC ${BULLET_DEFINITIONS})
+target_link_directories(test_rbdl PUBLIC ${Bullet_DIR}/${BULLET_ROOT_DIR}/${BULLET_LIBRARY_DIRS})
+target_link_libraries(test_rbdl PUBLIC BulletDynamics BulletCollision LinearMath)
+
+endif(USE_RBDL)
