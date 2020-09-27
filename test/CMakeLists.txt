@@ -6,6 +6,7 @@ find_package(Ceres CONFIG REQUIRED)
 if (USE_STAN)
 add_executable(test_gradients test_gradients.cpp)
 target_link_libraries(test_gradients PRIVATE GTest::gtest GTest::gtest_main ${STAN_LIBRARIES} ${CERES_LIBRARIES})
+add_test(GradientTests test_gradients)
 # target_compile_definitions(test_gradients PRIVATE STAN_MATH)
 # add_definitions(-std=c++1y -pthread -DGTEST_HAS_PTHREAD=0 -D_REENTRANT -Wno-ignored-attributes -Wno-sign-compare -DBOOST_DISABLE_ASSERTS)
 # add_definitions(-std=c++1y -pthread -DGTEST_HAS_PTHREAD=0 -D_REENTRANT -Wno-ignored-attributes -Wno-sign-compare -DBOOST_DISABLE_ASSERTS 
@@ -19,5 +20,8 @@ target_link_libraries(test_gradients PRIVATE GTest::gtest GTest::gtest_main ${ST
 #   /home/eric/hybrid-sim-exp/tds/third_party/stan_math/lib/sundials_5.2.0/lib/libsundials_kinsol.a  
 #   /home/eric/hybrid-sim-exp/tds/third_party/stan_math/lib/tbb/libtbb.so.2)
 
-add_test(GradientTests test_gradients)
+add_executable(test_ceres_estimation test_ceres_estimation.cpp)
+target_link_libraries(test_ceres_estimation PRIVATE GTest::gtest GTest::gtest_main ${STAN_LIBRARIES} ${CERES_LIBRARIES})
+add_test(EstimationTests test_ceres_estimation)
+
 endif(USE_STAN)

@@ -17,8 +17,8 @@
 #include "dynamics/forward_dynamics.hpp"
 #include "dynamics/integrator.hpp"
 #include "multi_body.hpp"
-#include "pendulum.hpp"
-#include "utils/ceres_estimator.hpp"
+#include "utils/ceres_estimator_old.hpp"
+#include "utils/pendulum.hpp"
 #include "world.hpp"
 
 using namespace tds;
@@ -49,9 +49,10 @@ void rollout_pendulum(const std::vector<Scalar>& params,
 }
 
 template <int NumLinks, ResidualMode ResMode = RES_MODE_1D>
-class PendulumEstimator : public CeresEstimator<NumLinks, NumLinks, ResMode> {
+class PendulumEstimator
+    : public CeresEstimatorOld<NumLinks, NumLinks, ResMode> {
  public:
-  typedef CeresEstimator<NumLinks, NumLinks, ResMode> CE;
+  typedef CeresEstimatorOld<NumLinks, NumLinks, ResMode> CE;
   using CE::kStateDim, CE::kParameterDim;
   using CE::parameters;
   using typename CE::ADScalar;

@@ -63,6 +63,10 @@ struct TinyDualUtils {
     return (double)v.real();
   }
 
+  static Dual scalar_from_double(double d) {
+    return Dual(d);
+  }
+
   template <class T>
   static Dual convert(T) = delete;  // C++11
 

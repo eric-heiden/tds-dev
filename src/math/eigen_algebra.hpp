@@ -1,7 +1,8 @@
 #pragma once
 
-#include <iostream>
 #include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <iostream>
 
 #include "spatial_vector.hpp"
 
@@ -124,16 +125,17 @@ struct EigenAlgebraT {
     return vector_a.dot(vector_b);
   }
 
-  // Eigen sqrt defaults to std::sqrt. Eigen::sqrt is a broadcast operation
   TINY_INLINE static Scalar norm(const MotionVector &v) {
-    return std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3] +
-                     v[4] * v[4] + v[5] * v[5]);
+    using std::sqrt;
+    return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3] +
+                v[4] * v[4] + v[5] * v[5]);
+  }
+  TINY_INLINE static Scalar norm(const ForceVector &v) {
+    using std::sqrt;
+    return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3] +
+                v[4] * v[4] + v[5] * v[5]);
   }
 
-  TINY_INLINE static Scalar norm(const ForceVector &v) {
-    return std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3] +
-                     v[4] * v[4] + v[5] * v[5]);
-  }
   template <typename T>
   EIGEN_ALWAYS_INLINE static Scalar norm(const T &v) {
     return v.norm();
@@ -296,30 +298,31 @@ struct EigenAlgebraT {
   }
   EIGEN_ALWAYS_INLINE static Quaternion axis_angle_quaternion(
       const Vector3 &axis, const Scalar &angle) {
-    // return enoki::rotate<Quaternion, Vector3>(axis, angle);
-    // TODO: Check if this is equivalent in Eigen
     return Quaternion(Eigen::AngleAxis(angle, axis));
   }
 
   EIGEN_ALWAYS_INLINE static Matrix3 rotation_x_matrix(const Scalar &angle) {
-    Scalar c = std::cos(angle);
-    Scalar s = std::sin(angle);
+    using std::cos, std::sin;
+    Scalar c = cos(angle);
+    Scalar s = sin(angle);
     Matrix3 temp;
     temp << 1, 0, 0, 0, c, s, 0, -s, c;
     return temp;
   }
 
   EIGEN_ALWAYS_INLINE static Matrix3 rotation_y_matrix(const Scalar &angle) {
-    Scalar c = std::cos(angle);
-    Scalar s = std::sin(angle);
+    using std::cos, std::sin;
+    Scalar c = cos(angle);
+    Scalar s = sin(angle);
     Matrix3 temp;
     temp << c, 0, -s, 0, 1, 0, s, 0, c;
     return temp;
   }
 
   EIGEN_ALWAYS_INLINE static Matrix3 rotation_z_matrix(const Scalar &angle) {
-    Scalar c = std::cos(angle);
-    Scalar s = std::sin(angle);
+    using std::cos, std::sin;
+    Scalar c = cos(angle);
+    Scalar s = sin(angle);
     Matrix3 temp;
     temp << c, s, 0, -s, c, 0, 0, 0, 1;
     return temp;
@@ -327,23 +330,19 @@ struct EigenAlgebraT {
 
   static Matrix3 rotation_zyx_matrix(const Scalar &r, const Scalar &p,
                                      const Scalar &y) {
-    Scalar ci(std::cos(r));
-    Scalar cj(std::cos(p));
-    Scalar ch(std::cos(y));
-    Scalar si(std::sin(r));
-    Scalar sj(std::sin(p));
-    Scalar sh(std::sin(y));
+    using std::cos, std::sin;
+    Scalar ci(cos(r));
+    Scalar cj(cos(p));
+    Scalar ch(cos(y));
+    Scalar si(sin(r));
+    Scalar sj(sin(p));
+    Scalar sh(sin(y));
     Scalar cc = ci * ch;
     Scalar cs = ci * sh;
     Scalar sc = si * ch;
     Scalar ss = si * sh;
     return Matrix3(cj * ch, sj * sc - cs, sj * cc + ss, cj * sh, sj * ss + cc,
                    sj * cs - sc, -sj, cj * si, cj * ci);
-
-    Matrix3 tmp;
-    tmp << cj * ch, sj * sc - cs, sj * cc + ss, cj * sh, sj * ss + cc,
-        sj * cs - sc, -sj, cj * si, cj * ci;
-    return tmp;
   }
 
   EIGEN_ALWAYS_INLINE static Vector3 rotate(const Quaternion &q,
@@ -453,8 +452,26 @@ struct EigenAlgebraT {
     return a == b;
   }
 
+#ifdef USE_STAN
+  template <typename InnerScalar>
+  TINY_INLINE static std::enable_if_t<
+      !std::is_same_v<Scalar, stan::math::fvar<InnerScalar>>, double>
+  to_double(const stan::math::fvar<InnerScalar> &s) {
+    return stan::math::value_of(s);
+  }
+#endif
+
   TINY_INLINE static double to_double(const Scalar &s) {
+#ifdef USE_STAN
+    if constexpr (std::is_same_v<Scalar, stan::math::var> ||
+                  std::is_same_v<Scalar, stan::math::fvar<double>>) {
+      return stan::math::value_of(s);
+    } else {
+      return static_cast<double>(s);
+    }
+#else
     return static_cast<double>(s);
+#endif
   }
 
   TINY_INLINE static Scalar from_double(double s) {
@@ -481,22 +498,26 @@ struct EigenAlgebraT {
 
   template <typename T>
   TINY_INLINE static auto sin(const T &s) {
-    return std::sin(s);
+    using std::sin;
+    return sin(s);
   }
 
   template <typename T>
   TINY_INLINE static auto cos(const T &s) {
-    return std::cos(s);
+    using std::cos;
+    return cos(s);
   }
 
   template <typename T>
   TINY_INLINE static auto abs(const T &s) {
-    return std::abs(s);
+    using std::abs;
+    return abs(s);
   }
 
   template <typename T>
   TINY_INLINE static auto sqrt(const T &s) {
-    return std::sqrt(s);
+    using std::sqrt;
+    return sqrt(s);
   }
 
   EigenAlgebraT<Scalar>() = delete;

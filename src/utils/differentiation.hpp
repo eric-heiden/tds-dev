@@ -15,6 +15,7 @@
 #include "math/tiny/tiny_dual_utils.h"
 #include "math/eigen_algebra.hpp"
 #include "math/tiny/tiny_algebra.hpp"
+#include "math/tiny/ceres_utils.h"
 
 namespace tds {
 enum DiffMethod {
@@ -125,6 +126,7 @@ static std::enable_if_t<Method == DIFF_STAN_REVERSE, void> compute_gradient(
   for (std::size_t i = 0; i < x.size(); ++i) {
     dfx[i] = x_var[i].adj();
   }
+  stan::math::recover_memory();
 }
 
 /**
@@ -161,7 +163,7 @@ template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_NUMERICAL, F, ScalarAlgebra> {
   using Scalar = typename ScalarAlgebra::Scalar;
   F<ScalarAlgebra> f_scalar_;
-  std::vector<Scalar> gradient_;
+  mutable std::vector<Scalar> gradient_;
 
  public:
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
@@ -173,28 +175,42 @@ class GradientFunctional<DIFF_NUMERICAL, F, ScalarAlgebra> {
 
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_CERES, F, ScalarAlgebra> {
-  using Scalar = typename ScalarAlgebra::Scalar;
   static const int kDim = F<ScalarAlgebra>::kDim;
-  F<ScalarAlgebra> f_scalar_;
-  F<ceres::Jet<Scalar, kDim>> f_jet_;
+  using Scalar = typename ScalarAlgebra::Scalar;
+  using ADScalar = ceres::Jet<Scalar, kDim>;
+  mutable std::vector<Scalar> gradient_;
 
-  template <typename T>
-  bool operator()(const T* const x, T* e) const {
-    std::vector<T> arg(x, x + kDim);
-    if constexpr (std::is_same_v<T, Scalar>) {
-      *e = f_scalar_(arg);
-    } else {
-      *e = f_jet_(arg);
+  struct CostFunctional {
+    GradientFunctional* parent;
+
+    F<ScalarAlgebra> f_scalar;
+    F<TinyAlgebra<ADScalar, CeresUtils<kDim>>> f_jet;
+
+    CostFunctional(GradientFunctional* parent) : parent(parent) {}
+
+    template <typename T>
+    bool operator()(const T* const x, T* e) const {
+      std::vector<T> arg(x, x + kDim);
+      if constexpr (std::is_same_v<T, Scalar>) {
+        *e = f_scalar(arg);
+      } else {
+        *e = f_jet(arg);
+      }
+      return true;
     }
-    return true;
-  }
-  std::vector<Scalar> gradient_;
-  ceres::AutoDiffCostFunction<GradientFunctional, 1, kDim> cost_function_;
+  };
+
+  CostFunctional* cost_;
+  ceres::AutoDiffCostFunction<CostFunctional, 1, kDim> cost_function_;
 
  public:
-  GradientFunctional() : cost_function_(this) {}
+  // CostFunctional pointer is managed by cost_function_.
+  GradientFunctional()
+      : cost_(new CostFunctional(this)), cost_function_(cost_) {}
 
-  Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
+  Scalar value(const std::vector<Scalar>& x) const {
+    return cost_->f_scalar(x);
+  }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     assert(static_cast<int>(x.size()) == kDim);
     gradient_.resize(x.size());
@@ -211,7 +227,7 @@ class GradientFunctional<DIFF_DUAL, F, ScalarAlgebra> {
   using Scalar = typename ScalarAlgebra::Scalar;
   F<ScalarAlgebra> f_scalar_;
   F<TinyAlgebra<TinyDual<Scalar>, TinyDualUtils<Scalar>>> f_ad_;
-  std::vector<Scalar> gradient_;
+  mutable std::vector<Scalar> gradient_;
 
  public:
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
@@ -226,7 +242,7 @@ class GradientFunctional<DIFF_STAN_REVERSE, F, ScalarAlgebra> {
   using Scalar = typename ScalarAlgebra::Scalar;
   F<ScalarAlgebra> f_scalar_;
   F<EigenAlgebraT<stan::math::var>> f_ad_;
-  std::vector<Scalar> gradient_;
+  mutable std::vector<Scalar> gradient_;
 
  public:
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
@@ -241,7 +257,7 @@ class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
   using Scalar = typename ScalarAlgebra::Scalar;
   F<ScalarAlgebra> f_scalar_;
   F<EigenAlgebraT<stan::math::fvar<Scalar>>> f_ad_;
-  std::vector<Scalar> gradient_;
+  mutable std::vector<Scalar> gradient_;
 
  public:
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }

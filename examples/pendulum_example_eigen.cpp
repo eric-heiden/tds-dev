@@ -29,7 +29,7 @@
 #include "math/tiny/tiny_double_utils.h"
 #include "multi_body.hpp"
 #include "opengl_window/tiny_opengl3_app.h"
-#include "pendulum.hpp"
+#include "utils/pendulum.hpp"
 #include "utils/file_utils.hpp"
 #include "world.hpp"
 
