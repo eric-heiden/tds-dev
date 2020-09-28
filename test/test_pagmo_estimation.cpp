@@ -7,21 +7,8 @@
 #include <pagmo/problem.hpp>
 
 #include "estimation_utils.hpp"
-#include "utils/optimization_problem.hpp"
 
 constexpr double kEpsilon = 1e-5;
-
-template <tds::DiffMethod Method>
-tds::OptimizationProblem<Method, PendulumCost> create_problem() {
-  tds::OptimizationProblem<Method, PendulumCost> pendulum_problem;
-  pendulum_problem[0].minimum = 0.5;
-  pendulum_problem[0].maximum = 10.;
-  pendulum_problem[0].value = 3;
-  pendulum_problem[1].minimum = 0.5;
-  pendulum_problem[1].maximum = 10.;
-  pendulum_problem[1].value = 5;
-  return pendulum_problem;
-}
 
 TEST(PagmoEstimation, Sade) {
   pagmo::problem prob(create_problem<tds::DIFF_NUMERICAL>());

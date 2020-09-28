@@ -30,14 +30,16 @@ class OptimizationProblem {
   ParameterVector parameters_;
 
  public:
-  ParameterVector& parameters() { return parameters_; }
-  const ParameterVector& parameters() const { return parameters_; }
+  TINY_INLINE ParameterVector& parameters() { return parameters_; }
+  TINY_INLINE const ParameterVector& parameters() const { return parameters_; }
 
-  EstimationParameter& operator[](int i) { return parameters_[i]; }
-  const EstimationParameter& operator[](int i) const { return parameters_[i]; }
+  TINY_INLINE EstimationParameter& operator[](int i) { return parameters_[i]; }
+  TINY_INLINE const EstimationParameter& operator[](int i) const {
+    return parameters_[i];
+  }
 
-  CostFunctor& cost() { return cost_; }
-  const CostFunctor& cost() const { return cost_; }
+  TINY_INLINE CostFunctor& cost() { return cost_; }
+  TINY_INLINE const CostFunctor& cost() const { return cost_; }
 
   void set_params(const std::array<double, kParameterDim>& params) {
     for (int i = 0; i < kParameterDim; ++i) {
@@ -63,9 +65,11 @@ class OptimizationProblem {
     return {low, high};
   }
 
-  DoubleVector fitness(const DoubleVector& x) const { return {cost_.value(x)}; }
+  TINY_INLINE DoubleVector fitness(const DoubleVector& x) const {
+    return {cost_.value(x)};
+  }
 
-  DoubleVector gradient(const DoubleVector& x) const {
+  TINY_INLINE DoubleVector gradient(const DoubleVector& x) const {
     return cost_.gradient(x);
   }
 

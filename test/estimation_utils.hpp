@@ -4,6 +4,7 @@
 #include "dynamics/integrator.hpp"
 #include "utils/ceres_estimator.hpp"
 #include "utils/pendulum.hpp"
+#include "utils/optimization_problem.hpp"
 
 const std::vector<double> true_link_lengths = {2, 4};
 
@@ -56,3 +57,14 @@ class PendulumCost {
   }
 };
 
+template <tds::DiffMethod Method>
+tds::OptimizationProblem<Method, PendulumCost> create_problem() {
+  tds::OptimizationProblem<Method, PendulumCost> pendulum_problem;
+  pendulum_problem[0].minimum = 0.5;
+  pendulum_problem[0].maximum = 10.;
+  pendulum_problem[0].value = 3;
+  pendulum_problem[1].minimum = 0.5;
+  pendulum_problem[1].maximum = 10.;
+  pendulum_problem[1].value = 5;
+  return pendulum_problem;
+}

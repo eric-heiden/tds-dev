@@ -39,19 +39,20 @@ namespace plt = matplotlibcpp;
 #endif
 
 namespace tds {
-template <DiffMethod Method, template <typename> typename F>
+/**
+ * Solves optimization problems using gradient-based optimizers in Ceres.
+ * Box constraints defined by the parameters in `OptimizationProblem` are
+ * handled.
+ * Template parameter `OptimizationProblem` must implement the interface from
+ * `tds::OptimizationProblem`.
+ */
+template <typename OptimizationProblem>
 class CeresEstimator : ceres::IterationCallback {
+  friend struct CostFunctor;
+
  public:
-  static const int kParameterDim = F<EigenAlgebra>::kDim;
+  static const int kParameterDim = OptimizationProblem::kParameterDim;
   static_assert(kParameterDim >= 1);
-
-  std::array<EstimationParameter, kParameterDim> parameters;
-
-  void set_params(const std::array<double, kParameterDim> &params) {
-    for (int i = 0; i < kParameterDim; ++i) {
-      parameters[i].value = params[i];
-    }
-  }
 
   /**
    * Whether to set parameter bounds (line search optimizers do not support
@@ -61,18 +62,26 @@ class CeresEstimator : ceres::IterationCallback {
 
   ceres::Solver::Options options;
 
-  CeresEstimator() {
+  CeresEstimator(const OptimizationProblem &problem) : problem_(problem) {
     options.minimizer_progress_to_stdout = true;
     options.callbacks.push_back(this);
   }
 
+  virtual ~CeresEstimator() {
+    if (vars_) {
+      delete[] vars_;
+      vars_ = nullptr;
+    }
+  }
+
  private:
-  GradientFunctional<Method, F> cost_;
+  OptimizationProblem problem_;
   struct CostFunctor : ceres::SizedCostFunction<1, kParameterDim> {
     CeresEstimator *parent{nullptr};
-    GradientFunctional<Method, F> cost;
+    const typename OptimizationProblem::CostFunctor &cost;
 
-    CostFunctor(CeresEstimator *parent) : parent(parent) {}
+    CostFunctor(CeresEstimator *parent)
+        : parent(parent), cost(parent->cost()) {}
 
     bool Evaluate(double const *const *parameters, double *residuals,
                   double **jacobians) const override {
@@ -82,6 +91,12 @@ class CeresEstimator : ceres::IterationCallback {
       }
       if (residuals != nullptr) {
         *residuals = cost.value(x);
+        if (*residuals < parent->best_cost_) {
+          parent->best_cost_ = *residuals;
+          for (int i = 0; i < kParameterDim; ++i) {
+            parent->best_params_[i] = x[i];
+          }
+        }
       }
       if (jacobians != nullptr) {
         const std::vector<double> &gradient = cost.gradient(x);
@@ -103,31 +118,35 @@ class CeresEstimator : ceres::IterationCallback {
     }
     vars_ = new double[kParameterDim];
     cost_function_ = new CostFunctor(this);
-    problem_.AddResidualBlock(cost_function_, loss_function, vars_);
+
+    ceres_problem_ = ceres::Problem();
+    ceres_problem_.AddResidualBlock(cost_function_, loss_function, vars_);
 
     for (int i = 0; i < kParameterDim; ++i) {
-      vars_[i] = parameters[i].value;
+      vars_[i] = problem_[i].value;
     }
     if (set_bounds) {
       for (int i = 0; i < kParameterDim; ++i) {
-        problem_.SetParameterLowerBound(vars_, i, parameters[i].minimum);
-        problem_.SetParameterUpperBound(vars_, i, parameters[i].maximum);
+        ceres_problem_.SetParameterLowerBound(vars_, i, problem_[i].minimum);
+        ceres_problem_.SetParameterUpperBound(vars_, i, problem_[i].maximum);
       }
     }
 
-    return problem_;
+    return ceres_problem_;
   }
 
-  const GradientFunctional<Method, F> &cost() const { return cost_; }
+  TINY_INLINE const OptimizationProblem &problem() const { return problem_; }
+  TINY_INLINE const typename OptimizationProblem::CostFunctor &cost() const {
+    return problem_.cost();
+  }
 
   void gradient_descent(double learning_rate, int iterations) {
-    double cost;
     param_evolution_.clear();
     std::vector<double> x(vars_, vars_ + kParameterDim);
     for (int i = 0; i < iterations; ++i) {
-      double cost = cost_.value(x);
-      const auto &gradient = cost_.gradient(x);
-      printf("Gradient descent step %i - cost: %.6f\n", i, cost);
+      double c = cost().value(x);
+      const auto &gradient = cost().gradient(x);
+      printf("Gradient descent step %i - cost: %.6f\n", i, c);
       for (int j = 0; j < kParameterDim; ++j) {
         current_param_[j] = x[j];
         x[j] -= learning_rate * gradient[j];
@@ -135,7 +154,7 @@ class CeresEstimator : ceres::IterationCallback {
       param_evolution_.push_back(current_param_);
     }
     for (int i = 0; i < kParameterDim; ++i) {
-      parameters[i].value = x[i];
+      problem_[i].value = x[i];
     }
   }
 
@@ -144,10 +163,10 @@ class CeresEstimator : ceres::IterationCallback {
     param_evolution_.clear();
     best_cost_ = std::numeric_limits<double>::max();
     for (int i = 0; i < kParameterDim; ++i) {
-      vars_[i] = parameters[i].value;
-      best_params_[i] = parameters[i].value;
+      vars_[i] = problem_[i].value;
+      best_params_[i] = problem_[i].value;
     }
-    ceres::Solve(options, &problem_, &summary);
+    ceres::Solve(options, &ceres_problem_, &summary);
     if (summary.final_cost > best_cost_) {
       printf(
           "Ceres returned a parameter vector with a final cost of %.8f whereas "
@@ -155,38 +174,31 @@ class CeresEstimator : ceres::IterationCallback {
           "%.8f was found. Returning the best parameter vector.\n",
           summary.final_cost, best_cost_);
       for (int i = 0; i < kParameterDim; ++i) {
-        parameters[i].value = best_params_[i];
+        problem_[i].value = best_params_[i];
       }
     } else {
       for (int i = 0; i < kParameterDim; ++i) {
-        parameters[i].value = vars_[i];
+        problem_[i].value = vars_[i];
       }
     }
     return summary;
   }
 
-  const double *vars() const { return vars_; }
+  TINY_INLINE const double *vars() const { return vars_; }
 
-  virtual ~CeresEstimator() {
-    if (vars_) {
-      delete[] vars_;
-      vars_ = nullptr;
-    }
-  }
-
-  const std::vector<std::array<double, kParameterDim>> &parameter_evolution()
-      const {
+  TINY_INLINE const std::vector<std::array<double, kParameterDim>>
+      &parameter_evolution() const {
     return param_evolution_;
   }
 
-  double best_cost() const { return best_cost_; }
+  TINY_INLINE double best_cost() const { return best_cost_; }
 
-  const std::array<double, kParameterDim> &best_parameters() const {
+  TINY_INLINE const std::array<double, kParameterDim> &best_parameters() const {
     return best_params_;
   }
 
  private:
-  ceres::Problem problem_;
+  ceres::Problem ceres_problem_;
   double *vars_{nullptr};
   CostFunctor *cost_function_{nullptr};
   std::vector<std::array<double, kParameterDim>> param_evolution_;
@@ -321,13 +333,13 @@ class BasinHoppingEstimator {
               this->best_cost_ = estimator->best_cost();
               printf("FOUND NEW BEST COST: %.6f\n", estimator->best_cost());
               for (int i = 0; i < kParameterDim; ++i) {
-                this->params[i] = estimator->parameters[i].value;
+                this->params[i] = estimator->problem_[i].value;
               }
             }
           }
           // apply random change to the parameters
           for (int i = 0; i < kParameterDim; ++i) {
-            auto &param = estimator->parameters[i];
+            auto &param = estimator->problem_[i];
             if (fade_std) {
               std::normal_distribution<double> d{
                   this->params[i],
