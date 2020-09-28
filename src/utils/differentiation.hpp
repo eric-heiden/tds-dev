@@ -5,8 +5,10 @@
 
 // clang-format off
 // Stan Math needs to be included first to get its Eigen plugins
+#if USE_STAN
 #include <stan/math.hpp>
 #include <stan/math/fwd.hpp>
+#endif
 #include <ceres/autodiff_cost_function.h>
 // clang-format on
 
@@ -23,7 +25,7 @@ enum DiffMethod {
   DIFF_CERES,
   DIFF_DUAL,
   DIFF_STAN_REVERSE,
-  DIFF_STAN_FORWARD
+  DIFF_STAN_FORWARD,
 };
 
 /**
@@ -113,6 +115,7 @@ static std::enable_if_t<Method == DIFF_DUAL, void> compute_gradient(
 template <DiffMethod Method, typename F>
 static std::enable_if_t<Method == DIFF_STAN_REVERSE, void> compute_gradient(
     F f, const std::vector<double>& x, std::vector<double>& dfx) {
+#if USE_STAN
   dfx.resize(x.size());
 
   std::vector<stan::math::var> x_var(x.size());
@@ -127,6 +130,11 @@ static std::enable_if_t<Method == DIFF_STAN_REVERSE, void> compute_gradient(
     dfx[i] = x_var[i].adj();
   }
   stan::math::recover_memory();
+#else
+  static_assert(false,
+                "Variable 'USE_STAN' must be set to use automatic "
+                "differentiation functions from Stan Math.");
+#endif
 }
 
 /**
@@ -135,6 +143,7 @@ static std::enable_if_t<Method == DIFF_STAN_REVERSE, void> compute_gradient(
 template <DiffMethod Method, typename F, typename Scalar = double>
 static std::enable_if_t<Method == DIFF_STAN_FORWARD, void> compute_gradient(
     F f, const std::vector<Scalar>& x, std::vector<Scalar>& dfx) {
+#if USE_STAN
   typedef stan::math::fvar<Scalar> Dual;
   dfx.resize(x.size());
 
@@ -148,6 +157,11 @@ static std::enable_if_t<Method == DIFF_STAN_FORWARD, void> compute_gradient(
     dfx[i] = fx.d_;
     x_dual[i].d_ = 0.;
   }
+#else
+  static_assert(false,
+                "Variable 'USE_STAN' must be set to use automatic "
+                "differentiation functions from Stan Math.");
+#endif
 }
 
 template <DiffMethod Method, template <typename> typename F,
@@ -207,6 +221,19 @@ class GradientFunctional<DIFF_CERES, F, ScalarAlgebra> {
   // CostFunctional pointer is managed by cost_function_.
   GradientFunctional()
       : cost_(new CostFunctional(this)), cost_function_(cost_) {}
+  GradientFunctional(GradientFunctional& f)
+      : cost_(new CostFunctional(this)), cost_function_(cost_) {}
+  GradientFunctional(const GradientFunctional& f)
+      : cost_(new CostFunctional(this)), cost_function_(cost_) {}
+  GradientFunctional& operator=(const GradientFunctional& f) {
+    if (cost_) {
+      delete cost_;
+    }
+    cost_ = new CostFunctional(this);
+    cost_function_ =
+        ceres::AutoDiffCostFunction<CostFunctional, 1, kDim>(cost_);
+    return *this;
+  }
 
   Scalar value(const std::vector<Scalar>& x) const {
     return cost_->f_scalar(x);
@@ -239,6 +266,7 @@ class GradientFunctional<DIFF_DUAL, F, ScalarAlgebra> {
 
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_STAN_REVERSE, F, ScalarAlgebra> {
+#if USE_STAN
   using Scalar = typename ScalarAlgebra::Scalar;
   F<ScalarAlgebra> f_scalar_;
   F<EigenAlgebraT<stan::math::var>> f_ad_;
@@ -250,10 +278,16 @@ class GradientFunctional<DIFF_STAN_REVERSE, F, ScalarAlgebra> {
     tds::compute_gradient<tds::DIFF_STAN_REVERSE>(f_ad_, x, gradient_);
     return gradient_;
   }
+#else
+  static_assert(false,
+                "Variable 'USE_STAN' must be set to use automatic "
+                "differentiation functions from Stan Math.");
+#endif
 };
 
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
+#if USE_STAN
   using Scalar = typename ScalarAlgebra::Scalar;
   F<ScalarAlgebra> f_scalar_;
   F<EigenAlgebraT<stan::math::fvar<Scalar>>> f_ad_;
@@ -265,5 +299,10 @@ class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
     tds::compute_gradient<tds::DIFF_STAN_FORWARD>(f_ad_, x, gradient_);
     return gradient_;
   }
+#else
+  static_assert(false,
+                "Variable 'USE_STAN' must be set to use automatic "
+                "differentiation functions from Stan Math.");
+#endif
 };
 }  // namespace tds

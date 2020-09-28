@@ -24,7 +24,7 @@
 #include <thread>
 
 // clang-format off
-#include "utils/differentiation.hpp"
+#include "differentiation.hpp"
 #include "math/eigen_algebra.hpp"
 #include "parameter.hpp"
 
@@ -43,8 +43,6 @@ template <DiffMethod Method, template <typename> typename F>
 class CeresEstimator : ceres::IterationCallback {
  public:
   static const int kParameterDim = F<EigenAlgebra>::kDim;
-  static const int kResidualDim = 1;
-
   static_assert(kParameterDim >= 1);
 
   std::array<EstimationParameter, kParameterDim> parameters;

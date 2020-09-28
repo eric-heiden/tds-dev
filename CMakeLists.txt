@@ -27,6 +27,7 @@ if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0003 NEW)
 	cmake_policy(SET CMP0017 NEW)
 	cmake_policy(SET CMP0042 NEW)
+	cmake_policy(SET CMP0057 NEW)
 endif(COMMAND cmake_policy)
     
 #this line has to appear before 'PROJECT' in order to be able to disable incremental linking
@@ -181,6 +182,13 @@ if(USE_RBDL)
   add_definitions(-DUSE_RBDL)
   SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/third_party/rbdl)
 endif(USE_RBDL)
+
+
+OPTION(USE_PAGMO "Use Pagmo" ON)
+if(USE_PAGMO)
+  find_package(pagmo)
+  add_definitions(-DUSE_PAGMO)
+endif(USE_PAGMO)
 
 SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/third_party/cpp_base64)
 

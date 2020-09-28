@@ -1,7 +1,5 @@
 #include <gtest/gtest.h>
 
-#define USE_RBDL true
-
 #include "rbdl_test_utils.hpp"
 
 using namespace tds;
