@@ -25,3 +25,17 @@ target_link_libraries(test_ceres_estimation PRIVATE GTest::gtest GTest::gtest_ma
 add_test(EstimationTests test_ceres_estimation)
 
 endif(USE_STAN)
+
+if (USE_RBDL)
+add_executable(test_rbdl test_rbdl.cpp)
+set_target_properties(test_rbdl PROPERTIES FOLDER autodiff)
+# target_link_libraries(test_rbdl PRIVATE opengl_window tinyxml2 ${PYTHON_LIBRARIES})
+target_link_libraries(test_rbdl PUBLIC pybullet_visualizer_api)
+target_link_libraries(test_rbdl PRIVATE tinyxml2 ${PYTHON_LIBRARIES})
+target_link_libraries(test_rbdl PRIVATE GTest::gtest GTest::gtest_main rbdl-static)
+target_include_directories(test_rbdl PUBLIC ${BULLET_INCLUDE_DIR})
+target_compile_definitions(test_rbdl PUBLIC ${BULLET_DEFINITIONS})
+target_link_directories(test_rbdl PUBLIC ${Bullet_DIR}/${BULLET_ROOT_DIR}/${BULLET_LIBRARY_DIRS})
+target_link_libraries(test_rbdl PUBLIC BulletDynamics BulletCollision LinearMath)
+
+endif(USE_RBDL)
