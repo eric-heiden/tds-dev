@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 
 #include <Bullet3Common/b3Logging.h>
 #include <SharedMemory/PhysicsDirectC_API.h>

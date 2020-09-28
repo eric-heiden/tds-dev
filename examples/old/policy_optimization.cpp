@@ -17,7 +17,7 @@
 #include <deque>
 #include <fstream>
 
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 typedef PyBulletVisualizerAPI VisualizerAPI;
 
 #include "utils/file_utils.hpp"

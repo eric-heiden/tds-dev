@@ -17,7 +17,7 @@
 #pragma once
 
 #include "multi_body.hpp"
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 #include "urdf_structures.hpp"
 
 namespace tds {

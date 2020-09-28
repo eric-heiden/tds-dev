@@ -12,8 +12,7 @@ using VectorX = typename Algebra::VectorX;
 using Matrix3 = Algebra::Matrix3;
 using RigidBodyInertia = RigidBodyInertia<Algebra>;
 
-TEST(RBDLTest, Swimmer05)
-{
+TEST(RBDLTest, Swimmer05) {
   Vector3 gravity(0., 0., -9.81);
 
   UrdfCache<Algebra> cache;
@@ -67,16 +66,14 @@ TEST(RBDLTest, Swimmer05)
     for (int i = 0; i < mb->dof_actuated(); ++i) {
       rbdl_tau[i + qd_offset] = Algebra::to_double(mb->tau(i));
     }
-    RigidBodyDynamics::UpdateKinematics(rbdl_model, rbdl_q, rbdl_qd,
-                                        rbdl_qdd);
+    RigidBodyDynamics::UpdateKinematics(rbdl_model, rbdl_q, rbdl_qd, rbdl_qdd);
     forward_kinematics(*mb);
     // if (!is_equal<Algebra>(*mb, rbdl_model)) {
     //   // exit(1);
     // }
 
-
     double dt = 0.001;
-    for (int i = 0; i < 500; ++i) {
+    for (int i = 0; i < 200; ++i) {
       printf("\n\n\nt: %i\n", i);
       forward_kinematics(*mb);
       // traj.push_back(mb->q);
@@ -114,8 +111,8 @@ TEST(RBDLTest, Swimmer05)
         //           << rbdl_model.X_base[link.q_index + 1] << std::endl;
       }
 
-      RigidBodyDynamics::ForwardDynamics(rbdl_model, rbdl_q, rbdl_qd,
-                                          rbdl_tau, rbdl_qdd);
+      RigidBodyDynamics::ForwardDynamics(rbdl_model, rbdl_q, rbdl_qd, rbdl_tau,
+                                         rbdl_qdd);
 
       mb->print_state();
       std::cout << "RBDL q: " << rbdl_q.transpose()
@@ -134,7 +131,8 @@ TEST(RBDLTest, Swimmer05)
       //   exit(1);
       // }
 
-      ASSERT_TRUE(is_equal<Algebra>(*mb, rbdl_q, rbdl_qd, rbdl_qdd)) << fail_message << i;
+      ASSERT_TRUE(is_equal<Algebra>(*mb, rbdl_q, rbdl_qd, rbdl_qdd))
+          << fail_message << i;
 
       integrate_euler(*mb, dt);
       rbdl_qd += rbdl_qdd * dt;
@@ -171,7 +169,8 @@ TEST(RBDLTest, Swimmer05)
       // if (!is_equal<Algebra>(*mb, rbdl_q, rbdl_qd, rbdl_qdd)) {
       //   exit(1);
       // }
-      ASSERT_TRUE(is_equal<Algebra>(*mb, rbdl_q, rbdl_qd, rbdl_qdd)) << fail_message << i;
+      ASSERT_TRUE(is_equal<Algebra>(*mb, rbdl_q, rbdl_qd, rbdl_qdd))
+          << fail_message << i;
 
       mb->clear_forces();
 
@@ -181,16 +180,16 @@ TEST(RBDLTest, Swimmer05)
       Algebra::Vector3 world_point(1., 2., 3.);
       auto tds_jac = tds::point_jacobian(*mb, jac_link_id, world_point);
       RigidBodyDynamics::Math::MatrixNd rbdl_jac(Algebra::num_rows(tds_jac),
-                                                  Algebra::num_cols(tds_jac));
+                                                 Algebra::num_cols(tds_jac));
       rbdl_jac.setZero();
       // left-associative inverse transform of body_to_world transform
       // (rotation matrix is not inverted)
       Transform<Algebra> link_tf = (*mb)[jac_link_id].X_world;
       Algebra::Vector3 body_point =
           link_tf.rotation * (world_point - link_tf.translation);
-      RigidBodyDynamics::CalcPointJacobian(
-          rbdl_model, rbdl_q, jac_link_id + 1, to_rbdl<Algebra>(body_point),
-          rbdl_jac);
+      RigidBodyDynamics::CalcPointJacobian(rbdl_model, rbdl_q, jac_link_id + 1,
+                                           to_rbdl<Algebra>(body_point),
+                                           rbdl_jac);
 
       // Algebra::print("TDS Jacobian", tds_jac);
       // std::cout << "RBDL Jacobian:\n" << rbdl_jac << std::endl;
@@ -200,4 +199,3 @@ TEST(RBDLTest, Swimmer05)
     }
   }
 }
-

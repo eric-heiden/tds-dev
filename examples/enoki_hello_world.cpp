@@ -5,7 +5,7 @@
 
 // #define DEBUG 1
 
-#include "opengl_window/tiny_opengl3_app.h"
+#include "visualizer/opengl/tiny_opengl3_app.h"
 
 // #define USE_MATPLOTLIB 1
 

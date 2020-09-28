@@ -24,7 +24,7 @@
 
 #include "Utils/b3Clock.h"
 
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 typedef PyBulletVisualizerAPI VisualizerAPI;
 
 #include "ceres_utils.h"

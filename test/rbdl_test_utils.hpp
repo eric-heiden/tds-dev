@@ -20,8 +20,6 @@
 #include "utils/file_utils.hpp"
 #include "world.hpp"
 
-#define USE_RBDL true
-
 #if USE_RBDL
 #include "rbdl/Dynamics.h"
 #include "rbdl/Model.h"

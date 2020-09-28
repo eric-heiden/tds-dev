@@ -2,7 +2,7 @@
 
 #include "neural_scalar.h"
 #include "pendulum.h"
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 #include "utils/ceres_estimator.hpp"
 #include "utils/file_utils.hpp"
 #include "multi_body.hpp

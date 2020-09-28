@@ -21,7 +21,7 @@
 #include "math/pose.hpp"
 #include "math/tiny/tiny_double_utils.h"
 #include "multi_body.hpp"
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 #include "rigid_body.hpp"
 #include "utils/file_utils.hpp"
 #include "world.hpp"

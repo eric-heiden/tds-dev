@@ -28,7 +28,7 @@ bool useLaikago = true;
 
 bool floating_base = true;
 
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 #include "utils/file_utils.hpp"
 
 typedef PyBulletVisualizerAPI VisualizerAPI;

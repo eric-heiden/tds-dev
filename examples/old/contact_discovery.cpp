@@ -35,7 +35,7 @@
 #include "utils/file_utils.hpp"
 #include "tiny_rigid_body.h"
 
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 
 std::string sphere2red;
 

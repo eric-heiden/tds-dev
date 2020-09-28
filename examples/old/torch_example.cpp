@@ -7,7 +7,7 @@
 #include <iostream>
 #include <thread>
 
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 #include "tiny_double_utils.h"
 #include "utils/file_utils.hpp"
 #include "tiny_mb_constraint_solver_spring.h"

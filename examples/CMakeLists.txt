@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-include_directories(. .. ${CMAKE_SOURCE_DIR}/src)
+include_directories(.)
 
 set(DL ${CMAKE_DL_LIBS})
 
@@ -22,17 +22,6 @@ find_package(ct_core)
 find_package(ct_optcon)
 find_package(Ceres)
 find_package(PkgConfig)
-
-add_definitions(-DBT_USE_DOUBLE_PRECISION)
-if(DEFINED Bullet_DIR)
-  message("Finding local Bullet")
-  find_package(Bullet CONFIG)
-  set(BULLET_INCLUDE_DIR ${Bullet_DIR}/${BULLET_ROOT_DIR}/${BULLET_INCLUDE_DIR})
-  set(BLA ${Bullet_DIR}/${BULLET_ROOT_DIR}/${BULLET_LIBRARY_DIRS})
-else()
-  message("Finding system installed Bullet")
-  find_package(Bullet)
-endif()
 
 #find_package(tinyxml2)
 if(tinyxml2_FOUND)
@@ -99,28 +88,6 @@ set(HAS_MESHCAT TRUE)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 if(Bullet_FOUND)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-  include_directories(${BULLET_INCLUDE_DIRS})
-  add_library(pybullet_visualizer_api STATIC pybullet_visualizer_api.cpp)
-  target_link_libraries(
-    pybullet_visualizer_api BulletRoboticsGUI BulletExampleBrowserLib
-    BulletRobotics BulletFileLoader BulletWorldImporter BulletSoftBody BulletDynamics
-    BulletCollision BulletInverseDynamicsUtils BulletInverseDynamics LinearMath
-    OpenGLWindow gwen BussIK Bullet3Common
-  )
-
-  if(WIN32)
-    target_link_libraries(pybullet_visualizer_api Ws2_32)
-  else()
-    target_link_libraries(pybullet_visualizer_api pthread ${DL})
-  endif()
-  target_include_directories(pybullet_visualizer_api PUBLIC ${BULLET_INCLUDE_DIR})
-  target_compile_definitions(pybullet_visualizer_api PUBLIC ${BULLET_DEFINITIONS})
-  target_link_directories(pybullet_visualizer_api PUBLIC ${Bullet_DIR}/${BULLET_ROOT_DIR}/${BULLET_LIBRARY_DIRS})
-
-
-
-
   add_executable(world_example_gui world_example_gui.cpp ${TDS_HDRS})
   target_link_libraries(world_example_gui pybullet_visualizer_api ${DL})
 
@@ -263,33 +230,25 @@ endif(tinyxml2_FOUND)
 # add_executable(world_example world_example.cpp ${TDS_HDRS})
 # add_executable(test_xarm test_xarm.cpp ${TDS_HDRS})
 
-subdirs(${CMAKE_CURRENT_SOURCE_DIR}/opengl_window)
+add_executable(pendulum_example_gui pendulum_example_gui.cpp ${TDS_HDRS})
+target_link_libraries(pendulum_example_gui opengl_window ${DL})
 
-add_executable(pendulum_example_gui pendulum_example_gui.cpp utils/tiny_clock.cpp utils/tiny_chrome_trace_util.cpp utils/tiny_logging.cpp ${TDS_HDRS})
-target_link_libraries(pendulum_example_gui opengl_window)
+add_executable(pendulum_example_eigen pendulum_example_eigen.cpp ${TDS_HDRS})
+target_link_libraries(pendulum_example_eigen opengl_window ${DL})
+if(USE_STAN)
+  target_link_libraries(pendulum_example_eigen ${STAN_LIBRARIES})
+endif(USE_STAN)
 
-add_executable(pendulum_example_eigen pendulum_example_eigen.cpp utils/tiny_clock.cpp utils/tiny_chrome_trace_util.cpp utils/tiny_logging.cpp ${TDS_HDRS})
-target_link_libraries(pendulum_example_eigen opengl_window)
+add_executable(opengl_test opengl_test.cpp ${TDS_HDRS})
+target_link_libraries(opengl_test opengl_window ${DL})
 
-add_executable(opengl_test opengl_test.cpp ../third_party/stb_image/stb_image.cpp ../third_party/tinyobjloader/tiny_obj_loader.cc utils/tiny_clock.cpp utils/tiny_chrome_trace_util.cpp utils/tiny_logging.cpp ${TDS_HDRS})
-target_include_directories(opengl_test PRIVATE ../third_party/tinyobjloader)
-target_include_directories(opengl_test PRIVATE ../third_party)
-
-
-
-#add_executable(tiny_urdf_parser_opengl_example tiny_urdf_parser_opengl_example.cpp ../third_party/stb_image/stb_image.cpp ../third_party/tinyobjloader/tiny_obj_loader.cc utils/tiny_clock.cpp utils/tiny_chrome_trace_util.cpp utils/tiny_logging.cpp ${TDS_HDRS})
+#add_executable(tiny_urdf_parser_opengl_example tiny_urdf_parser_opengl_example.cpp ../third_party/stb_image/stb_image.cpp ../third_party/tinyobjloader/tiny_obj_loader.cc ${TDS_HDRS})
 #target_link_libraries(tiny_urdf_parser_opengl_example  tinyxml2 opengl_window)
-#target_include_directories(tiny_urdf_parser_opengl_example PRIVATE ../third_party/tinyobjloader)
-#target_include_directories(tiny_urdf_parser_opengl_example PRIVATE ../third_party)
-
-
-
-target_link_libraries(opengl_test opengl_window)
 
 subdirs(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/dear_imgui)
 
-add_executable(opengl_imgui_test opengl_imgui_test.cpp ../third_party/dear_imgui/opengl3/imgui_impl_opengl3.cpp utils/tiny_clock.cpp utils/tiny_chrome_trace_util.cpp utils/tiny_logging.cpp ${TDS_HDRS})
-target_link_libraries(opengl_imgui_test opengl_window dear_imgui)
+add_executable(opengl_imgui_test opengl_imgui_test.cpp ../third_party/dear_imgui/opengl3/imgui_impl_opengl3.cpp  ${TDS_HDRS})
+target_link_libraries(opengl_imgui_test opengl_window dear_imgui ${DL})
 target_include_directories(opengl_imgui_test PRIVATE ../third_party/glad ../third_party/dear_imgui)
 
 
@@ -299,11 +258,6 @@ if(WIN32)
   target_link_libraries(opengl_test Opengl32)
   target_link_libraries(opengl_imgui_test Opengl32)
 endif()
-
-
-
-
-
 
 
 

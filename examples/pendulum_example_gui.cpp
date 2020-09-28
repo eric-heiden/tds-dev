@@ -17,7 +17,7 @@
 
 #include <chrono>  // std::chrono::seconds
 #include <thread>  // std::this_thread::sleep_for
-#include "opengl_window/tiny_opengl3_app.h"
+#include "visualizer/opengl/tiny_opengl3_app.h"
 
 #include "math/tiny/fix64_scalar.h"
 #include "dynamics/kinematics.hpp"

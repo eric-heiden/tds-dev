@@ -22,7 +22,7 @@
 #include "Utils/b3Clock.h"
 #include "meshcat_urdf_visualizer.h"
 #include "pybullet_urdf_import.h"
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 #include "utils/file_utils.hpp"
 #include "tiny_urdf_to_multi_body.h"
 

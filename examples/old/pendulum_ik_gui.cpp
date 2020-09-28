@@ -20,7 +20,7 @@
 #include "LinearMath/btQuaternion.h"
 #include "math/tiny/fix64_scalar.h"
 #include "pendulum.h"
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 #include "tiny_double_utils.h"
 #include "tiny_dual.h"
 #include "tiny_dual_double_utils.h"

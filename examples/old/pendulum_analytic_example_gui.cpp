@@ -27,7 +27,7 @@ int logId = -1;
 #include "tiny_vector3.h"
 #include "world.hpp
 
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 #include "tiny_double_utils.h"
 #include "tiny_dual_double_utils.h"
 #include "multi_body.hpp

@@ -3,7 +3,7 @@
 #include "utils/neural_augmentation.hpp"
 #include "math/tiny/neural_scalar.hpp"
 #include "pendulum.hpp"
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 #include "utils/ceres_estimator.hpp"
 #include "utils/file_utils.hpp"
 #include "utils/neural_augmentation.hpp"

@@ -1,10 +1,5 @@
 project(opengl_window)
 
-INCLUDE_DIRECTORIES(
-    ../../third_party/glad
-    ../../third_party
-)
-
 FILE(GLOB OpenGLWindow_HDRS "*.h" )
 
 FILE(GLOB OpenGLWindowMac_CPP "tiny_mac*.cpp")
@@ -22,39 +17,44 @@ LIST(REMOVE_ITEM OpenGLWindowCommon_CPP tiny_mac_opengl_window.cpp )
 MESSAGE (${OpenGLWindowCommon_CPP})
 
 IF (WIN32)
-    SET(OpenGLWindow_SRCS ../../third_party/glad/gl.c ${OpenGLWindowWin32_CPP} ${OpenGLWindowCommon_CPP})
-	  ADD_DEFINITIONS(-DGLEW_STATIC)
+  SET(OpenGLWindow_SRCS ../../../third_party/glad/gl.c ${OpenGLWindowWin32_CPP} ${OpenGLWindowCommon_CPP})
+  ADD_DEFINITIONS(-DGLEW_STATIC)
 ELSE()
   IF(APPLE)
   MESSAGE("APPLE!")
-  SET(OpenGLWindow_SRCS ${OpenGLWindowMac_CPP} ../../third_party/glad/gl.c ${OpenGLWindowMacObjC_CPP}  ${OpenGLWindowCommon_CPP} )
+  SET(OpenGLWindow_SRCS ${OpenGLWindowMac_CPP} ../../../third_party/glad/gl.c ${OpenGLWindowMacObjC_CPP}  ${OpenGLWindowCommon_CPP} )
 ELSE()
   MESSAGE("LINUX!")
-  SET(OpenGLWindow_SRCS ${OpenGLWindowLinux_CPP} ${OpenGLWindowCommon_CPP} ../../third_party/glad/gl.c)
+  SET(OpenGLWindow_SRCS ${OpenGLWindowLinux_CPP} ${OpenGLWindowCommon_CPP} ../../../third_party/glad/gl.c)
   ENDIF()
 ENDIF(WIN32)
 
 #no Linux detection?
 IF(NOT WIN32 AND NOT APPLE)
-	INCLUDE_DIRECTORIES(
-		../../third_party/glad
-		../../third_party/optionalX11
-        )
+	INCLUDE_DIRECTORIES(../../../third_party/optionalX11)
 	ADD_DEFINITIONS(-DGLEW_STATIC)
 	ADD_DEFINITIONS("-DGLEW_INIT_OPENGL11_FUNCTIONS=1")
   ADD_DEFINITIONS("-DGLEW_DYNAMIC_LOAD_ALL_GLX_FUNCTIONS=1")
 	ADD_DEFINITIONS("-DDYNAMIC_LOAD_X11_FUNCTIONS=1")
 
-        SET(OpenGLWindow_SRCS ${OpenGLWindowLinux_CPP} ${OpenGLWindowCommon_CPP}  ../../third_party/glad/gl.c  ../../third_party/glad/glx.c )
+  SET(OpenGLWindow_SRCS ${OpenGLWindowLinux_CPP} ${OpenGLWindowCommon_CPP}  ../../../third_party/glad/gl.c  ../../../third_party/glad/glx.c )
 ENDIF()
+
+SET(OpenGLWindow_SRCS ${OpenGLWindow_SRCS}
+    ../../../third_party/tinyobjloader/tiny_obj_loader.cc
+    utils/tiny_clock.cpp
+    utils/tiny_chrome_trace_util.cpp
+    utils/tiny_logging.cpp)
 
 MESSAGE (${OpenGLWindowCommon_CPP})
 
 IF(BUILD_EGL)
-    SET(OpenGLWindow_SRCS ${OpenGLWindow_SRCS}  ../../third_party/glad/egl.c)
+    SET(OpenGLWindow_SRCS ${OpenGLWindow_SRCS}  ../../../third_party/glad/egl.c)
 ENDIF(BUILD_EGL)
 
-SET(OpenGLWindow_SRCS ${OpenGLWindow_SRCS}  ../../third_party/stb_image/stb_image_write.cpp)
+SET(OpenGLWindow_SRCS ${OpenGLWindow_SRCS}
+    ../../../third_party/stb_image/stb_image_write.cpp
+    ../../../third_party/stb_image/stb_image.cpp)
 
 MESSAGE("OpenGLWindow_SRCS=${OpenGLWindow_SRCS}")
 
@@ -83,6 +83,13 @@ IF(APPLE)
   FIND_PACKAGE(OpenGL)
   target_link_libraries(opengl_window ${COCOA} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY})
 ENDIF()
+
+
+target_include_directories(opengl_window PUBLIC
+  ../../../third_party
+  ../../../third_party/glad
+  ../../../third_party/tinyobjloader
+)
 
 #target_link_libraries(opengl_window ${OPENGL_gl_LIBRARY})
 

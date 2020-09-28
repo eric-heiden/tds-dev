@@ -19,7 +19,7 @@
 #define BULLET_VISUALIZER true
 
 #if !BULLET_VISUALIZER
-#include "opengl_window/tiny_opengl3_app.h"
+#include "visualizer/opengl/visualizer.h"
 #endif
 
 #include "dynamics/forward_dynamics.hpp"
@@ -28,7 +28,7 @@
 #include "math/tiny/tiny_double_utils.h"
 #include "mb_constraint_solver_spring.hpp"
 #include "multi_body.hpp"
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 #include "urdf/pybullet_urdf_import.hpp"
 #include "urdf/system_constructor.hpp"
 #include "urdf/urdf_cache.hpp"

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#Tiny Differentiable Simulator or TDS
+# Tiny Differentiable Simulator (TDS)
 
 cmake_minimum_required(VERSION 3.13)
 
@@ -22,12 +22,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For LLVM tooling
 # set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 
-# cmake_policy(SET CMP0042 NEW)
 
-# cmake_policy(SET CMP0017 NEW)
-#  if(COMMAND cmake_policy)
-#       cmake_policy(SET CMP0003 NEW)
-#     endif(COMMAND cmake_policy)
+if(COMMAND cmake_policy)
+	cmake_policy(SET CMP0003 NEW)
+	cmake_policy(SET CMP0017 NEW)
+	cmake_policy(SET CMP0042 NEW)
+endif(COMMAND cmake_policy)
     
 #this line has to appear before 'PROJECT' in order to be able to disable incremental linking
 SET(MSVC_INCREMENTAL_DEFAULT ON)
@@ -36,20 +36,6 @@ PROJECT(DIFF_PHYSICS)
 
 #The core library consists of those headers
 FILE(GLOB TDS_HDRS "*.h" )
-
-# find_package(Eigen3 CONFIG)
-# if (Eigen3_FOUND)
-#     message("FOUND EIGEN")
-#     add_definitions(-DUSE_EIGEN)
-#     # include_directories(${EIGEN3_INCLUDE_DIRS})
-# else(Eigen3_FOUND)
-#     set(Eigen3_FOUND TRUE)
-#     message("Using third_party/eigen3")
-#     add_definitions(-DUSE_EIGEN)
-#     set(EIGEN3_INCLUDE_DIRS  third_party/eigen3)
-#     # include_directories(${EIGEN3_INCLUDE_DIRS})
-# endif (Eigen3_FOUND)
-
 
 
 OPTION(USE_MSVC_INCREMENTAL_LINKING "Use MSVC Incremental Linking" OFF)
@@ -141,19 +127,39 @@ ELSE(WIN32)
 ENDIF(WIN32)
 
 
-
-
 ADD_DEFINITIONS(-DSTATIC_LINK_SPD_PLUGIN)
 
 OPTION(USE_STAN "Use Stan Math" ON)
 if(USE_STAN)
-  add_definitions(-pthread -D_REENTRANT -DBOOST_DISABLE_ASSERTS -DUSE_STAN)
-  set(STAN_LIBRARIES ${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/tbb/libtbb.so.2)
+	add_definitions(-pthread -D_REENTRANT -DBOOST_DISABLE_ASSERTS -DUSE_STAN)
+	set(STAN_LIBRARIES ${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/tbb/libtbb.so.2)
+	include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math)
+	set(Eigen3_FOUND true)
+	# use Eigen distribution from Stan Math
+	include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/boost_1.72.0)
+	include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/eigen_3.3.7)
+	include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/cpplint_1.4.5)
+	include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/opencl_2.2.0)
+	include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/sundials_5.2.0/include)
+	include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/tbb_2019_U8/include)
+else(USE_STAN)
+	find_package(Eigen3 CONFIG)
+	if (Eigen3_FOUND)
+		message("FOUND EIGEN")
+		add_definitions(-DUSE_EIGEN)
+		# include_directories(${EIGEN3_INCLUDE_DIRS})
+	else(Eigen3_FOUND)
+		set(Eigen3_FOUND TRUE)
+		message("Using third_party/eigen3")
+		add_definitions(-DUSE_EIGEN)
+		set(EIGEN3_INCLUDE_DIRS  third_party/eigen3)
+		# include_directories(${EIGEN3_INCLUDE_DIRS})
+	endif (Eigen3_FOUND)
 endif(USE_STAN)
 
 OPTION(USE_ENOKI "Use Enoki" OFF)
-
 IF(USE_ENOKI)
+  add_definitions(-DUSE_ENOKI)
   set(ENOKI_AUTODIFF ON CACHE BOOL "Use enoki with autodiff" FORCE)
   set(ENOKI_CUDA ON CACHE BOOL "Use enoki with CUDA" FORCE)
   add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/enoki)
@@ -171,27 +177,16 @@ IF(USE_ENOKI)
 ENDIF(USE_ENOKI)
 
 OPTION (USE_RBDL "Compare against RBDL" ON)
-message("USE_RBDL? " ${USE_RBDL})
 if(USE_RBDL)
+  add_definitions(-DUSE_RBDL)
   SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/third_party/rbdl)
 endif(USE_RBDL)
 
 SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/third_party/cpp_base64)
 
-include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math)
-set(Eigen3_FOUND true)
-# include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/boost_1.69.0)
-# include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/eigen_3.3.3)
-# include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/cpplint_4.45)
-# include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/opencl_2.1.0)
-# include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/sundials_4.1.0)
-# include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/tbb_2019_U8)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/boost_1.72.0)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/eigen_3.3.7)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/cpplint_1.4.5)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/opencl_2.2.0)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/sundials_5.2.0/include)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/tbb_2019_U8/include)
+
+subdirs(${CMAKE_CURRENT_LIST_DIR}/src/visualizer/opengl)
+subdirs(${CMAKE_CURRENT_LIST_DIR}/src/visualizer/pybullet)
 
 SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/test)
 SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/examples)

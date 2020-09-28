@@ -20,7 +20,7 @@
 #include "control_toolbox.h"
 #include "cppad_utils.h"
 #include "pybullet_urdf_import.h"
-#include "pybullet_visualizer_api.h"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 #include "tiny_pd_control.h"
 #include "tiny_urdf_to_multi_body.h"
 #include "world.hpp

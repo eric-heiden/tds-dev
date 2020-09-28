@@ -1,7 +1,7 @@
 #include <fstream>
 
 #include "neural_scalar.h"
-#include "opengl_window/tiny_opengl3_app.h"
+#include "visualizer/opengl/tiny_opengl3_app.h"
 #include "pendulum.h"
 #include "utils/ceres_estimator.hpp"
 #include "utils/file_utils.hpp"

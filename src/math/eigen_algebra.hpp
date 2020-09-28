@@ -1,5 +1,10 @@
 #pragma once
 
+#if USE_STAN
+#include <stan/math.hpp>
+#include <stan/math/fwd.hpp>
+#endif
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <iostream>

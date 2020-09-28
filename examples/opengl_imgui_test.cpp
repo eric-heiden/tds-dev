@@ -1,7 +1,4 @@
-#include "opengl_window/tiny_opengl3_app.h"
-#include "utils/tiny_chrome_trace_util.h"
-#include "utils/tiny_logging.h"
-#include "utils/tiny_clock.h"
+#include "visualizer/opengl/visualizer.h"
 
 #include "imgui.h"
 //#include "imgui_impl_glfw.h"
