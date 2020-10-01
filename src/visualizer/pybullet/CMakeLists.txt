@@ -1,13 +1,3 @@
-add_definitions(-DBT_USE_DOUBLE_PRECISION)
-if(DEFINED Bullet_DIR)
-  message("Finding local Bullet")
-  find_package(Bullet CONFIG)
-  set(BULLET_INCLUDE_DIR ${Bullet_DIR}/${BULLET_ROOT_DIR}/${BULLET_INCLUDE_DIR})
-  set(BLA ${Bullet_DIR}/${BULLET_ROOT_DIR}/${BULLET_LIBRARY_DIRS})
-else()
-  message("Finding system installed Bullet")
-  find_package(Bullet)
-endif()
 
 if(Bullet_FOUND)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")

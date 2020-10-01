@@ -23,7 +23,7 @@
 #include "dynamics/kinematics.hpp"
 #include "dynamics/forward_dynamics.hpp"
 #include "dynamics/integrator.hpp"
-#include "pendulum.hpp"
+#include "utils/pendulum.hpp"
 
 #include "math/tiny/tiny_double_utils.h"
 #include "utils/file_utils.hpp"
@@ -87,16 +87,6 @@ int main(int argc, char* argv[]) {
   }
   
 
-#if 0
-  if (visualizer->canSubmitCommand()) {
-    for (int i = 0; i < mb->m_links.size(); i++) {
-      int sphereId = visualizer->loadURDF("sphere_small.urdf");
-      mbvisuals.push_back(sphereId);
-      // apply some linear joint damping
-      mb->m_links[i].m_damping = 5.;
-    }
-  }
-#endif
   mb->q() = std::vector<double>(mb->dof(), DoubleUtils::zero());
   mb->qd() = std::vector<double>(mb->dof_qd(), DoubleUtils::zero());
   mb->tau() = std::vector<double>(mb->dof_qd(), DoubleUtils::zero());

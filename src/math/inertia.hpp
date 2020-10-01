@@ -299,9 +299,12 @@ struct ArticulatedBodyInertia {
     // Algebra::print("b", b);
     ArticulatedBodyInertia abi;
     for (Index i = 0; i < 3; i++) {
-      Algebra::assign_column(abi.I, i, a.top * b.top[i]);
-      Algebra::assign_column(abi.H, i, a.top * b.bottom[i]);
-      Algebra::assign_column(abi.M, i, a.bottom * b.bottom[i]);
+      Vector3 a_top_b_top = a.top * b.top[i];
+      Algebra::assign_column(abi.I, i, a_top_b_top);
+      Vector3 a_top_b_bottom = a.top * b.bottom[i];
+      Algebra::assign_column(abi.H, i, a_top_b_bottom);
+      Vector3 a_bottom_b_bottom = a.bottom * b.bottom[i];
+      Algebra::assign_column(abi.M, i, a_bottom_b_bottom);
     }
     return abi;
   }

@@ -118,6 +118,24 @@ IF(MSVC)
 ENDIF(MSVC)
 
 
+
+if(DEFINED Bullet_DIR)
+  message("Finding local Bullet")
+  find_package(Bullet CONFIG)
+  set(BULLET_INCLUDE_DIR ${Bullet_DIR}/${BULLET_ROOT_DIR}/${BULLET_INCLUDE_DIR})
+  message("BULLET_INCLUDE_DIR=",${BULLET_INCLUDE_DIR})
+  set(BLA ${Bullet_DIR}/${BULLET_ROOT_DIR}/${BULLET_LIBRARY_DIRS})
+else()
+  message("Finding system installed Bullet")
+  find_package(Bullet)
+  OPTION(SYSTEM_BULLET_IS_DOUBLE_PRECISION "System version of Bullet is double precision" ON)
+  if (SYSTEM_BULLET_IS_DOUBLE_PRECISION)
+    add_definitions(-DBT_USE_DOUBLE_PRECISION)
+  endif()
+endif()
+
+
+
 include_directories(src)
 
 
@@ -130,7 +148,7 @@ ENDIF(WIN32)
 
 ADD_DEFINITIONS(-DSTATIC_LINK_SPD_PLUGIN)
 
-OPTION(USE_STAN "Use Stan Math" ON)
+OPTION(USE_STAN "Use Stan Math" OFF)
 if(USE_STAN)
 	add_definitions(-pthread -D_REENTRANT -DBOOST_DISABLE_ASSERTS -DUSE_STAN)
 	set(STAN_LIBRARIES ${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/tbb/libtbb.so.2)
@@ -148,13 +166,13 @@ else(USE_STAN)
 	if (Eigen3_FOUND)
 		message("FOUND EIGEN")
 		add_definitions(-DUSE_EIGEN)
-		# include_directories(${EIGEN3_INCLUDE_DIRS})
+		include_directories(${EIGEN3_INCLUDE_DIRS})
 	else(Eigen3_FOUND)
 		set(Eigen3_FOUND TRUE)
 		message("Using third_party/eigen3")
 		add_definitions(-DUSE_EIGEN)
 		set(EIGEN3_INCLUDE_DIRS  third_party/eigen3)
-		# include_directories(${EIGEN3_INCLUDE_DIRS})
+		include_directories(${EIGEN3_INCLUDE_DIRS})
 	endif (Eigen3_FOUND)
 endif(USE_STAN)
 
