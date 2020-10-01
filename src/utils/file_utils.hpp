@@ -47,7 +47,7 @@ struct FileUtils {
     FILE* f = 0;
     f = fopen(org_file_name.c_str(), "rb");
     if (f) {
-      relative_file_name = fs::canonical(fs::path(org_file_name));
+      relative_file_name = fs::canonical(fs::path(org_file_name)).u8string();
       fclose(f);
       return true;
     }
@@ -60,7 +60,7 @@ struct FileUtils {
         relative_file_name = root + prefixes[i] + org_file_name;
         f = fopen(relative_file_name.c_str(), "rb");
         if (f) {
-          relative_file_name = fs::canonical(fs::path(relative_file_name));
+          relative_file_name = fs::canonical(fs::path(relative_file_name)).u8string();
           file_found = true;
           break;
         }

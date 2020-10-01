@@ -34,7 +34,7 @@
 #include "world.hpp"
 
 int main(int argc, char* argv[]) {
-  // typedef TinyAlgebra<double, DoubleUtils> Algebra;
+  //typedef TinyAlgebra<double, DoubleUtils> Algebra;
   typedef tds::EigenAlgebra Algebra;
 
   typedef typename Algebra::Vector3 Vector3;
