@@ -10,7 +10,8 @@ using VectorX = typename Algebra::VectorX;
 using Matrix3 = Algebra::Matrix3;
 using RigidBodyInertia = RigidBodyInertia<Algebra>;
 
-TEST(RBDLTest, Swimmer05) {
+void TestOnURDF(std::string filename)
+{
   Vector3 gravity(0., 0., -9.81);
 
   UrdfCache<Algebra> cache;
@@ -19,7 +20,7 @@ TEST(RBDLTest, Swimmer05) {
 
   std::string urdf_filename;
   bool is_floating = false;
-  FileUtils::find_file("swimmer/swimmer05/swimmer05.urdf", urdf_filename);
+  FileUtils::find_file(filename, urdf_filename);
   mb = cache.construct(urdf_filename, world, false, is_floating);
 
   std::string fail_message = "Failure at iteration ";
@@ -196,4 +197,12 @@ TEST(RBDLTest, Swimmer05) {
       // }
     }
   }
+}
+
+TEST(RBDLTest, Swimmer05) {
+  TestOnURDF("swimmer/swimmer05/swimmer05.urdf");
+}
+
+TEST(RBDLTest, Pendulum) {
+  TestOnURDF("pendulum5.urdf");
 }

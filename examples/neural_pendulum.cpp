@@ -1,12 +1,14 @@
 #include <fstream>
 
 #include "neural_scalar.h"
-#include "pendulum.h"
+#include "utils/pendulum.hpp"
 #include "visualizer/pybullet/pybullet_visualizer_api.h"
 #include "utils/ceres_estimator.hpp"
 #include "utils/file_utils.hpp"
 #include "multi_body.hpp
 #include "world.hpp
+#include "forward_dynamics.hpp"
+#include "integrator.hpp"
 
 // whether to use Parallel Basin Hopping
 #define USE_PBH false
@@ -33,18 +35,21 @@ void plot_trajectory(const std::vector<std::vector<T>> &states) {
 }
 #endif
 
-template <typename T>
+using namespace tds;
+
+template <typename Algebra>
 void visualize_trajectory(const std::vector<std::vector<T>> &states,
                           const std::vector<T> &params, const T &dt) {
-  typedef std::conditional_t<std::is_same_v<T, double>, DoubleUtils,
-                             CeresUtils<param_dim>>
-      Utils;
+  // typedef std::conditional_t<std::is_same_v<T, double>, DoubleUtils,
+  //                            CeresUtils<param_dim>>
+  //     Utils;
+  typedef Algebra::Scalar Scalar;
   typedef PyBulletVisualizerAPI VisualizerAPI;
   VisualizerAPI *visualizer = new VisualizerAPI();
   std::string plane_filename;
-  TinyFileUtils::find_file("plane_implicit.urdf", plane_filename);
+  FileUtils::find_file("plane_implicit.urdf", plane_filename);
   char path[TINY_MAX_EXE_PATH_LEN];
-  TinyFileUtils::extract_path(plane_filename.c_str(), path,
+  FileUtils::extract_path(plane_filename.c_str(), path,
                               TINY_MAX_EXE_PATH_LEN);
   std::string search_path = path;
   visualizer->connect(eCONNECT_GUI);
@@ -52,14 +57,14 @@ void visualize_trajectory(const std::vector<std::vector<T>> &states,
   if (visualizer->canSubmitCommand()) {
     visualizer->resetSimulation();
   }
-  TinyWorld<T, Utils> world;
-  TinyMultiBody<T, Utils> *mb = world.create_multi_body();
-  std::vector<T> link_lengths(params.begin(), params.begin() + 2);
-  std::vector<T> masses(2);
+  World<Algebra> world;
+  MultiBody<Algebra> *mb = world.create_multi_body();
+  std::vector<Scalar> link_lengths(params.begin(), params.begin() + 2);
+  std::vector<Scalar> masses(2);
   for (int i = 0; i < 2; ++i) {
     masses[i] = params[2 + i];
   }
-  init_compound_pendulum<T, Utils>(*mb, world, 2, link_lengths, masses);
+  init_compound_pendulum<Algebra>(*mb, world, 2, link_lengths, masses);
   std::vector<int> mbvisuals;
   if (visualizer->canSubmitCommand()) {
     for (int i = 0; i < mb->m_links.size(); i++) {
@@ -72,13 +77,18 @@ void visualize_trajectory(const std::vector<std::vector<T>> &states,
   double distance = 1.8;
   visualizer->resetDebugVisualizerCamera(distance, 0, 90, basePos);
 
-  std::vector<T> q(2);
-  for (const std::vector<T> &state : states) {
-    q[0] = state[0];
-    q[1] = state[1];
-    mb->forward_kinematics(q);
-    printf("  q: [%.6f  %.6f]\n", Utils::getDouble(q[0]),
-           Utils::getDouble(q[1]));
+  std::vector<Scalar> q(2);
+  for (const std::vector<Scalar> &state : states) {
+    // q[0] = state[0];
+    // q[1] = state[1];
+    mb->q()[0] = state[0];
+    mb->q()[1] = state[1];
+    // mb->forward_kinematics(q);
+    forward_kinematics(*mb);
+    // printf("  q: [%.6f  %.6f]\n", Utils::getDouble(q[0]),
+    //        Utils::getDouble(q[1]));
+    printf("  q: [%.6f  %.6f]\n", q()[0],
+           q()[1]);
 
     std::this_thread::sleep_for(
         std::chrono::duration<double>(Utils::getDouble(dt)));
@@ -86,16 +96,16 @@ void visualize_trajectory(const std::vector<std::vector<T>> &states,
     int visual_index = 0;
     for (int l = 0; l < mb->m_links.size(); l++) {
       int sphereId = mbvisuals[visual_index++];
-      TinyQuaternion<T, Utils> rot;
-      const TinySpatialTransform<T, Utils> &geom_X_world =
-          mb->m_links[l].m_X_world * mb->m_links[l].m_X_visuals[0];
-      btVector3 base_pos(Utils::getDouble(geom_X_world.m_translation.getX()),
-                         Utils::getDouble(geom_X_world.m_translation.getY()),
-                         Utils::getDouble(geom_X_world.m_translation.getZ()));
-      geom_X_world.m_rotation.getRotation(rot);
+      Algebra::Quaternion rot;
+      const Transform<Algebra> &geom_X_world =
+          mb->links()[l].X_world * mb->links()[l].X_visuals[0];
+      btVector3 base_pos(geom_X_world.translation.getX(),
+                         geom_X_world.translation.getY(),
+                         geom_X_world.translation.getZ());
+      geom_X_world.rotation.getRotation(rot); // CHECK
       btQuaternion base_orn(
-          Utils::getDouble(rot.getX()), Utils::getDouble(rot.getY()),
-          Utils::getDouble(rot.getZ()), Utils::getDouble(rot.getW()));
+          rot.getX(), rot.getY(),
+          rot.getZ(), rot.getW());
       visualizer->resetBasePositionAndOrientation(sphereId, base_pos, base_orn);
     }
   }
@@ -114,14 +124,17 @@ void rollout_pendulum(const std::vector<Scalar> &params,
                       const std::array<double, 2> &damping = {0., 0.}) {
   TinyVector3<Scalar, Utils> gravity(Utils::zero(), Utils::zero(),
                                      Utils::fraction(-981, 100));
+
+  typedef TinyAlgebra<Scalar, Utils> Algebra;
+
   output_states.resize(time_steps);
-  TinyWorld<Scalar, Utils> world;
-  TinyMultiBody<Scalar, Utils> *mb = world.create_multi_body();
-  init_compound_pendulum<Scalar, Utils>(*mb, world, 2);
+  World<Algebra> world;
+  MultiBody<Algebra> *mb = world.create_multi_body();
+  init_compound_pendulum<Algebra>(*mb, world, 2);
 
   if constexpr (std::is_same_v<Scalar, double>) {
-    mb->m_links[0].m_damping = damping[0];
-    mb->m_links[1].m_damping = damping[1];
+    mb->links()[0].damping = damping[0];
+    mb->links()[1].damping = damping[1];
   }
   // if constexpr (is_neural_scalar<Scalar, Utils>::value) {
   //   if (!params.empty()) {
@@ -137,7 +150,7 @@ void rollout_pendulum(const std::vector<Scalar> &params,
   //     // mb->m_tau[1].net().print_params();
   //   }
   // }
-  if constexpr (is_neural_scalar<Scalar, Utils>::value) {
+  if constexpr (is_neural_algebra<Algebra>) {
     Scalar::clear_all_blueprints();
     if (!params.empty()) {
       typedef typename Scalar::NeuralNetworkType NeuralNetwork;
@@ -154,20 +167,20 @@ void rollout_pendulum(const std::vector<Scalar> &params,
       Scalar::add_blueprint("tau_1", {"qd_1"}, net_tau_1);
 
       // assign scalar names so that the defined blueprints can be used
-      mb->m_qd[0].assign("qd_0");
-      mb->m_qd[1].assign("qd_1");
-      mb->m_tau[0].assign("tau_0");
-      mb->m_tau[1].assign("tau_1");
+      mb->qd(0).assign("qd_0");
+      mb->qd(1).assign("qd_1");
+      mb->tau(0).assign("tau_0");
+      mb->tau(1).assign("tau_1");
     }
   }
 
   if (static_cast<int>(start_state.size()) >= mb->dof()) {
     for (int i = 0; i < mb->dof(); ++i) {
-      mb->m_q[i] = Utils::scalar_from_double(start_state[i]);
+      mb->q(i) = Utils::scalar_from_double(start_state[i]);
     }
     if (static_cast<int>(start_state.size()) >= 2 * mb->dof()) {
       for (int i = 0; i < mb->dof_qd(); ++i) {
-        mb->m_qd[i] = Utils::scalar_from_double(start_state[i + mb->dof()]);
+        mb->qd(i) = Utils::scalar_from_double(start_state[i + mb->dof()]);
       }
     }
   }
@@ -183,9 +196,11 @@ void rollout_pendulum(const std::vector<Scalar> &params,
       output_states[t][i + mb->dof()] = mb->m_qd[i];
 #endif
     }
-    mb->forward_dynamics(gravity);
+    // mb->forward_dynamics(gravity);
+    forward_dynamics(*mb, gravity);
 
-    mb->integrate(Utils::scalar_from_double(dt));
+    // mb->integrate(Utils::scalar_from_double(dt));
+    integrate_euler(*mb, dt);
   }
 
 #if !USE_PBH
