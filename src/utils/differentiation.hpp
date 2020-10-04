@@ -214,7 +214,7 @@ class GradientFunctional<DIFF_CERES, F, ScalarAlgebra> {
     }
   };
 
-  CostFunctional* cost_;
+  CostFunctional* cost_{nullptr};
   ceres::AutoDiffCostFunction<CostFunctional, 1, kDim> cost_function_;
 
  public:

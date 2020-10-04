@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdarg>
 #include <cstring>
 #include <fstream>
 #include <string>
