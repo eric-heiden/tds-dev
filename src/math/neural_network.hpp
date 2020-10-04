@@ -116,7 +116,7 @@ class NeuralNetworkSpecification {
       std::vector<typename Algebra::Scalar>& biases,
       NeuralNetworkInitialization init_method = NN_INIT_XAVIER) const {
     weights.resize(num_weights());
-    biases.resize(num_biases(), Algebra::zero());
+    biases.resize(num_biases(), Algebra::from_double(0.5));
 
     std::random_device rd_;
     std::mt19937 gen_{rd_()};

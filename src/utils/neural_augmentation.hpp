@@ -54,6 +54,15 @@ struct NeuralAugmentation {
     return specs.back();
   }
 
+  NeuralNetworkSpecification &add_wiring(
+      const std::vector<std::string> &outputs,
+      const std::vector<std::string> &inputs,
+      const NeuralNetworkSpecification &spec) {
+    output_inputs.push_back(std::make_pair(outputs, inputs));
+    specs.push_back(spec);
+    return specs.back();
+  }
+
   template <typename Algebra>
   void instantiate(const std::vector<typename Algebra::Scalar> &params,
                    std::size_t param_index_offset = 0) const {
@@ -79,6 +88,10 @@ struct NeuralAugmentation {
     }
   }
 
+  /**
+   * Assigns the names and l1, l2 loss coefficients on the parameters to match
+   * the architectures of the defined networks.
+   */
   template <std::size_t ParameterDim>
   void assign_estimation_parameters(
       std::array<EstimationParameter, ParameterDim> &params,

@@ -43,6 +43,10 @@ struct TinyDualUtils {
     return Dual(x, z.dual() / (2. * double(x)));
   }
 
+  static Dual abs(const Dual& v) {
+    return Dual(std::abs(v.real()), std::abs(v.dual()));
+  }
+
   static Dual zero() { return Dual(0.); }
   static Dual one() { return Dual(1.); }
 
@@ -63,9 +67,7 @@ struct TinyDualUtils {
     return (double)v.real();
   }
 
-  static Dual scalar_from_double(double d) {
-    return Dual(d);
-  }
+  static Dual scalar_from_double(double d) { return Dual(d); }
 
   template <class T>
   static Dual convert(T) = delete;  // C++11

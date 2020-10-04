@@ -592,6 +592,18 @@ struct EigenAlgebraT {
   }
 
   template <typename T>
+  TINY_INLINE static auto tan(const T &s) {
+    using std::tan;
+    return tan(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto atan2(const T &dy, const T &dx) {
+    using std::atan2;
+    return atan2(dy, dx);
+  }
+
+  template <typename T>
   TINY_INLINE static auto abs(const T &s) {
     using std::abs;
     return abs(s);
@@ -601,6 +613,36 @@ struct EigenAlgebraT {
   TINY_INLINE static auto sqrt(const T &s) {
     using std::sqrt;
     return sqrt(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto tanh(const T &s) {
+    using std::tanh;
+    return tanh(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto exp(const T &s) {
+    using std::exp;
+    return exp(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto log(const T &s) {
+    using std::log;
+    return log(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto max(const T &x, const T &y) {
+    using std::max;
+    return max(x, y);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto min(const T &x, const T &y) {
+    using std::min;
+    return min(x, y);
   }
 
   EigenAlgebraT<Scalar>() = delete;
