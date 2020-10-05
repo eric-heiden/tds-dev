@@ -31,8 +31,30 @@ RUN \
     nano \
     htop \
     tmux \
-    libcrossguid-dev
+    libcrossguid-dev \
+    libgtest-dev \
+    libnlopt-dev \
+    libnlopt0 \
+    libtbb-dev \
+    libboost-all-dev
 
+
+# Install llvm requirements
+RUN \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  llvm-10 \
+  llvm-10-dev \
+  libllvm10 \
+  libllvm-10-ocaml-dev \
+  libclang-common-10-dev \
+  libclang-10-dev \
+  libclang1-10 \
+  clang-format-10 \
+  python3-clang-10 \
+  clang-10 \
+  clang-tools-10 \
+  lld-10 \
+  libssl-dev
 
 # apt install python-pip2
 # apt install python-pip
@@ -63,6 +85,15 @@ RUN \
 # apt install -y vim-nox
 # apt install valgrind
 
+# Install latest version of CMake (not available from APT repo)
+RUN mkdir -p /root/cmake_install
+WORKDIR /root/cmake_install
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.18.3/cmake-3.18.3.tar.gz
+RUN tar -zxf cmake-3.18.3.tar.gz
+WORKDIR /root/cmake_install/cmake-3.18.3
+RUN ./bootstrap && make && make install
+
+
 RUN mkdir -p /root/code
 
 # Copy tiny-differentiable-simulator folder
@@ -70,6 +101,13 @@ COPY . /root/code/tiny-differentiable-simulator
 
 # Get python dependencies
 WORKDIR /root/code/tiny-differentiable-simulator
+
+# Trying to resolve dependency issues...
+RUN pip3 install numpy==1.16.0
+
+# Probably need to point LLVM_CONFIG to the right path
+ENV LLVM_CONFIG=/usr/bin/llvm-config-10
+
 RUN pip3 install -r python/requirements.txt
 
 # Check out git submodules
@@ -83,5 +121,63 @@ RUN pip3 install -r python/requirements.txt
 # Set up git lfs
 RUN git lfs install
 
+# Install all dependencies
+RUN mkdir /root/deps
+
+# Ceres
+WORKDIR /root/deps
+RUN git clone https://github.com/ceres-solver/ceres-solver.git
+WORKDIR /root/deps/ceres-solver
+RUN git checkout 1.14.x
+RUN mkdir build 
+WORKDIR /root/deps/ceres-solver/build
+RUN cmake .. && make -j && make install
+
+# Bullet
+WORKDIR /root/deps
+RUN git clone https://github.com/bulletphysics/bullet3.git
+WORKDIR /root/deps/bullet3
+RUN ./build_cmake_pybullet_double.sh 
+WORKDIR /root/deps/bullet3/build_cmake
+RUN make install 
+
+
+WORKDIR /root/deps 
+RUN wget -q https://github.com/stevengj/nlopt/archive/v2.6.2.tar.gz 
+RUN tar -zxf v2.6.2.tar.gz 
+WORKDIR /root/deps/nlopt-2.6.2
+RUN mkdir build 
+WORKDIR /root/deps/nlopt-2.6.2/build
+RUN cmake .. && make && make install 
+
+# PAGMO
+WORKDIR /root/deps 
+RUN git clone https://github.com/esa/pagmo2.git 
+WORKDIR /root/deps/pagmo2 
+RUN mkdir build 
+WORKDIR /root/deps/pagmo2/build
+RUN cmake .. -DPAGMO_WITH_NLOPT=ON \
+      # -DNLopt_DIR="/usr/lib/x86_64-linux-gnu/cmake/nlopt/" \ 
+      && cmake --build . && cmake --build . --target install
+
+
+WORKDIR /usr/src/googletest/googletest
+RUN mkdir build 
+WORKDIR /usr/src/googletest/googletest/build
+RUN cmake .. && make && make install
+
 # Setup repo
 WORKDIR /root/code/tiny-differentiable-simulator
+
+# In case stan-math is not built 
+WORKDIR /root/code/tiny-differentiable-simulator/third_party/stan_math
+RUN make -f ./make/standalone math-libs 
+
+# Run estimation
+WORKDIR /root/code/tiny-differentiable-simulator
+RUN mkdir build
+WORKDIR /root/code/tiny-differentiable-simulator/build 
+RUN cmake .. 
+RUN make test_pagmo_estimation
+
+CMD [ "./test/test_pagmo_estimation" ]
