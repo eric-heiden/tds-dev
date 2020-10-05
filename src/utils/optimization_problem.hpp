@@ -1,6 +1,7 @@
 #pragma once
 
 #if USE_PAGMO
+#include <pagmo/threading.hpp>
 #include <pagmo/types.hpp>
 #endif
 
@@ -74,5 +75,11 @@ class OptimizationProblem {
   }
 
   bool has_gradient() const { return true; }
+
+#if USE_PAGMO
+  pagmo::thread_safety get_thread_safety() const {
+    return pagmo::thread_safety::basic;
+  }
+#endif
 };
 }  // namespace tds

@@ -17,8 +17,8 @@
 #pragma once
 
 #include "multi_body.hpp"
-#include "visualizer/pybullet/pybullet_visualizer_api.h"
 #include "urdf_structures.hpp"
+#include "visualizer/pybullet/pybullet_visualizer_api.h"
 
 namespace tds {
 template <typename Algebra>
@@ -90,7 +90,7 @@ struct PyBulletUrdfImport {
       } else {
         b3JointInfo parentJointInfo;
         sim_api->getJointInfo(body_unique_id, jointInfo.m_parentIndex,
-                             &parentJointInfo);
+                              &parentJointInfo);
         joint.parent_name = parentJointInfo.m_linkName;
         urdf_structures.links[jointInfo.m_parentIndex]
             .child_link_indices.push_back(link_index);
@@ -98,7 +98,8 @@ struct PyBulletUrdfImport {
       child_link.parent_index = jointInfo.m_parentIndex;
 
       b3DynamicsInfo dynamics_info_child;
-      sim_api->getDynamicsInfo(body_unique_id, link_index, &dynamics_info_child);
+      sim_api->getDynamicsInfo(body_unique_id, link_index,
+                               &dynamics_info_child);
       btVector3 childInertiaPos(dynamics_info_child.m_localInertialFrame[0],
                                 dynamics_info_child.m_localInertialFrame[1],
                                 dynamics_info_child.m_localInertialFrame[2]);
@@ -118,7 +119,7 @@ struct PyBulletUrdfImport {
       btTransform tmpInv = tmp_.inverse();
       b3DynamicsInfo dynamics_info_parent;
       sim_api->getDynamicsInfo(body_unique_id, jointInfo.m_parentIndex,
-                              &dynamics_info_parent);
+                               &dynamics_info_parent);
       btVector3 parentInertiaPos(dynamics_info_parent.m_localInertialFrame[0],
                                  dynamics_info_parent.m_localInertialFrame[1],
                                  dynamics_info_parent.m_localInertialFrame[2]);
@@ -150,31 +151,31 @@ struct PyBulletUrdfImport {
                                        PyBulletVisualizerAPI* viz_api) {
     for (std::size_t v = 0; v < body->visual_ids().size(); v++) {
       int visual_id = body->visual_ids()[v];
-      Quaternion rot;
       Transform geom_X_world = body->base_X_world() * body->X_visuals()[v];
-      btVector3 base_pos(Algebra::to_double(geom_X_world.translation.getX()),
-                         Algebra::to_double(geom_X_world.translation.getY()),
-                         Algebra::to_double(geom_X_world.translation.getZ()));
+      btVector3 base_pos(Algebra::to_double(geom_X_world.translation[0]),
+                         Algebra::to_double(geom_X_world.translation[1]),
+                         Algebra::to_double(geom_X_world.translation[2]));
       typename Algebra::Matrix3 rot_mat = geom_X_world.rotation;
-      rot_mat.getRotation(rot);
-      btQuaternion base_orn(
-          Algebra::to_double(rot.getX()), Algebra::to_double(rot.getY()),
-          Algebra::to_double(rot.getZ()), Algebra::to_double(rot.getW()));
+      Quaternion rot = Algebra::matrix_to_quat(rot_mat);
+      btQuaternion base_orn(Algebra::to_double(Algebra::quat_x(rot)),
+                            Algebra::to_double(Algebra::quat_y(rot)),
+                            Algebra::to_double(Algebra::quat_z(rot)),
+                            Algebra::to_double(Algebra::quat_w(rot)));
       viz_api->resetBasePositionAndOrientation(visual_id, base_pos, base_orn);
     }
 
     for (std::size_t l = 0; l < body->size(); l++) {
       for (std::size_t v = 0; v < (*body)[l].visual_ids.size(); v++) {
         int visual_id = (*body)[l].visual_ids[v];
-        Quaternion rot;
         Transform geom_X_world = (*body)[l].X_world * (*body)[l].X_visuals[v];
-        btVector3 base_pos(Algebra::to_double(geom_X_world.translation.getX()),
-                           Algebra::to_double(geom_X_world.translation.getY()),
-                           Algebra::to_double(geom_X_world.translation.getZ()));
-        geom_X_world.rotation.getRotation(rot);
-        btQuaternion base_orn(
-            Algebra::to_double(rot.getX()), Algebra::to_double(rot.getY()),
-            Algebra::to_double(rot.getZ()), Algebra::to_double(rot.getW()));
+        btVector3 base_pos(Algebra::to_double(geom_X_world.translation[0]),
+                           Algebra::to_double(geom_X_world.translation[1]),
+                           Algebra::to_double(geom_X_world.translation[2]));
+        Quaternion rot = Algebra::matrix_to_quat(geom_X_world.rotation);
+        btQuaternion base_orn(Algebra::to_double(Algebra::quat_x(rot)),
+                              Algebra::to_double(Algebra::quat_y(rot)),
+                              Algebra::to_double(Algebra::quat_z(rot)),
+                              Algebra::to_double(Algebra::quat_w(rot)));
         viz_api->resetBasePositionAndOrientation(visual_id, base_pos, base_orn);
       }
     }
@@ -293,7 +294,7 @@ struct PyBulletUrdfImport {
     // collision shapes, only convert spheres for now
     b3CollisionShapeInformation collisionShapeInfo;
     sim_api->getCollisionShapeData(body_unique_id, linkIndex,
-                                  collisionShapeInfo);
+                                   collisionShapeInfo);
 
     for (int i = 0; i < collisionShapeInfo.m_numCollisionShapes; i++) {
       const b3CollisionShapeData& colShapeData =

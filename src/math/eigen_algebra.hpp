@@ -1,6 +1,5 @@
 #pragma once
 
-
 #if USE_STAN
 #include <stan/math.hpp>
 #include <stan/math/fwd.hpp>
@@ -92,19 +91,13 @@ struct EigenAlgebraT {
     return matrix.cols();
   }
 
-  
-
-  EIGEN_ALWAYS_INLINE static Scalar determinant(
-      const Matrix3& m) {
-      return m.determinant();
+  EIGEN_ALWAYS_INLINE static Scalar determinant(const Matrix3 &m) {
+    return m.determinant();
   }
 
-
-  EIGEN_ALWAYS_INLINE static Scalar determinant(
-      const MatrixX& m) {
-      return m.determinant();
+  EIGEN_ALWAYS_INLINE static Scalar determinant(const MatrixX &m) {
+    return m.determinant();
   }
-
 
   /**
    * Returns true if the matrix `mat` is positive-definite, and assigns
@@ -224,69 +217,69 @@ struct EigenAlgebraT {
     return mat.block(start_row_index, start_col_index, rows, cols);
   }
 
-  
-  EIGEN_ALWAYS_INLINE static void assign_block(
-          Matrix3X& output,
-          const Matrix3& input, int i, int j,
-          int m = -1, int n = -1, int input_i = 0, int input_j = 0) {
-      if (m < 0) m = input.rows();
-      if (n < 0) n = input.cols();
-      assert(i + m <= output.rows() && j + n <= output.cols());
-      assert(input_i + m <= input.rows() && input_j + n <= input.cols());
-      for (int ii = 0; ii < m; ++ii) {
-          for (int jj = 0; jj < n; ++jj) {
-              output(ii + i, jj + j) = input(ii + input_i, jj + input_j);
-          }
+  EIGEN_ALWAYS_INLINE static void assign_block(Matrix3X &output,
+                                               const Matrix3 &input, int i,
+                                               int j, int m = -1, int n = -1,
+                                               int input_i = 0,
+                                               int input_j = 0) {
+    if (m < 0) m = input.rows();
+    if (n < 0) n = input.cols();
+    assert(i + m <= output.rows() && j + n <= output.cols());
+    assert(input_i + m <= input.rows() && input_j + n <= input.cols());
+    for (int ii = 0; ii < m; ++ii) {
+      for (int jj = 0; jj < n; ++jj) {
+        output(ii + i, jj + j) = input(ii + input_i, jj + input_j);
       }
+    }
   }
 
-  EIGEN_ALWAYS_INLINE static void assign_block(
-      Matrix6& output,
-      const Matrix3& input, int i, int j,
-      int m = -1, int n = -1, int input_i = 0, int input_j = 0) {
-      if (m < 0) m = input.rows();
-      if (n < 0) n = input.cols();
-      assert(i + m <= output.rows() && j + n <= output.cols());
-      assert(input_i + m <= input.rows() && input_j + n <= input.cols());
-      for (int ii = 0; ii < m; ++ii) {
-          for (int jj = 0; jj < n; ++jj) {
-              output(ii + i, jj + j) = input(ii + input_i, jj + input_j);
-          }
+  EIGEN_ALWAYS_INLINE static void assign_block(Matrix6 &output,
+                                               const Matrix3 &input, int i,
+                                               int j, int m = -1, int n = -1,
+                                               int input_i = 0,
+                                               int input_j = 0) {
+    if (m < 0) m = input.rows();
+    if (n < 0) n = input.cols();
+    assert(i + m <= output.rows() && j + n <= output.cols());
+    assert(input_i + m <= input.rows() && input_j + n <= input.cols());
+    for (int ii = 0; ii < m; ++ii) {
+      for (int jj = 0; jj < n; ++jj) {
+        output(ii + i, jj + j) = input(ii + input_i, jj + input_j);
       }
+    }
   }
 
-  EIGEN_ALWAYS_INLINE static void assign_block(
-      Matrix3& output,
-      const Matrix6& input, int i, int j,
-      int m = -1, int n = -1, int input_i = 0, int input_j = 0) {
-      if (m < 0) m = input.rows();
-      if (n < 0) n = input.cols();
-      assert(i + m <= output.rows() && j + n <= output.cols());
-      assert(input_i + m <= input.rows() && input_j + n <= input.cols());
-      for (int ii = 0; ii < m; ++ii) {
-          for (int jj = 0; jj < n; ++jj) {
-              output(ii + i, jj + j) = input(ii + input_i, jj + input_j);
-          }
+  EIGEN_ALWAYS_INLINE static void assign_block(Matrix3 &output,
+                                               const Matrix6 &input, int i,
+                                               int j, int m = -1, int n = -1,
+                                               int input_i = 0,
+                                               int input_j = 0) {
+    if (m < 0) m = input.rows();
+    if (n < 0) n = input.cols();
+    assert(i + m <= output.rows() && j + n <= output.cols());
+    assert(input_i + m <= input.rows() && input_j + n <= input.cols());
+    for (int ii = 0; ii < m; ++ii) {
+      for (int jj = 0; jj < n; ++jj) {
+        output(ii + i, jj + j) = input(ii + input_i, jj + input_j);
       }
+    }
   }
 
-
-  EIGEN_ALWAYS_INLINE static void assign_block(
-      MatrixX& output,
-      const MatrixX& input, int i, int j,
-      int m = -1, int n = -1, int input_i = 0, int input_j = 0) {
-      if (m < 0) m = input.rows();
-      if (n < 0) n = input.cols();
-      assert(i + m <= output.rows() && j + n <= output.cols());
-      assert(input_i + m <= input.rows() && input_j + n <= input.cols());
-      for (int ii = 0; ii < m; ++ii) {
-          for (int jj = 0; jj < n; ++jj) {
-              output(ii + i, jj + j) = input(ii + input_i, jj + input_j);
-          }
+  EIGEN_ALWAYS_INLINE static void assign_block(MatrixX &output,
+                                               const MatrixX &input, int i,
+                                               int j, int m = -1, int n = -1,
+                                               int input_i = 0,
+                                               int input_j = 0) {
+    if (m < 0) m = input.rows();
+    if (n < 0) n = input.cols();
+    assert(i + m <= output.rows() && j + n <= output.cols());
+    assert(input_i + m <= input.rows() && input_j + n <= input.cols());
+    for (int ii = 0; ii < m; ++ii) {
+      for (int jj = 0; jj < n; ++jj) {
+        output(ii + i, jj + j) = input(ii + input_i, jj + input_j);
       }
+    }
   }
-
-
 
   template <int Rows1, int Cols1, int Rows2, int Cols2>
   EIGEN_ALWAYS_INLINE static void assign_block(
@@ -304,35 +297,27 @@ struct EigenAlgebraT {
     }
   }
 
-  
-
-  EIGEN_ALWAYS_INLINE static void assign_column(
-      Matrix3& m, Index i,
-      const Vector3& v) {
-      m.col(i) = v;
-  }
-
-  EIGEN_ALWAYS_INLINE static void assign_column(
-      Matrix3& m, Index i,
-      const Matrix6& v) {
-      m.col(i) = v;
-  }
-  EIGEN_ALWAYS_INLINE static void assign_column(
-      Matrix3X& m, Index i,
-      const Vector3& v) {
-      m.col(i) = v;
-  }
-
-  
-  
-  EIGEN_ALWAYS_INLINE static void assign_column(
-      MatrixX&m, Index i,
-      const MatrixX &v) {
+  EIGEN_ALWAYS_INLINE static void assign_column(Matrix3 &m, Index i,
+                                                const Vector3 &v) {
     m.col(i) = v;
   }
-  
-  EIGEN_ALWAYS_INLINE static void assign_column(
-      MatrixX&m, Index i, const SpatialVector &v) {
+
+  EIGEN_ALWAYS_INLINE static void assign_column(Matrix3 &m, Index i,
+                                                const Matrix6 &v) {
+    m.col(i) = v;
+  }
+  EIGEN_ALWAYS_INLINE static void assign_column(Matrix3X &m, Index i,
+                                                const Vector3 &v) {
+    m.col(i) = v;
+  }
+
+  EIGEN_ALWAYS_INLINE static void assign_column(MatrixX &m, Index i,
+                                                const MatrixX &v) {
+    m.col(i) = v;
+  }
+
+  EIGEN_ALWAYS_INLINE static void assign_column(MatrixX &m, Index i,
+                                                const SpatialVector &v) {
     m.block(0, i, 3, 1) = v.top;
     m.block(3, i, 3, 1) = v.bottom;
   }
@@ -343,23 +328,21 @@ struct EigenAlgebraT {
     assign_column(m, i, v.eval());
   }
 
-  
-
-  EIGEN_ALWAYS_INLINE static void assign_row(
-      MatrixX&m, Index i,
-      const MatrixX&v) {
+  EIGEN_ALWAYS_INLINE static void assign_row(MatrixX &m, Index i,
+                                             const MatrixX &v) {
     m.row(i) = v;
   }
-  
-  EIGEN_ALWAYS_INLINE static void assign_row(
-      MatrixX&m, Index i, const SpatialVector &v) {
+
+  EIGEN_ALWAYS_INLINE static void assign_row(MatrixX &m, Index i,
+                                             const SpatialVector &v) {
     m.block(i, 0, 1, 3) = v.top;
     m.block(i, 3, 1, 3) = v.bottom;
   }
 
-  EIGEN_ALWAYS_INLINE static void assign_horizontal(
-      MatrixX &mat, const VectorX& vec,
-      int start_row_index, int start_col_index) {
+  EIGEN_ALWAYS_INLINE static void assign_horizontal(MatrixX &mat,
+                                                    const VectorX &vec,
+                                                    int start_row_index,
+                                                    int start_col_index) {
     mat.block(start_row_index, start_col_index, 1, vec.cols()) = vec;
   }
 
@@ -439,8 +422,10 @@ struct EigenAlgebraT {
     Scalar cs = ci * sh;
     Scalar sc = si * ch;
     Scalar ss = si * sh;
-    return Matrix3(cj * ch, sj * sc - cs, sj * cc + ss, cj * sh, sj * ss + cc,
-                   sj * cs - sc, -sj, cj * si, cj * ci);
+    Matrix3 temp;
+    temp << cj * ch, sj * sc - cs, sj * cc + ss, cj * sh, sj * ss + cc,
+        sj * cs - sc, -sj, cj * si, cj * ci;
+    return temp;
   }
 
   EIGEN_ALWAYS_INLINE static Vector3 rotate(const Quaternion &q,
@@ -490,26 +475,11 @@ struct EigenAlgebraT {
     return Quaternion(w, x, y, z);
   }
 
-  
-  
-  EIGEN_ALWAYS_INLINE static void set_zero(
-      Matrix3X& m) {
-      m.setZero();
-  }
-  EIGEN_ALWAYS_INLINE static void set_zero(
-      Vector3& m) {
-      m.setZero();
-  }
-  EIGEN_ALWAYS_INLINE static void set_zero(
-      VectorX& m) {
-      m.setZero();
-  }
-  
+  EIGEN_ALWAYS_INLINE static void set_zero(Matrix3X &m) { m.setZero(); }
+  EIGEN_ALWAYS_INLINE static void set_zero(Vector3 &m) { m.setZero(); }
+  EIGEN_ALWAYS_INLINE static void set_zero(VectorX &m) { m.setZero(); }
 
-  EIGEN_ALWAYS_INLINE static void set_zero(
-      MatrixX &m) {
-    m.setZero();
-  }
+  EIGEN_ALWAYS_INLINE static void set_zero(MatrixX &m) { m.setZero(); }
   template <int Size1, int Size2 = 1>
   EIGEN_ALWAYS_INLINE static void set_zero(
       Eigen::Array<Scalar, Size1, Size2> &v) {
@@ -622,6 +592,18 @@ struct EigenAlgebraT {
   }
 
   template <typename T>
+  TINY_INLINE static auto tan(const T &s) {
+    using std::tan;
+    return tan(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto atan2(const T &dy, const T &dx) {
+    using std::atan2;
+    return atan2(dy, dx);
+  }
+
+  template <typename T>
   TINY_INLINE static auto abs(const T &s) {
     using std::abs;
     return abs(s);
@@ -631,6 +613,36 @@ struct EigenAlgebraT {
   TINY_INLINE static auto sqrt(const T &s) {
     using std::sqrt;
     return sqrt(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto tanh(const T &s) {
+    using std::tanh;
+    return tanh(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto exp(const T &s) {
+    using std::exp;
+    return exp(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto log(const T &s) {
+    using std::log;
+    return log(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto max(const T &x, const T &y) {
+    using std::max;
+    return max(x, y);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto min(const T &x, const T &y) {
+    using std::min;
+    return min(x, y);
   }
 
   EigenAlgebraT<Scalar>() = delete;

@@ -62,7 +62,7 @@ class CeresEstimator : ceres::IterationCallback {
 
   ceres::Solver::Options options;
 
-  CeresEstimator(const OptimizationProblem &problem) : problem_(problem) {
+  CeresEstimator(OptimizationProblem *problem) : problem_(problem) {
     options.minimizer_progress_to_stdout = true;
     options.callbacks.push_back(this);
   }
@@ -75,7 +75,7 @@ class CeresEstimator : ceres::IterationCallback {
   }
 
  private:
-  OptimizationProblem problem_;
+  OptimizationProblem *problem_{nullptr};
   struct CostFunctor : ceres::SizedCostFunction<1, kParameterDim> {
     CeresEstimator *parent{nullptr};
     const typename OptimizationProblem::CostFunctor &cost;
@@ -123,21 +123,21 @@ class CeresEstimator : ceres::IterationCallback {
     ceres_problem_.AddResidualBlock(cost_function_, loss_function, vars_);
 
     for (int i = 0; i < kParameterDim; ++i) {
-      vars_[i] = problem_[i].value;
+      vars_[i] = (*problem_)[i].value;
     }
     if (set_bounds) {
       for (int i = 0; i < kParameterDim; ++i) {
-        ceres_problem_.SetParameterLowerBound(vars_, i, problem_[i].minimum);
-        ceres_problem_.SetParameterUpperBound(vars_, i, problem_[i].maximum);
+        ceres_problem_.SetParameterLowerBound(vars_, i, (*problem_)[i].minimum);
+        ceres_problem_.SetParameterUpperBound(vars_, i, (*problem_)[i].maximum);
       }
     }
 
     return ceres_problem_;
   }
 
-  TINY_INLINE const OptimizationProblem &problem() const { return problem_; }
+  TINY_INLINE const OptimizationProblem &problem() const { return *problem_; }
   TINY_INLINE const typename OptimizationProblem::CostFunctor &cost() const {
-    return problem_.cost();
+    return problem_->cost();
   }
 
   void gradient_descent(double learning_rate, int iterations) {
@@ -154,7 +154,7 @@ class CeresEstimator : ceres::IterationCallback {
       param_evolution_.push_back(current_param_);
     }
     for (int i = 0; i < kParameterDim; ++i) {
-      problem_[i].value = x[i];
+      (*problem_)[i].value = x[i];
     }
   }
 
@@ -163,8 +163,8 @@ class CeresEstimator : ceres::IterationCallback {
     param_evolution_.clear();
     best_cost_ = std::numeric_limits<double>::max();
     for (int i = 0; i < kParameterDim; ++i) {
-      vars_[i] = problem_[i].value;
-      best_params_[i] = problem_[i].value;
+      vars_[i] = (*problem_)[i].value;
+      best_params_[i] = (*problem_)[i].value;
     }
     ceres::Solve(options, &ceres_problem_, &summary);
     if (summary.final_cost > best_cost_) {
@@ -174,11 +174,11 @@ class CeresEstimator : ceres::IterationCallback {
           "%.8f was found. Returning the best parameter vector.\n",
           summary.final_cost, best_cost_);
       for (int i = 0; i < kParameterDim; ++i) {
-        problem_[i].value = best_params_[i];
+        (*problem_)[i].value = best_params_[i];
       }
     } else {
       for (int i = 0; i < kParameterDim; ++i) {
-        problem_[i].value = vars_[i];
+        (*problem_)[i].value = vars_[i];
       }
     }
     return summary;

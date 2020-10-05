@@ -4,7 +4,8 @@
 
 template <tds::DiffMethod Method>
 void test_ceres_estimation(double epsilon = 1e-4) {
-  auto estimator = tds::CeresEstimator(create_problem<Method>());
+  auto problem = create_problem<Method>();
+  auto estimator = tds::CeresEstimator(&problem);
   estimator.setup();
   auto summary = estimator.solve();
   std::cout << summary.FullReport() << std::endl;
