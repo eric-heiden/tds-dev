@@ -316,11 +316,11 @@ class NeuralNetwork : public NeuralNetworkSpecification {
   }
 
   void set_parameters(const std::vector<typename Algebra::Scalar>& params) {
-    assert(static_cast<int>(params.size()) == num_parameters());
+    assert(static_cast<int>(params.size()) >= num_parameters());
     weights.resize(num_weights());
     biases.resize(num_biases());
     std::copy(params.begin(), params.begin() + num_weights(), weights.begin());
-    std::copy(params.begin() + num_weights(), params.end(), biases.begin());
+    std::copy(params.begin() + num_weights(), params.begin() + num_weights() + num_biases(), biases.begin());
   }
 
   void print_params() const {

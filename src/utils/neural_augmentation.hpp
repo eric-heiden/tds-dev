@@ -63,6 +63,10 @@ struct NeuralAugmentation {
     return specs.back();
   }
 
+  /**
+   * Registers the previously defined blueprints and their corresponding network
+   * parameters from the provided `params`.
+   */
   template <typename Algebra>
   void instantiate(const std::vector<typename Algebra::Scalar> &params,
                    std::size_t param_index_offset = 0) const {
