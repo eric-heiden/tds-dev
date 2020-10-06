@@ -131,7 +131,7 @@ WORKDIR /root/deps/ceres-solver
 RUN git checkout 1.14.x
 RUN mkdir build 
 WORKDIR /root/deps/ceres-solver/build
-RUN cmake .. && make -j && make install
+RUN cmake -DCMAKE_BUILD_TYPE=Release .. && make -j && make install
 
 # Bullet
 WORKDIR /root/deps
@@ -148,7 +148,7 @@ RUN tar -zxf v2.6.2.tar.gz
 WORKDIR /root/deps/nlopt-2.6.2
 RUN mkdir build 
 WORKDIR /root/deps/nlopt-2.6.2/build
-RUN cmake .. && make && make install 
+RUN cmake -DCMAKE_BUILD_TYPE=Release .. && make && make install 
 
 # PAGMO
 WORKDIR /root/deps 
@@ -156,15 +156,15 @@ RUN git clone https://github.com/esa/pagmo2.git
 WORKDIR /root/deps/pagmo2 
 RUN mkdir build 
 WORKDIR /root/deps/pagmo2/build
-RUN cmake .. -DPAGMO_WITH_NLOPT=ON \
+RUN cmake -DCMAKE_BUILD_TYPE=Release .. -DPAGMO_WITH_NLOPT=ON \
       # -DNLopt_DIR="/usr/lib/x86_64-linux-gnu/cmake/nlopt/" \ 
-      && cmake --build . && cmake --build . --target install
+      && cmake -DCMAKE_BUILD_TYPE=Release --build . && cmake --build . --target install
 
 
 WORKDIR /usr/src/googletest/googletest
 RUN mkdir build 
 WORKDIR /usr/src/googletest/googletest/build
-RUN cmake .. && make && make install
+RUN cmake -DCMAKE_BUILD_TYPE=Release .. && make && make install
 
 # Setup repo
 WORKDIR /root/code/tiny-differentiable-simulator
@@ -177,7 +177,7 @@ RUN make -f ./make/standalone math-libs
 WORKDIR /root/code/tiny-differentiable-simulator
 RUN mkdir build
 WORKDIR /root/code/tiny-differentiable-simulator/build 
-RUN cmake .. 
+RUN cmake -DCMAKE_BUILD_TYPE=Release .. 
 RUN make test_pagmo_estimation
 
 CMD [ "./test/test_pagmo_estimation" ]
