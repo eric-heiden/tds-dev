@@ -40,9 +40,9 @@ struct NeuralAugmentation {
       const std::vector<std::string> &inputs,
       int hidden_layers = default_hidden_layers,
       int hidden_units = default_hidden_units,
+      bool input_bias = false,
       NeuralNetworkActivation output_fn = NN_ACT_IDENTITY) {
-    // TODO consider allowing biases on inputs?
-    NeuralNetworkSpecification spec(static_cast<int>(inputs.size()), false);
+    NeuralNetworkSpecification spec(static_cast<int>(inputs.size()), input_bias);
     // define overparameterized NN
     for (int li = 0; li < hidden_layers; ++li) {
       spec.add_linear_layer(activation_fn, hidden_units);
