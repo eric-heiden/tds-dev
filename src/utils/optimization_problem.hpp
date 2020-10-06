@@ -44,7 +44,7 @@ class OptimizationProblem {
 
   void set_params(const std::array<double, kParameterDim>& params) {
     for (int i = 0; i < kParameterDim; ++i) {
-      parameters[i].value = params[i];
+      parameters_[i].value = params[i];
     }
   }
 
