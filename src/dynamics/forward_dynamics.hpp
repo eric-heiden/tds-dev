@@ -59,8 +59,8 @@ void forward_dynamics(MultiBody<Algebra> &mb,
     // by Shinjiro Sueda
     // https://github.com/sueda/redmax/blob/master/notes.pdf
     // TODO consider nonzero resting position of joint for stiffness?
-    // tau_val -= link.stiffness * get_q_for_link(q, i);
-    // tau_val -= link.damping * get_qd_for_link(qd, i);
+    tau_val -= link.stiffness * get_q_for_link(q, i);
+    tau_val -= link.damping * get_qd_for_link(qd, i);
 
     // #ifdef NEURAL_SIM
     //       NEURAL_ASSIGN(tau_val, "tau_" + std::to_string(i));
