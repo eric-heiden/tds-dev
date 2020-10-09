@@ -39,10 +39,10 @@ struct NeuralAugmentation {
       const std::vector<std::string> &outputs,
       const std::vector<std::string> &inputs,
       int hidden_layers = default_hidden_layers,
-      int hidden_units = default_hidden_units,
-      bool input_bias = false,
+      int hidden_units = default_hidden_units, bool input_bias = false,
       NeuralNetworkActivation output_fn = NN_ACT_IDENTITY) {
-    NeuralNetworkSpecification spec(static_cast<int>(inputs.size()), input_bias);
+    NeuralNetworkSpecification spec(static_cast<int>(inputs.size()),
+                                    input_bias);
     // define overparameterized NN
     for (int li = 0; li < hidden_layers; ++li) {
       spec.add_linear_layer(activation_fn, hidden_units);
@@ -157,6 +157,7 @@ struct NeuralAugmentation {
   }
 
   void save_graphviz(std::vector<double> &params,
+                     const std::string &prefix = "",
                      std::size_t param_index_offset = 0) const {
     std::size_t pi = param_index_offset;
     for (std::size_t i = 0; i < specs.size(); ++i) {
@@ -170,7 +171,7 @@ struct NeuralAugmentation {
       }
 
       specs[i].template save_graphviz<DoubleAlgebra>(
-          "net_" + std::to_string(i) + ".dot", output_inputs[i].second,
+          prefix + "net_" + std::to_string(i) + ".dot", output_inputs[i].second,
           {output_inputs[i].first}, weights, biases);
     }
   }
