@@ -210,6 +210,9 @@ endif(USE_PAGMO)
 
 SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/third_party/cpp_base64)
 
+set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
+subdirs(${CMAKE_CURRENT_LIST_DIR}/third_party/benchmark)
+
 
 subdirs(${CMAKE_CURRENT_LIST_DIR}/src/visualizer/opengl)
 subdirs(${CMAKE_CURRENT_LIST_DIR}/src/visualizer/pybullet)

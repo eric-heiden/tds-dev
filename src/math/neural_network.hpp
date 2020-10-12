@@ -145,10 +145,12 @@ class NeuralNetworkSpecification {
         }
       }
     }
+#ifndef NDEBUG
     printf("NN weights:  ");
     this->template print_states<Algebra>(weights);
     printf("NN biases:  ");
     this->template print_states<Algebra>(biases);
+#endif
   }
 
   /**

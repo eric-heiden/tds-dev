@@ -13,3 +13,9 @@
 [submodule "third_party/stan_math"]
 	path = third_party/stan_math
 	url = git@github.com:eric-heiden/stan_math.git
+[submodule "third_party/benchmark"]
+	path = third_party/benchmark
+	url = https://github.com/google/benchmark
+[submodule "third_party/CppADCodeGen"]
+	path = third_party/CppADCodeGen
+	url = https://github.com/joaoleal/CppADCodeGen
