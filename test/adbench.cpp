@@ -1,9 +1,12 @@
 #include <benchmark/benchmark.h>
 
-#include "utils/differentiation.hpp"
+// clang-format off
 // Differentiation must go first
+#include "utils/differentiation.hpp"
+// clang-format on
 #include "math/neural_network.hpp"
 #include "math/tiny/ceres_utils.h"
+#include "math/tiny/cppad_utils.h"
 #include "math/tiny/tiny_double_utils.h"
 #include "utils/optimization_problem.hpp"
 
@@ -45,7 +48,7 @@ struct NNBenchFunctor {
     using ProblemType =                                           \
         tds::OptimizationProblem<tds::diff_type, NNBenchFunctor>; \
     ProblemType problem;                                          \
-    ProblemType::DoubleVector x(kParameterDim, 5.0);                   \
+    ProblemType::DoubleVector x(kParameterDim, 5.0);              \
     for (auto _ : state) {                                        \
       problem.fitness(x);                                         \
     }                                                             \
@@ -56,7 +59,7 @@ struct NNBenchFunctor {
     using ProblemType =                                           \
         tds::OptimizationProblem<tds::diff_type, NNBenchFunctor>; \
     ProblemType problem;                                          \
-    ProblemType::DoubleVector x(kParameterDim, 5.0);                   \
+    ProblemType::DoubleVector x(kParameterDim, 5.0);              \
     for (auto _ : state) {                                        \
       problem.gradient(x);                                        \
     }                                                             \
@@ -67,6 +70,7 @@ TDS_AD_BENCH(DIFF_NUMERICAL);
 TDS_AD_BENCH(DIFF_CERES);
 TDS_AD_BENCH(DIFF_STAN_REVERSE);
 TDS_AD_BENCH(DIFF_STAN_FORWARD);
+TDS_AD_BENCH(DIFF_CPPAD_FORWARD);
 
 // Run the benchmark
 BENCHMARK_MAIN();

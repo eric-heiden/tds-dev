@@ -61,11 +61,12 @@ else()
  message("No gtest")
 endif()
 
-  add_executable(adbench adbench.cpp)
-  target_include_directories(adbench PRIVATE ../src)
-  target_link_libraries(adbench
-    PRIVATE
-      benchmark
-      ${STAN_LIBRARIES}
-      ${CERES_LIBRARIES}
-  )
+add_executable(adbench adbench.cpp)
+target_include_directories(adbench PRIVATE ../src)
+target_link_libraries(adbench
+  PRIVATE
+    benchmark
+    CppADCodeGen
+    ${STAN_LIBRARIES}
+    ${CERES_LIBRARIES}
+)

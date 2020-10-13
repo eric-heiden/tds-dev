@@ -210,9 +210,41 @@ endif(USE_PAGMO)
 
 SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/third_party/cpp_base64)
 
+include(ExternalProject)
+# Add CppAD as an external project and an imported target.
+ExternalProject_Add(CppAD-Project
+  PREFIX CppAD
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/CppAD
+  CMAKE_ARGS
+    -Dcppad_prefix=${CMAKE_CURRENT_BINARY_DIR}/CppAD
+)
+add_library(CppAD INTERFACE IMPORTED)
+add_dependencies(CppAD CppAD-Project)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include)
+target_include_directories(CppAD INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include)
+
+# Same for CppADCodeGen
+ExternalProject_Add(CppADCodeGen-Project
+  PREFIX CppADCodeGen
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/CppADCodeGen
+  CMAKE_ARGS
+    -DCPPAD_INCLUDE_DIR=${CMAKE_CURRENT_BINARY_DIR}/CppAD/include
+    -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen
+    -DGOOGLETEST_GIT=ON
+)
+add_dependencies(CppADCodeGen-Project CppAD)
+add_library(CppADCodeGen INTERFACE IMPORTED)
+add_dependencies(CppADCodeGen CppAD-Project CppADCodeGen-Project)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen/include)
+target_include_directories(CppADCodeGen
+  INTERFACE
+    ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include
+    ${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen/include
+)
+
 set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
 subdirs(${CMAKE_CURRENT_LIST_DIR}/third_party/benchmark)
-
 
 subdirs(${CMAKE_CURRENT_LIST_DIR}/src/visualizer/opengl)
 subdirs(${CMAKE_CURRENT_LIST_DIR}/src/visualizer/pybullet)
