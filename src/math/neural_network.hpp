@@ -267,9 +267,9 @@ class NeuralNetworkSpecification {
     }
     std::size_t weight_i = 0;
     for (std::size_t i = 1; i < layers_.size(); ++i) {
-      for (int j = 0; j < layers_[i - 1]; ++j) {
-        for (int k = 0; k < layers_[i]; ++k, ++weight_i) {
-          file << "n_" << i - 1 << "_" << j << "--n_" << i << "_" << k;
+      for (int j = 0; j < layers_[i]; ++j) {
+        for (int k = 0; k < layers_[i - 1]; ++k, ++weight_i) {
+          file << "n_" << i - 1 << "_" << k << "--n_" << i << "_" << j;
           if (!weights.empty()) {
             file << "[penwidth="
                  << std::to_string(
@@ -322,7 +322,8 @@ class NeuralNetwork : public NeuralNetworkSpecification {
     weights.resize(num_weights());
     biases.resize(num_biases());
     std::copy(params.begin(), params.begin() + num_weights(), weights.begin());
-    std::copy(params.begin() + num_weights(), params.begin() + num_weights() + num_biases(), biases.begin());
+    std::copy(params.begin() + num_weights(),
+              params.begin() + num_weights() + num_biases(), biases.begin());
   }
 
   void print_params() const {

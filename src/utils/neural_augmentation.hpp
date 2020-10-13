@@ -40,6 +40,7 @@ struct NeuralAugmentation {
       const std::vector<std::string> &inputs,
       int hidden_layers = default_hidden_layers,
       int hidden_units = default_hidden_units, bool input_bias = false,
+      bool output_bias = false,
       NeuralNetworkActivation output_fn = NN_ACT_IDENTITY) {
     NeuralNetworkSpecification spec(static_cast<int>(inputs.size()),
                                     input_bias);
@@ -48,7 +49,8 @@ struct NeuralAugmentation {
       spec.add_linear_layer(activation_fn, hidden_units);
     }
     // output layer
-    spec.add_linear_layer(NN_ACT_IDENTITY, static_cast<int>(outputs.size()));
+    spec.add_linear_layer(NN_ACT_IDENTITY, static_cast<int>(outputs.size()),
+                          output_bias);
     output_inputs.push_back(std::make_pair(outputs, inputs));
     specs.push_back(spec);
     return specs.back();

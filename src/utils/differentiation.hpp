@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 
 // clang-format off
 // Stan Math needs to be included first to get its Eigen plugins
@@ -129,11 +130,12 @@ static std::enable_if_t<Method == DIFF_STAN_REVERSE, void> compute_gradient(
   for (std::size_t i = 0; i < x.size(); ++i) {
     dfx[i] = x_var[i].adj();
   }
-  stan::math::recover_memory();
+  // stan::math::recover_memory();
+  // stan::math::zero_adjoints();
 #else
-  static_assert(false,
-                "Variable 'USE_STAN' must be set to use automatic "
-                "differentiation functions from Stan Math.");
+  throw std::runtime_error(
+      "Variable 'USE_STAN' must be set to use automatic "
+      "differentiation functions from Stan Math.");
 #endif
 }
 
@@ -158,9 +160,9 @@ static std::enable_if_t<Method == DIFF_STAN_FORWARD, void> compute_gradient(
     x_dual[i].d_ = 0.;
   }
 #else
-  static_assert(false,
-                "Variable 'USE_STAN' must be set to use automatic "
-                "differentiation functions from Stan Math.");
+  throw std::runtime_error(
+      "Variable 'USE_STAN' must be set to use automatic "
+      "differentiation functions from Stan Math.");
 #endif
 }
 
@@ -279,9 +281,9 @@ class GradientFunctional<DIFF_STAN_REVERSE, F, ScalarAlgebra> {
     return gradient_;
   }
 #else
-  static_assert(false,
-                "Variable 'USE_STAN' must be set to use automatic "
-                "differentiation functions from Stan Math.");
+  throw std::runtime_error(
+      "Variable 'USE_STAN' must be set to use automatic "
+      "differentiation functions from Stan Math.");
 #endif
 };
 
@@ -300,9 +302,9 @@ class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
     return gradient_;
   }
 #else
-  static_assert(false,
-                "Variable 'USE_STAN' must be set to use automatic "
-                "differentiation functions from Stan Math.");
+  throw std::runtime_error(
+      "Variable 'USE_STAN' must be set to use automatic "
+      "differentiation functions from Stan Math.");
 #endif
 };
 }  // namespace tds
