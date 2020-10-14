@@ -132,8 +132,8 @@ static std::enable_if_t<Method == DIFF_STAN_REVERSE, void> compute_gradient(
   for (std::size_t i = 0; i < x.size(); ++i) {
     dfx[i] = x_var[i].adj();
   }
-  // stan::math::recover_memory();
-  // stan::math::zero_adjoints();
+  stan::math::recover_memory();
+  stan::math::zero_adjoints();
 #else
   throw std::runtime_error(
       "Variable 'USE_STAN' must be set to use automatic "
@@ -310,37 +310,31 @@ class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
 #endif
 };
 
-namespace {
-template <typename F, typename Scalar>
-CppAD::ADFun<Scalar> CreateADFun(F f, const std::vector<Scalar>& x) {
-  using Dual = typename CppAD::AD<Scalar>;
-  std::vector<Dual> ax(x.size());
-  for (std::size_t i = 0; i < x.size(); ++i) {
-    ax[i] = x[i];
-  }
-  CppAD::Independent(ax);
-  std::vector<Dual> ay(1);
-  ay[0] = f(ax);
-
-  CppAD::ADFun<Scalar> af;
-  af.Dependent(ax, ay);
-  af.optimize();
-  return af;
-}
-}  // namespace
-
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
   using Scalar = typename ScalarAlgebra::Scalar;
+  using Dual = typename CppAD::AD<Scalar>;
   F<ScalarAlgebra> f_scalar_;
   F<EigenAlgebraT<CppAD::AD<Scalar>>> f_ad_;
+  mutable CppAD::ADFun<Scalar> tape_;
   mutable std::vector<Scalar> gradient_;
 
  public:
+  GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra>() {
+    std::vector<Dual> ax(F<ScalarAlgebra>::kDim);
+    for (auto& axi : ax) {
+      axi = ScalarAlgebra::zero();
+    }
+    CppAD::Independent(ax);
+    std::vector<Dual> ay(1);
+    ay[0] = f_ad_(ax);
+    tape_.Dependent(ax, ay);
+    tape_.optimize();
+  }
+
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
-    static CppAD::ADFun<Scalar> af = CreateADFun(f_ad_, x);
-    gradient_ = af.Jacobian(x);
+    gradient_ = tape_.Jacobian(x);
     return gradient_;
   }
 };
