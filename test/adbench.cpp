@@ -39,7 +39,11 @@ struct NNBenchFunctor {
   Scalar operator()(const std::vector<Scalar>& x) const {
     net_.set_parameters(x);
     net_.compute(Input<Algebra>(), output_);
-    return Algebra::from_double(5.0);
+    Scalar value = Algebra::zero();
+    for (auto& output : output_) {
+      value += output;
+    }
+    return value;
   }
 };
 
@@ -70,7 +74,7 @@ TDS_AD_BENCH(DIFF_NUMERICAL);
 TDS_AD_BENCH(DIFF_CERES);
 TDS_AD_BENCH(DIFF_STAN_REVERSE);
 TDS_AD_BENCH(DIFF_STAN_FORWARD);
-TDS_AD_BENCH(DIFF_CPPAD_FORWARD);
+TDS_AD_BENCH(DIFF_CPPAD_AUTO);
 
 // Run the benchmark
 BENCHMARK_MAIN();

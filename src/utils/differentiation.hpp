@@ -28,7 +28,7 @@ enum DiffMethod {
   DIFF_DUAL,
   DIFF_STAN_REVERSE,
   DIFF_STAN_FORWARD,
-  DIFF_CPPAD_FORWARD,
+  DIFF_CPPAD_AUTO,
 };
 
 /**
@@ -166,27 +166,6 @@ static std::enable_if_t<Method == DIFF_STAN_FORWARD, void> compute_gradient(
       "Variable 'USE_STAN' must be set to use automatic "
       "differentiation functions from Stan Math.");
 #endif
-}
-
-/**
- * Forward-mode AD using CppAD.
- */
-template <DiffMethod Method, typename F, typename Scalar = double>
-static std::enable_if_t<Method == DIFF_CPPAD_FORWARD, void> compute_gradient(
-    F f, const std::vector<Scalar>& x, std::vector<Scalar>& dfx) {
-  using Dual = typename CppAD::AD<Scalar>;
-  dfx.resize(x.size());
-
-  std::vector<Dual> ax(x.size());
-  for (std::size_t i = 0; i < x.size(); ++i) {
-    ax[i] = x[i];
-  }
-  CppAD::Independent(ax);
-  std::vector<Dual> ay(1);
-  ay[0] = f(ax);
-
-  CppAD::ADFun<Scalar> af(ax, ay);
-  dfx = af.Jacobian(x);
 }
 
 template <DiffMethod Method, template <typename> typename F,
@@ -331,8 +310,27 @@ class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
 #endif
 };
 
+namespace {
+template <typename F, typename Scalar>
+CppAD::ADFun<Scalar> CreateADFun(F f, const std::vector<Scalar>& x) {
+  using Dual = typename CppAD::AD<Scalar>;
+  std::vector<Dual> ax(x.size());
+  for (std::size_t i = 0; i < x.size(); ++i) {
+    ax[i] = x[i];
+  }
+  CppAD::Independent(ax);
+  std::vector<Dual> ay(1);
+  ay[0] = f(ax);
+
+  CppAD::ADFun<Scalar> af;
+  af.Dependent(ax, ay);
+  af.optimize();
+  return af;
+}
+}  // namespace
+
 template <template <typename> typename F, typename ScalarAlgebra>
-class GradientFunctional<DIFF_CPPAD_FORWARD, F, ScalarAlgebra> {
+class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
   using Scalar = typename ScalarAlgebra::Scalar;
   F<ScalarAlgebra> f_scalar_;
   F<EigenAlgebraT<CppAD::AD<Scalar>>> f_ad_;
@@ -341,7 +339,8 @@ class GradientFunctional<DIFF_CPPAD_FORWARD, F, ScalarAlgebra> {
  public:
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
-    tds::compute_gradient<tds::DIFF_CPPAD_FORWARD>(f_ad_, x, gradient_);
+    static CppAD::ADFun<Scalar> af = CreateADFun(f_ad_, x);
+    gradient_ = af.Jacobian(x);
     return gradient_;
   }
 };
