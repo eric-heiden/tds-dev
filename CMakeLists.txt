@@ -123,7 +123,7 @@ if(DEFINED Bullet_DIR)
   message("Finding local Bullet")
   find_package(Bullet CONFIG)
   set(BULLET_INCLUDE_DIR ${Bullet_DIR}/${BULLET_ROOT_DIR}/${BULLET_INCLUDE_DIR})
-  message("BULLET_INCLUDE_DIR=",${BULLET_INCLUDE_DIR})
+  message("BULLET_INCLUDE_DIR=" ${BULLET_INCLUDE_DIR})
   set(BLA ${Bullet_DIR}/${BULLET_ROOT_DIR}/${BULLET_LIBRARY_DIRS})
 else()
   message("Finding system installed Bullet")
@@ -243,8 +243,9 @@ target_include_directories(CppADCodeGen
     ${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen/include
 )
 
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/googletest)
 set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
-subdirs(${CMAKE_CURRENT_LIST_DIR}/third_party/benchmark)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/benchmark)
 
 subdirs(${CMAKE_CURRENT_LIST_DIR}/src/visualizer/opengl)
 subdirs(${CMAKE_CURRENT_LIST_DIR}/src/visualizer/pybullet)

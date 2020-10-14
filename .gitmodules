@@ -22,3 +22,6 @@
 [submodule "third_party/CppAD"]
 	path = third_party/CppAD
 	url = https://github.com/coin-or/CppAD
+[submodule "third_party/googletest"]
+	path = third_party/googletest
+	url = https://github.com/google/googletest

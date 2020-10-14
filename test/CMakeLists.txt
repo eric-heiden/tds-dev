@@ -70,3 +70,15 @@ target_link_libraries(adbench
     ${STAN_LIBRARIES}
     ${CERES_LIBRARIES}
 )
+
+add_executable(adtest adtest.cpp)
+target_include_directories(adtest PRIVATE ../src)
+target_link_libraries(adtest
+  PRIVATE
+    benchmark
+    gtest_main
+    gmock
+    CppADCodeGen
+    ${STAN_LIBRARIES}
+    ${CERES_LIBRARIES}
+)
