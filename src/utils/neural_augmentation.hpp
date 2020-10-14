@@ -158,23 +158,24 @@ struct NeuralAugmentation {
     return num;
   }
 
-  void save_graphviz(std::vector<double> &params,
-                     const std::string &prefix = "",
+  void save_graphviz(const std::vector<double> &params = {},
+                     const std::string &prefix = "", bool show_arrows = true,
                      std::size_t param_index_offset = 0) const {
     std::size_t pi = param_index_offset;
     for (std::size_t i = 0; i < specs.size(); ++i) {
-      std::vector<double> weights(specs[i].num_weights()),
-          biases(specs[i].num_biases());
-      for (int j = 0; j < specs[i].num_weights(); ++j, ++pi) {
+      std::vector<double> weights(specs[i].num_weights(), 1.),
+          biases(specs[i].num_biases(), 1.);
+      for (int j = 0; j < specs[i].num_weights() && pi < params.size();
+           ++j, ++pi) {
         weights[j] = params[pi];
       }
-      for (int j = 0; j < specs[i].num_biases(); ++j, ++pi) {
+      for (int j = 0; j < specs[i].num_biases() && pi < params.size();
+           ++j, ++pi) {
         biases[j] = params[pi];
       }
-
       specs[i].template save_graphviz<DoubleAlgebra>(
           prefix + "net_" + std::to_string(i) + ".dot", output_inputs[i].second,
-          {output_inputs[i].first}, weights, biases);
+          {output_inputs[i].first}, weights, biases, show_arrows);
     }
   }
 };

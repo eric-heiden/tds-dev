@@ -226,21 +226,26 @@ class NeuralNetworkSpecification {
   }
 
   template <typename Algebra>
-  void save_graphviz(
-      const std::string& filename,
-      const std::vector<std::string>& input_names = {},
-      const std::vector<std::string>& output_names = {},
-      const std::vector<typename Algebra::Scalar>& weights = {},
-      const std::vector<typename Algebra::Scalar>& biases = {}) const {
+  void save_graphviz(const std::string& filename,
+                     const std::vector<std::string>& input_names = {},
+                     const std::vector<std::string>& output_names = {},
+                     const std::vector<typename Algebra::Scalar>& weights = {},
+                     const std::vector<typename Algebra::Scalar>& biases = {},
+                     bool show_arrows = false) const {
     std::ofstream file(filename);
-    file << "graph G {\n\t";
+    if (show_arrows) {
+      file << "digraph G {\n\t";
+    } else {
+      file << "graph G {\n\t";
+    }
     file << "rankdir=LR;\n\tsplines=false;\n\tedge[style=invis];\n\tranksep="
             "1.4;\n\t";
-    file << "node[shape=circle,color=black,style=filled,fillcolor=gray];\n\t";
+    file << "node[shape=circle,color=black,style=filled,fillcolor=lightgray];"
+            "\n\t";
     for (std::size_t i = 0; i < layers_.size(); ++i) {
-      file << "{\n\t\t";
+      file << "{\n\t";
       for (int j = 0; j < layers_[i]; ++j) {
-        file << "n_" << i << "_" << j << " [label=";
+        file << "\tn_" << i << "_" << j << " [label=";
         if (i == 0 && j < input_names.size()) {
           file << "\"" << input_names[j] << "\"";
         } else if (i == static_cast<int>(layers_.size()) - 1 &&
@@ -249,16 +254,22 @@ class NeuralNetworkSpecification {
         } else {
           file << "\"\"";
         }
-        file << "];\n\t\t";
+        file << "];\n\t";
       }
       file << "}\n\t";
     }
     file << "// prevent tilting\n\t";
     for (std::size_t i = 2; i < layers_.size(); ++i) {
-      file << "n_" << i - 1 << "_0--n_" << i << "_0;\n\t";
+      file << "n_" << i - 1 << "_0-";
+      file << (show_arrows ? '>' : '-');
+      file << "n_" << i << "_0;\n\t";
     }
-    file << "edge[style=solid, tailport=e, headport=w];\n\t";
-    double max_weight = 0;
+    file << "edge[style=solid";
+    if (!show_arrows) {
+      file << ", tailport=e, headport=w";
+    }
+    file << "];\n\t";
+    double max_weight = 2;
     if (!weights.empty()) {
       max_weight = std::abs(Algebra::from_double(weights[0]));
       for (const auto& w : weights) {
@@ -269,7 +280,9 @@ class NeuralNetworkSpecification {
     for (std::size_t i = 1; i < layers_.size(); ++i) {
       for (int j = 0; j < layers_[i]; ++j) {
         for (int k = 0; k < layers_[i - 1]; ++k, ++weight_i) {
-          file << "n_" << i - 1 << "_" << k << "--n_" << i << "_" << j;
+          file << "\tn_" << i - 1 << "_" << k << "-";
+          file << (show_arrows ? '>' : '-');
+          file << "n_" << i << "_" << j;
           if (!weights.empty()) {
             file << "[penwidth="
                  << std::to_string(
@@ -277,7 +290,7 @@ class NeuralNetworkSpecification {
                         max_weight * 3.0)
                  << "]";
           }
-          file << ";\n\t";
+          file << ";\n";
         }
       }
     }
