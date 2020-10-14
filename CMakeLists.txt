@@ -214,7 +214,7 @@ include(ExternalProject)
 # Add CppAD as an external project and an imported target.
 ExternalProject_Add(CppAD-Project
   PREFIX CppAD
-  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/CppAD
+  SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party/CppAD
   CMAKE_ARGS
     -Dcppad_prefix=${CMAKE_CURRENT_BINARY_DIR}/CppAD
 )
@@ -226,7 +226,7 @@ target_include_directories(CppAD INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/CppAD/inc
 # Same for CppADCodeGen
 ExternalProject_Add(CppADCodeGen-Project
   PREFIX CppADCodeGen
-  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/CppADCodeGen
+  SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party/CppADCodeGen
   CMAKE_ARGS
     -DCPPAD_INCLUDE_DIR=${CMAKE_CURRENT_BINARY_DIR}/CppAD/include
     -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen
