@@ -5,11 +5,14 @@
 #include <stan/math/fwd.hpp>
 #endif
 
+// clang-format off
+#include <cppad/cg.hpp>
+// clang-format on
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <iostream>
 
-#include "math/tiny/cppad_utils.h"  // ADL lookup of comparisons
 #include "spatial_vector.hpp"
 
 namespace tds {
@@ -204,7 +207,7 @@ struct EigenAlgebraT {
   }
 
   static Scalar scalar_from_string(const std::string &s) {
-    return std::stod(s);
+    return from_double(std::stod(s));
   }
 
   EIGEN_ALWAYS_INLINE static Vector3 zero3() { return Vector3::Zero(); }
