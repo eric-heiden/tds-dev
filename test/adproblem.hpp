@@ -73,7 +73,7 @@ struct NNBenchFunctor {
   BENCHMARK(BM_##diff_type##_Pendulum_Grad);
 
 #define TDS_AD_TEST(diff_type)                                               \
-  TEST(ADTest, diff_type##_VS_CERES) {                                       \
+  TEST(ADTest, NN_##diff_type##_VS_CERES) {                                  \
     std::default_random_engine e(1234);                                      \
     std::normal_distribution<> normal_dist(0, 1);                            \
     using DiffProblemType =                                                  \
@@ -86,6 +86,27 @@ struct NNBenchFunctor {
     CeresProblemType::DoubleVector cx(kParameterDim);                        \
     for (int trial = 0; trial < kTrials; ++trial) {                          \
       for (int i = 0; i < kParameterDim; ++i) {                              \
+        const double xi = normal_dist(e);                                    \
+        dx[i] = xi;                                                          \
+        cx[i] = xi;                                                          \
+      }                                                                      \
+      auto dgrad = dproblem.gradient(dx);                                    \
+      auto cgrad = cproblem.gradient(cx);                                    \
+      EXPECT_THAT(dgrad, ::testing::Pointwise(::testing::FloatEq(), cgrad)); \
+    }                                                                        \
+  }                                                                          \
+                                                                             \
+  TEST(ADTest, Pendulum_##diff_type##_VS_CERES) {                            \
+    std::default_random_engine e(1234);                                      \
+    std::normal_distribution<> normal_dist(0, 1);                            \
+    auto dproblem = create_problem<tds::diff_type>();                        \
+    auto cproblem = create_problem<tds::DIFF_CERES>();                       \
+    using DiffProblemType = decltype(dproblem);                              \
+    using CeresProblemType = decltype(cproblem);                             \
+    DiffProblemType::DoubleVector dx(DiffProblemType::kParameterDim);        \
+    CeresProblemType::DoubleVector cx(CeresProblemType::kParameterDim);      \
+    for (int trial = 0; trial < kTrials; ++trial) {                          \
+      for (int i = 0; i < DiffProblemType::kParameterDim; ++i) {             \
         const double xi = normal_dist(e);                                    \
         dx[i] = xi;                                                          \
         cx[i] = xi;                                                          \
