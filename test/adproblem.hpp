@@ -7,14 +7,15 @@
 #include "math/tiny/cppad_utils.h"
 #include "math/tiny/tiny_double_utils.h"
 #include "utils/optimization_problem.hpp"
+#include "estimation_utils.hpp"
 #include <random>
 
 constexpr int kInputDim = 5;
 const std::vector<int> kLayerSizes = {10, 10};
-constexpr tds::NeuralNetworkActivation kActivation = tds::NN_ACT_ELU;
+constexpr tds::NeuralNetworkActivation kActivation = tds::NN_ACT_TANH;
 constexpr bool kLearnBias = true;
 constexpr int kParameterDim = 175;
-constexpr int kTrials = 1;
+constexpr int kTrials = 10;
 
 template <typename Algebra>
 std::vector<typename Algebra::Scalar> Input() {
@@ -47,33 +48,34 @@ struct NNBenchFunctor {
   }
 };
 
-#define TDS_AD_BENCH(diff_type)                                   \
-  static void BM_##diff_type##_Eval(benchmark::State& state) {    \
-    using ProblemType =                                           \
-        tds::OptimizationProblem<tds::diff_type, NNBenchFunctor>; \
-    ProblemType problem;                                          \
-    ProblemType::DoubleVector x(kParameterDim, 5.0);              \
-    for (auto _ : state) {                                        \
-      problem.fitness(x);                                         \
-    }                                                             \
-  }                                                               \
-  BENCHMARK(BM_##diff_type##_Eval);                               \
-                                                                  \
-  static void BM_##diff_type##_Grad(benchmark::State& state) {    \
-    using ProblemType =                                           \
-        tds::OptimizationProblem<tds::diff_type, NNBenchFunctor>; \
-    ProblemType problem;                                          \
-    ProblemType::DoubleVector x(kParameterDim, 5.0);              \
-    for (auto _ : state) {                                        \
-      problem.gradient(x);                                        \
-    }                                                             \
-  }                                                               \
-  BENCHMARK(BM_##diff_type##_Grad);
+#define TDS_AD_BENCH(diff_type)                                         \
+  static void BM_##diff_type##_NN_Grad(benchmark::State& state) {       \
+    using ProblemType =                                                 \
+        tds::OptimizationProblem<tds::diff_type, NNBenchFunctor>;       \
+    ProblemType problem;                                                \
+    ProblemType::DoubleVector x(kParameterDim, 5.0);                    \
+    problem.gradient(x);                                                \
+    for (auto _ : state) {                                              \
+      problem.gradient(x);                                              \
+    }                                                                   \
+  }                                                                     \
+  BENCHMARK(BM_##diff_type##_NN_Grad);                                  \
+                                                                        \
+  static void BM_##diff_type##_Pendulum_Grad(benchmark::State& state) { \
+    auto problem = create_problem<tds::diff_type>();                    \
+    using ProblemType = decltype(problem);                              \
+    ProblemType::DoubleVector x(ProblemType::kParameterDim, 5.0);       \
+    problem.gradient(x);                                                \
+    for (auto _ : state) {                                              \
+      problem.gradient(x);                                              \
+    }                                                                   \
+  }                                                                     \
+  BENCHMARK(BM_##diff_type##_Pendulum_Grad);
 
 #define TDS_AD_TEST(diff_type)                                               \
   TEST(ADTest, diff_type##_VS_CERES) {                                       \
     std::default_random_engine e(1234);                                      \
-    std::normal_distribution<> normal_dist(0, 100);                          \
+    std::normal_distribution<> normal_dist(0, 1);                            \
     using DiffProblemType =                                                  \
         tds::OptimizationProblem<tds::diff_type, NNBenchFunctor>;            \
     using CeresProblemType =                                                 \

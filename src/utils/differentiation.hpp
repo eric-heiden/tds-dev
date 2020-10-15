@@ -13,13 +13,13 @@
 #include <ceres/autodiff_cost_function.h>
 // clang-format on
 
+#include <cppad/cg.hpp>
 #include "base.hpp"
 #include "math/tiny/tiny_dual.h"
 #include "math/tiny/tiny_dual_utils.h"
 #include "math/eigen_algebra.hpp"
 #include "math/tiny/tiny_algebra.hpp"
 #include "math/tiny/ceres_utils.h"
-#include "math/tiny/cppad_utils.h"
 
 namespace tds {
 enum DiffMethod {
@@ -29,6 +29,7 @@ enum DiffMethod {
   DIFF_STAN_REVERSE,
   DIFF_STAN_FORWARD,
   DIFF_CPPAD_AUTO,
+  DIFF_CPPAD_CODEGEN_AUTO,
 };
 
 /**
@@ -315,7 +316,7 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
   using Scalar = typename ScalarAlgebra::Scalar;
   using Dual = typename CppAD::AD<Scalar>;
   F<ScalarAlgebra> f_scalar_;
-  F<EigenAlgebraT<CppAD::AD<Scalar>>> f_ad_;
+  F<EigenAlgebraT<Dual>> f_ad_;
   mutable CppAD::ADFun<Scalar> tape_;
   mutable std::vector<Scalar> gradient_;
 
@@ -335,6 +336,49 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     gradient_ = tape_.Jacobian(x);
+    return gradient_;
+  }
+};
+
+template <template <typename> typename F, typename ScalarAlgebra>
+class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
+  using Scalar = typename ScalarAlgebra::Scalar;
+  using CGScalar = typename CppAD::cg::CG<Scalar>;
+  using Dual = typename CppAD::AD<CGScalar>;
+  F<ScalarAlgebra> f_scalar_;
+  F<EigenAlgebraT<Dual>> f_ad_;
+  mutable std::vector<Scalar> gradient_;
+  std::unique_ptr<CppAD::cg::DynamicLib<Scalar>> lib_;
+
+  void Init() {
+    std::vector<Dual> ax(F<ScalarAlgebra>::kDim);
+    for (auto& axi : ax) {
+      axi = ScalarAlgebra::zero();
+    }
+    CppAD::Independent(ax);
+    std::vector<Dual> ay(1);
+    ay[0] = f_ad_(ax);
+    CppAD::ADFun<CGScalar> tape;
+    tape.Dependent(ax, ay);
+
+    CppAD::cg::ModelCSourceGen<Scalar> cgen(tape, "model");
+    cgen.setCreateJacobian(true);
+    CppAD::cg::ModelLibraryCSourceGen<Scalar> libcgen(cgen);
+    CppAD::cg::DynamicModelLibraryProcessor<Scalar> p(libcgen);
+    CppAD::cg::GccCompiler<Scalar> compiler;
+    lib_ = p.createDynamicLibrary(compiler);
+  }
+
+ public:
+  GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra>() { Init(); }
+  GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra>(
+      const GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra>&) {
+    Init();
+  }
+
+  Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
+  const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
+    gradient_ = lib_->model("model")->Jacobian(x);
     return gradient_;
   }
 };

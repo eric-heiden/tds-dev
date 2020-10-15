@@ -59,9 +59,38 @@ struct CppADUtils {
   }
 
   template <class T>
+  static T exp(const T& v) {
+    using std::exp;
+    return exp(v);
+  }
+
+  template <class T>
+  static T log(const T& v) {
+    using std::log;
+    return log(v);
+  }
+
+  template <class T>
+  static T tanh(const T& v) {
+    using std::tanh;
+    return tanh(v);
+  }
+
+  template <class T>
   static T atan2(const T& dy, const T& dx) {
     using std::atan2;
     return atan2(dy, dx);
+  }
+
+  template <class T>
+  static T max1(const T& a, const T& b) {
+    printf("Called CppAD CondExpGt\n");
+    return CppAD::CondExpGt(a, b, a, b);
+  }
+
+  template <class T>
+  static T abs(const T& a) {
+    return CppAD::CondExpGt(a, zero(), a, -a);
   }
 
   static double getDouble(const Scalar& v) { return CppAD::Value(v); }
@@ -74,6 +103,8 @@ struct CppADUtils {
   static Scalar convert(T) = delete;  // C++11
 
   static Scalar convert(int value) { return Scalar(double(value)); }
+
+  static Scalar scalar_from_double(int value) { return Scalar(double(value)); }
 
   template <class T>
   static Scalar fraction(T, T) = delete;  // C++11

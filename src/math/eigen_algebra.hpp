@@ -9,6 +9,7 @@
 #include <Eigen/Geometry>
 #include <iostream>
 
+#include "math/tiny/cppad_utils.h"  // ADL lookup of comparisons
 #include "spatial_vector.hpp"
 
 namespace tds {
@@ -160,7 +161,7 @@ struct EigenAlgebraT {
 
   EIGEN_ALWAYS_INLINE static Matrix3 cross_matrix(const Vector3 &v) {
     Matrix3 tmp;
-    tmp << 0., -v[2], v[1], v[2], 0., -v[0], -v[1], v[0], 0.;
+    tmp << zero(), -v[2], v[1], v[2], zero(), -v[0], -v[1], v[0], zero();
     return tmp;
   }
 
@@ -172,28 +173,34 @@ struct EigenAlgebraT {
 
   EIGEN_ALWAYS_INLINE static Matrix3 diagonal3(const Vector3 &v) {
     Matrix3 tmp;
-    tmp << v[0], 0, 0, 0, v[1], 0, 0, 0, v[2];
+    tmp.setZero();
+    tmp(0, 0) = v[0];
+    tmp(1, 1) = v[1];
+    tmp(2, 2) = v[2];
     return tmp;
   }
 
   EIGEN_ALWAYS_INLINE static Matrix3 diagonal3(const Scalar &v) {
     Matrix3 tmp;
-    tmp << v, 0, 0, 0, v, 0, 0, 0, v;
+    tmp.setZero();
+    tmp(0, 0) = v;
+    tmp(1, 1) = v;
+    tmp(2, 2) = v;
     return tmp;
   }
 
   EIGEN_ALWAYS_INLINE static Matrix3 eye3() { return Matrix3::Identity(); }
   EIGEN_ALWAYS_INLINE static void set_identity(Quaternion &quat) {
-    quat = Quaternion(1., 0., 0., 0.);
+    quat = Quaternion(Scalar(1.), Scalar(0.), Scalar(0.), Scalar(0.));
   }
 
-  EIGEN_ALWAYS_INLINE static Scalar zero() { return 0; }
-  EIGEN_ALWAYS_INLINE static Scalar one() { return 1; }
-  EIGEN_ALWAYS_INLINE static Scalar two() { return 2; }
-  EIGEN_ALWAYS_INLINE static Scalar half() { return 0.5; }
-  EIGEN_ALWAYS_INLINE static Scalar pi() { return M_PI; }
+  EIGEN_ALWAYS_INLINE static Scalar zero() { return Scalar(0); }
+  EIGEN_ALWAYS_INLINE static Scalar one() { return Scalar(1); }
+  EIGEN_ALWAYS_INLINE static Scalar two() { return Scalar(2); }
+  EIGEN_ALWAYS_INLINE static Scalar half() { return Scalar(0.5); }
+  EIGEN_ALWAYS_INLINE static Scalar pi() { return Scalar(M_PI); }
   EIGEN_ALWAYS_INLINE static Scalar fraction(int a, int b) {
-    return ((double)a) / b;
+    return (Scalar(a)) / b;
   }
 
   static Scalar scalar_from_string(const std::string &s) {
@@ -201,9 +208,15 @@ struct EigenAlgebraT {
   }
 
   EIGEN_ALWAYS_INLINE static Vector3 zero3() { return Vector3::Zero(); }
-  EIGEN_ALWAYS_INLINE static Vector3 unit3_x() { return Vector3(1, 0, 0); }
-  EIGEN_ALWAYS_INLINE static Vector3 unit3_y() { return Vector3(0, 1, 0); }
-  EIGEN_ALWAYS_INLINE static Vector3 unit3_z() { return Vector3(0, 0, 1); }
+  EIGEN_ALWAYS_INLINE static Vector3 unit3_x() {
+    return Vector3(one(), zero(), zero());
+  }
+  EIGEN_ALWAYS_INLINE static Vector3 unit3_y() {
+    return Vector3(zero(), one(), zero());
+  }
+  EIGEN_ALWAYS_INLINE static Vector3 unit3_z() {
+    return Vector3(zero(), zero(), one());
+  }
 
   EIGEN_ALWAYS_INLINE static VectorX segment(const VectorX &vec,
                                              int start_index, int length) {
@@ -387,7 +400,7 @@ struct EigenAlgebraT {
     Scalar c = cos(angle);
     Scalar s = sin(angle);
     Matrix3 temp;
-    temp << 1, 0, 0, 0, c, s, 0, -s, c;
+    temp << one(), zero(), zero(), zero(), c, s, zero(), -s, c;
     return temp;
   }
 
@@ -396,7 +409,7 @@ struct EigenAlgebraT {
     Scalar c = cos(angle);
     Scalar s = sin(angle);
     Matrix3 temp;
-    temp << c, 0, -s, 0, 1, 0, s, 0, c;
+    temp << c, zero(), -s, zero(), one(), zero(), s, zero(), c;
     return temp;
   }
 
@@ -405,7 +418,7 @@ struct EigenAlgebraT {
     Scalar c = cos(angle);
     Scalar s = sin(angle);
     Matrix3 temp;
-    temp << c, s, 0, -s, c, 0, 0, 0, 1;
+    temp << c, s, zero(), -s, c, zero(), zero(), zero(), one();
     return temp;
   }
 
@@ -549,12 +562,17 @@ struct EigenAlgebraT {
     if constexpr (std::is_same_v<Scalar, stan::math::var> ||
                   std::is_same_v<Scalar, stan::math::fvar<double>>) {
       return stan::math::value_of(s);
+    } else
+#endif
+        if constexpr (std::is_same_v<std::remove_cv_t<Scalar>,
+                                     CppAD::AD<CppAD::cg::CG<double>>>) {
+      return CppAD::Value(s).getValue();
+    } else if constexpr (std::is_same_v<std::remove_cv_t<Scalar>,
+                                        CppAD::AD<double>>) {
+      return CppAD::Value(s);
     } else {
       return static_cast<double>(s);
     }
-#else
-    return static_cast<double>(s);
-#endif
   }
 
   TINY_INLINE static Scalar from_double(double s) {

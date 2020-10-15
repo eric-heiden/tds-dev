@@ -65,6 +65,7 @@ add_executable(adbench adbench.cpp)
 target_include_directories(adbench PRIVATE ../src)
 target_link_libraries(adbench
   PRIVATE
+    ${CMAKE_DL_LIBS}
     benchmark
     CppADCodeGen
     ${STAN_LIBRARIES}
@@ -75,6 +76,7 @@ add_executable(adtest adtest.cpp)
 target_include_directories(adtest PRIVATE ../src)
 target_link_libraries(adtest
   PRIVATE
+    ${CMAKE_DL_LIBS}
     benchmark
     gtest_main
     gmock
