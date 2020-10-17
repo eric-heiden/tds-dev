@@ -20,6 +20,7 @@
 #include "math/eigen_algebra.hpp"
 #include "math/tiny/tiny_algebra.hpp"
 #include "math/tiny/ceres_utils.h"
+#include "stopwatch.hpp"
 
 namespace tds {
 enum DiffMethod {
@@ -350,7 +351,9 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   mutable std::vector<Scalar> gradient_;
   std::unique_ptr<CppAD::cg::DynamicLib<Scalar>> lib_;
 
-  void Init() {
+  void Init(bool verbose = true, bool use_clang = true,
+            int optimization_level = 0,
+            std::size_t max_assignments_per_func = 5000) {
     std::vector<Dual> ax(F<ScalarAlgebra>::kDim);
     for (auto& axi : ax) {
       axi = ScalarAlgebra::zero();
@@ -361,12 +364,52 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     CppAD::ADFun<CGScalar> tape;
     tape.Dependent(ax, ay);
 
+    Stopwatch timer;
+    timer.start();
     CppAD::cg::ModelCSourceGen<Scalar> cgen(tape, "model");
     cgen.setCreateJacobian(true);
+    // cgen.setCreateSparseJacobian(true);
+    // cgen.setCreateSparseHessian(true);
+    cgen.setMaxAssignmentsPerFunc(max_assignments_per_func);
+    if (verbose) {
+      printf("Created CppAD::cg::ModelCSourceGen.\t(%.3fs)\n", timer.stop());
+      fflush(stdout);
+      timer.start();
+    }
     CppAD::cg::ModelLibraryCSourceGen<Scalar> libcgen(cgen);
+    libcgen.setVerbose(verbose);
+    if (verbose) {
+      printf("Created CppAD::cg::ModelLibraryCSourceGen.\t(%.3fs)\n",
+             timer.stop());
+      fflush(stdout);
+      timer.start();
+    }
     CppAD::cg::DynamicModelLibraryProcessor<Scalar> p(libcgen);
-    CppAD::cg::GccCompiler<Scalar> compiler;
-    lib_ = p.createDynamicLibrary(compiler);
+    if (verbose) {
+      printf("Created CppAD::cg::DynamicModelLibraryProcessor.\t(%.3fs)\n",
+             timer.stop());
+      fflush(stdout);
+      timer.start();
+    }
+    std::unique_ptr<CppAD::cg::AbstractCCompiler<Scalar>> compiler;
+    if (use_clang) {
+      compiler = std::make_unique<CppAD::cg::ClangCompiler<Scalar>>();
+    } else {
+      compiler = std::make_unique<CppAD::cg::GccCompiler<Scalar>>();
+    }
+    compiler->setSourcesFolder("cppadcg_src");
+    compiler->setSaveToDiskFirst(true);
+    compiler->addCompileFlag("-O" + std::to_string(optimization_level));
+    if (verbose) {
+      printf("Created CppAD::cg::GccCompiler.\t(%.3fs)\n", timer.stop());
+      fflush(stdout);
+      timer.start();
+    }
+    lib_ = p.createDynamicLibrary(*compiler);
+    if (verbose) {
+      printf("Finished compiling dynamic library.\t(%.3fs)\n", timer.stop());
+      fflush(stdout);
+    }
   }
 
  public:
