@@ -33,6 +33,62 @@ enum DiffMethod {
   DIFF_CPPAD_CODEGEN_AUTO,
 };
 
+TINY_INLINE std::string diff_method_name(DiffMethod m) {
+  switch (m) {
+    case DIFF_NUMERICAL:
+      return "NUMERICAL";
+    case DIFF_CERES:
+      return "CERES";
+    case DIFF_DUAL:
+      return "DUAL";
+    case DIFF_STAN_REVERSE:
+      return "STAN_REVERSE";
+    case DIFF_STAN_FORWARD:
+      return "STAN_FORWARD";
+    case DIFF_CPPAD_AUTO:
+      return "CPPAD_AUTO";
+    case DIFF_CPPAD_CODEGEN_AUTO:
+      return "CPPAD_CODEGEN_AUTO";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+template <DiffMethod Method, int Dim, typename Scalar>
+struct default_diff_algebra {};
+template <int Dim, typename Scalar>
+struct default_diff_algebra<DIFF_NUMERICAL, Dim, Scalar> {
+  using type = EigenAlgebraT<Scalar>;
+};
+template <int Dim, typename Scalar>
+struct default_diff_algebra<DIFF_CERES, Dim, Scalar> {
+  using ADScalar = ceres::Jet<Scalar, Dim>;
+  using type = TinyAlgebra<ADScalar, CeresUtils<Dim, Scalar>>;
+};
+template <int Dim, typename Scalar>
+struct default_diff_algebra<DIFF_DUAL, Dim, Scalar> {
+  using type = TinyAlgebra<TinyDual<Scalar>, TinyDualUtils<Scalar>>;
+};
+template <int Dim>
+struct default_diff_algebra<DIFF_STAN_REVERSE, Dim, double> {
+  using type = EigenAlgebraT<stan::math::var>;
+};
+template <int Dim, typename Scalar>
+struct default_diff_algebra<DIFF_STAN_FORWARD, Dim, Scalar> {
+  using type = EigenAlgebraT<stan::math::fvar<Scalar>>;
+};
+template <int Dim, typename Scalar>
+struct default_diff_algebra<DIFF_CPPAD_AUTO, Dim, Scalar> {
+  using ADScalar = typename CppAD::AD<Scalar>;
+  using type = EigenAlgebraT<ADScalar>;
+};
+template <int Dim, typename Scalar>
+struct default_diff_algebra<DIFF_CPPAD_CODEGEN_AUTO, Dim, Scalar> {
+  using CGScalar = typename CppAD::cg::CG<Scalar>;
+  using ADScalar = typename CppAD::AD<CGScalar>;
+  using type = EigenAlgebraT<ADScalar>;
+};
+
 /**
  * Central difference for scalar-valued function `f` given vector `x`.
  */
@@ -204,7 +260,7 @@ class GradientFunctional<DIFF_CERES, F, ScalarAlgebra> {
     GradientFunctional* parent;
 
     F<ScalarAlgebra> f_scalar;
-    F<TinyAlgebra<ADScalar, CeresUtils<kDim>>> f_jet;
+    F<TinyAlgebra<ADScalar, CeresUtils<kDim, Scalar>>> f_jet;
 
     CostFunctional(GradientFunctional* parent) : parent(parent) {}
 

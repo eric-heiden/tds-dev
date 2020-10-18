@@ -17,6 +17,7 @@ class OptimizationProblem {
   static_assert(kParameterDim >= 1);
   typedef std::array<EstimationParameter, kParameterDim> ParameterVector;
   typedef GradientFunctional<Method, F> CostFunctor;
+  static const DiffMethod kDiffMethod = Method;
 
 #if USE_PAGMO
   typedef pagmo::vector_double DoubleVector;
@@ -43,9 +44,10 @@ class OptimizationProblem {
   TINY_INLINE const CostFunctor& cost() const { return cost_; }
 
   void set_params(const std::array<double, kParameterDim>& params) {
-    for (int i = 0; i < kParameterDim; ++i) {
-      parameters_[i].value = params[i];
-    }
+    parameters_ = params;
+    // for (int i = 0; i < kParameterDim; ++i) {
+    //   parameters_[i].value = params[i];
+    // }
   }
 
   OptimizationProblem() = default;
