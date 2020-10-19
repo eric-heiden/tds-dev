@@ -68,6 +68,19 @@ class MultiBodyConstraintSolver {
 
   virtual ~MultiBodyConstraintSolver() = default;
 
+  template <typename AlgebraTo = Algebra>
+  MultiBodyConstraintSolver<AlgebraTo> clone() const {
+    typedef Conversion<Algebra, AlgebraTo> C;
+    MultiBodyConstraintSolver<AlgebraTo> conv;
+    conv.pgs_iterations_ = pgs_iterations_;
+    conv.least_squares_residual_threshold_ = least_squares_residual_threshold_;
+    conv.limit_dependency_ = limit_dependency_;
+    conv.erp_ = C::convert(erp_);
+    conv.cfm_ = C::convert(cfm_);
+    conv.num_friction_dir_ = num_friction_dir_;
+    return conv;
+  }
+
  private:
   /**
    * Projected Gauss-Seidel solver for a MLCP defined by coefficient matrix A
@@ -465,4 +478,10 @@ class MultiBodyConstraintSolver {
     }
   }
 };
+
+template <typename AlgebraFrom, typename AlgebraTo = AlgebraFrom>
+static TINY_INLINE MultiBodyConstraintSolver<AlgebraTo> clone(
+    const MultiBodyConstraintSolver<AlgebraFrom>& s) {
+  return s.template clone<AlgebraTo>();
+}
 }  // namespace tds

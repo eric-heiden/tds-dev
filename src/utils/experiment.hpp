@@ -115,7 +115,7 @@ class Experiment {
   virtual void after_iteration() {}
 
   template <typename OptimizationProblem>
-  void run(const OptimizationProblem& problem) {
+  void run(OptimizationProblem& problem) {
     if (log["settings"]["optimizer"] == "pagmo") {
       run_pagmo(problem);
       return;
@@ -131,7 +131,7 @@ class Experiment {
 
  protected:
   template <typename OptimizationProblemT>
-  void update_log(const OptimizationProblemT& problem) {
+  void update_log(OptimizationProblemT& problem) {
     log["param_dim"] = problem.kParameterDim;
     log["diff_method"] = tds::diff_method_name(problem.kDiffMethod);
     for (const auto& param : problem.parameters()) {
@@ -140,7 +140,7 @@ class Experiment {
   }
 
   template <typename OptimizationProblemT>
-  void run_pagmo(const OptimizationProblemT& problem) {
+  void run_pagmo(OptimizationProblemT& problem) {
     update_log(problem);
 #if USE_PAGMO
     pagmo::problem prob(problem);
@@ -151,6 +151,62 @@ class Experiment {
                             ["verbosity"]);  // print every n function evals
     solver.set_xtol_abs(log["settings"]["pagmo"]["nlopt"]["xtol_abs"]);
     solver.set_xtol_rel(log["settings"]["pagmo"]["nlopt"]["xtol_rel"]);
+
+    pagmo::algorithm algo{solver};
+    // pagmo::algorithm algo{pagmo::sade()};
+    // pagmo::algorithm algo{pagmo::ipopt()};
+    std::size_t num_islands = log["settings"]["pagmo"]["num_islands"];
+    std::size_t num_individuals = log["settings"]["pagmo"]["num_individuals"];
+    std::size_t num_evolutions = log["settings"]["pagmo"]["num_evolutions"];
+    pagmo::archipelago archi{num_islands, algo, prob, num_individuals};
+    for (std::size_t evolution = 0; evolution < num_evolutions; ++evolution) {
+      std::cout << "###### EVOLUTION " << evolution << " ######\n";
+      archi.evolve();
+      archi.wait_check();
+      int i = 0, best_island = 0;
+      const auto& cost_functor = problem.cost();
+      for (const auto& island : archi) {
+        auto params = island.get_population().champion_x();
+        double f = island.get_population().champion_f()[0];
+        if (f < archi[best_island].get_population().champion_f()[0]) {
+          best_island = i;
+        }
+        std::cout << "Best x from island " << (i++) << ": ";
+        for (std::size_t j = 0; j < problem.kParameterDim; ++j) {
+          std::cout << params[j] << " ";
+        }
+        std::cout << "\tf(x): " << f << std::endl;
+      }
+      auto best_params = archi[best_island].get_population().champion_x();
+      for (std::size_t j = 0; j < problem.kParameterDim; ++j) {
+        problem.parameters()[j].value = best_params[j];
+        std::cout << problem.parameters()[j] << std::endl;
+      }
+
+      double best_cost = problem.fitness(best_params)[0];
+      std::cout << "Best cost from evolution " << evolution << ": " << best_cost
+                << std::endl;
+      log["episodes"][evolution]["best_cost"] = best_cost;
+      std::cout << "Training cost: " << best_cost << std::endl;
+      std::cout << "Gradient: ";
+      const auto& gradient = problem.gradient(best_params);
+      for (std::size_t i = 0; i < problem.kParameterDim; ++i) {
+        std::cout << gradient[i] << "  ";
+      }
+      std::cout << std::endl;
+
+      for (const auto& p : problem.parameters()) {
+        log["episodes"][evolution]["parameters"][p.name] = p.value;
+      }
+
+      augmentation.save_graphviz(best_params,
+                                 name + "_" + std::to_string(evolution));
+
+      after_iteration();
+
+      std::string filename = name + "_" + std::to_string(evolution) + ".json";
+      save_log(filename);
+    }
 #else
     throw std::runtime_error(
         "CMake option 'USE_PAGMO' needs to be active to use Pagmo.");
@@ -158,7 +214,7 @@ class Experiment {
   }
 
   template <typename OptimizationProblemT>
-  void run_ceres(const OptimizationProblemT& problem) {
+  void run_ceres(OptimizationProblemT& problem) {
     update_log(problem);
     tds::CeresEstimator estimator(&problem);
     estimator.setup();

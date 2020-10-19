@@ -136,6 +136,29 @@ class MultiBodyConstraintSolverSpring
  public:
   MultiBodyConstraintSolverSpring() { needs_outer_iterations_ = false; }
 
+  template <typename AlgebraTo = Algebra>
+  MultiBodyConstraintSolverSpring<AlgebraTo> clone() const {
+    typedef Conversion<Algebra, AlgebraTo> C;
+    MultiBodyConstraintSolverSpring<AlgebraTo> conv;
+    conv.needs_outer_iterations_ = needs_outer_iterations_;
+    conv.spring_k_ = C::convert(spring_k_);
+    conv.damper_d_ = C::convert(damper_d_);
+    conv.exponent_n_ = C::convert(exponent_n_);
+    conv.exponent_n_air_ = C::convert(exponent_n_air_);
+    conv.exponent_vel_air_ = C::convert(exponent_vel_air_);
+    conv.hard_contact_condition_ = hard_contact_condition_;
+    conv.smoothing_method_ = C::convert(smoothing_method_);
+    conv.smooth_alpha_vel_ = C::convert(smooth_alpha_vel_);
+    conv.smooth_alpha_normal_ = C::convert(smooth_alpha_normal_);
+    conv.mu_static_ = C::convert(mu_static_);
+    conv.andersson_vs_ = C::convert(andersson_vs_);
+    conv.andersson_p_ = C::convert(andersson_p_);
+    conv.andersson_ktanh_ = C::convert(andersson_ktanh_);
+    conv.v_transition_ = C::convert(v_transition_);
+    conv.friction_model_ = friction_model_;
+    return conv;
+  }
+
   /**
    * Compute force magnitude for a compliant contact model based on a nonlinear
    * spring-damper system. It generalizes the Kelvin-Voigt and the Hunt-Crossley
@@ -301,8 +324,8 @@ class MultiBodyConstraintSolverSpring
 
     // joint torques to be applied (include DOFs for floating base)
     VectorX tau_a(mb_a->dof_qd()), tau_b(mb_b->dof_qd());
-    tau_a.set_zero();
-    tau_b.set_zero();
+    Algebra::set_zero(tau_a);
+    Algebra::set_zero(tau_b);
 
     for (const ContactPoint& cp : cps) {
       if (!hard_contact_condition_ || cp.distance < Algebra::zero()) {
@@ -339,8 +362,8 @@ class MultiBodyConstraintSolverSpring
         printf("Contact normal force magnitude: %.5f\n", force_normal);
 #endif
         Vector3 force_vector = world_normal * force_normal;
-        tau_a += jac_a.mul_transpose(force_vector);
-        tau_b -= jac_b.mul_transpose(force_vector);
+        tau_a += Algebra::mul_transpose(jac_a, force_vector);
+        tau_b -= Algebra::mul_transpose(jac_b, force_vector);
 
         // if (friction_model_ == FRICTION_NONE) {
         // continue;
@@ -405,12 +428,12 @@ class MultiBodyConstraintSolverSpring
         //   friction_vector.z.evaluate();
         // }
 
-        tau_a += jac_a.mul_transpose(friction_vector);
-        tau_b -= jac_b.mul_transpose(friction_vector);
+        tau_a += Algebra::mul_transpose(jac_a, friction_vector);
+        tau_b -= Algebra::mul_transpose(jac_b, friction_vector);
 
         // friction_vector = fr_direction2 * friction;
-        // tau_a += jac_a.mul_transpose(friction_vector);
-        // tau_b -= jac_b.mul_transpose(friction_vector);
+        // tau_a += Algebra::mul_transpose(jac_a, friction_vector);
+        // tau_b -= Algebra::mul_transpose(jac_b, friction_vector);
       }
     }
     // apply forces
@@ -442,4 +465,9 @@ class MultiBodyConstraintSolverSpring
   }
 };
 
+template <typename AlgebraFrom, typename AlgebraTo = AlgebraFrom>
+static TINY_INLINE MultiBodyConstraintSolverSpring<AlgebraTo> clone(
+    const MultiBodyConstraintSolverSpring<AlgebraFrom>& s) {
+  return s.template clone<AlgebraTo>();
+}
 }  // namespace tds

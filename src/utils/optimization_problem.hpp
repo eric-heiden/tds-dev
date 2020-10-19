@@ -13,7 +13,7 @@ namespace tds {
 template <DiffMethod Method, template <typename> typename F>
 class OptimizationProblem {
  public:
-  static const int kParameterDim = F<EigenAlgebra>::kDim;
+  static const inline int kParameterDim = F<EigenAlgebra>::kDim;
   static_assert(kParameterDim >= 1);
   typedef std::array<EstimationParameter, kParameterDim> ParameterVector;
   typedef GradientFunctional<Method, F> CostFunctor;

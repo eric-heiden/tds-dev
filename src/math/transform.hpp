@@ -3,8 +3,8 @@
 #include "inertia.hpp"
 #include "spatial_vector.hpp"
 
-// right-associative means transforms are multiplied like parent_transform * child_transform.
-// RBDL uses left-associative transforms
+// right-associative means transforms are multiplied like parent_transform *
+// child_transform. RBDL uses left-associative transforms
 #define RIGHT_ASSOCIATIVE_TRANSFORMS false
 
 namespace tds {
@@ -29,6 +29,12 @@ struct Transform {
       : translation(translation), rotation(rotation) {}
   Transform(const Scalar &trans_x, const Scalar &trans_y, const Scalar &trans_z)
       : translation(trans_x, trans_y, trans_z) {}
+
+  template <typename AlgebraTo = Algebra>
+  Transform<AlgebraTo> clone() const {
+    typedef Conversion<Algebra, AlgebraTo> C;
+    return Transform<AlgebraTo>(C::convert(translation), C::convert(rotation));
+  }
 
   friend std::ostream &operator<<(std::ostream &os, const Transform &tf) {
     os << "[ translation: " << tf.translation << "  rotation: " << tf.rotation
@@ -128,19 +134,18 @@ struct Transform {
     return Algebra::transpose(rotation) * (point - translation);
   }
 #else
-// Transform operator*(const Transform &t) const {
-//   Transform tr = *this;
-//   tr.translation = t.translation + t.rotation * translation;
-//   // tr.translation = t.translation + Algebra::transpose(t.rotation) * translation;
-//   tr.rotation *= t.rotation;
-//   return tr;
-// }
-// Transform operator*(const Transform &t) const {
-//   Transform tr = *this;
-//   tr.translation = t.translation + t.rotation * translation;
-//   tr.rotation *= t.rotation;
-//   return tr;
-// }
+  // Transform operator*(const Transform &t) const {
+  //   Transform tr = *this;
+  //   tr.translation = t.translation + t.rotation * translation;
+  //   // tr.translation = t.translation + Algebra::transpose(t.rotation) *
+  //   translation; tr.rotation *= t.rotation; return tr;
+  // }
+  // Transform operator*(const Transform &t) const {
+  //   Transform tr = *this;
+  //   tr.translation = t.translation + t.rotation * translation;
+  //   tr.rotation *= t.rotation;
+  //   return tr;
+  // }
   Transform operator*(const Transform &t) const {
     /// XXX this is different from Featherstone: we assume transforms are
     /// right-associative
@@ -364,4 +369,9 @@ struct Transform {
     return result;
   }
 };
+
+template <typename AlgebraFrom, typename AlgebraTo = AlgebraFrom>
+static TINY_INLINE Transform<AlgebraTo> clone(const Transform<AlgebraFrom>& x) {
+  return x.template clone<AlgebraTo>();
+}
 }  // namespace tds

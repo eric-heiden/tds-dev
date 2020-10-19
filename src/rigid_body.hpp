@@ -23,6 +23,9 @@
 namespace tds {
 template <typename Algebra>
 class RigidBody {
+  template <typename OtherAlgebra>
+  friend class RigidBody;
+
   using Scalar = typename Algebra::Scalar;
   using Vector3 = typename Algebra::Vector3;
   using Matrix3 = typename Algebra::Matrix3;
@@ -40,10 +43,10 @@ class RigidBody {
   Scalar inv_mass_;
   int user_index_;
 
-  const Geometry* geometry_;
+  Geometry* geometry_;
 
  public:
-  RigidBody(const Scalar& mass, const Geometry* geometry)
+  RigidBody(const Scalar& mass, Geometry* geometry)
       : mass_(mass), user_index_(-1), geometry_(geometry) {
     inv_mass_ =
         mass_ == Algebra::zero() ? Algebra::zero() : Algebra::one() / mass_;
@@ -59,16 +62,33 @@ class RigidBody {
     // local_inertia_(local_inertia)
   }
 
+  template <typename AlgebraTo = Algebra>
+  RigidBody<AlgebraTo> clone() const {
+    typedef Conversion<Algebra, AlgebraTo> C;
+    RigidBody<AlgebraTo> conv(C::convert(mass_),
+                              tds::clone<Algebra, AlgebraTo>(geometry_));
+    conv.world_pose_ = tds::clone<Algebra, AlgebraTo>(world_pose_);
+    conv.linear_velocity_ = C::convert(linear_velocity_);
+    conv.angular_velocity_ = C::convert(angular_velocity_);
+    conv.local_inertia_ = C::convert(local_inertia_);
+    conv.total_force_ = C::convert(total_force_);
+    conv.total_torque_ = C::convert(total_torque_);
+    conv.user_index_ = user_index_;
+    return conv;
+  }
+
   TINY_INLINE Pose& world_pose() { return world_pose_; }
   TINY_INLINE const Pose& world_pose() const { return world_pose_; }
 
-  const Geometry* geometry() const { return geometry_; }
+  Geometry* geometry() const { return geometry_; }
 
   /// Apply gravity force given the acceleration.
   void apply_gravity(const Vector3& gravity_acceleration) {
     Vector3 gravity_force = mass_ * gravity_acceleration;
     apply_central_force(gravity_force);
   }
+
+  const Scalar& mass() const { return mass_; }
 
   const Scalar& inv_mass() const { return inv_mass_; }
   const Matrix3& inv_inertia_world() const { return inv_inertia_world_; }
@@ -107,4 +127,10 @@ class RigidBody {
     world_pose_.orientation = Algebra::normalize(world_pose_.orientation);
   }
 };
+
+template <typename AlgebraFrom, typename AlgebraTo = AlgebraFrom>
+static TINY_INLINE RigidBody<AlgebraTo> clone(
+    const RigidBody<AlgebraFrom>& rb) {
+  return rb.template clone<AlgebraTo>();
+}
 }  // namespace tds

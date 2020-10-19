@@ -8,6 +8,8 @@
 namespace tds {
 template <typename Algebra>
 class MultiBody {
+  template <typename OtherAlgebra>
+  friend class MultiBody;
   template <typename>
   friend struct UrdfToMultiBody;
 
@@ -60,14 +62,48 @@ class MultiBody {
   // offset of geometry (relative to the base frame)
   std::vector<Transform> X_visuals_;
 
-  std::vector<const Geometry *> collision_geometries_;
+  std::vector<Geometry *> collision_geometries_;
   // offset of collision geometries (relative to this link frame)
   std::vector<Transform> X_collisions_;
 
   VectorX q_, qd_, qdd_, tau_;
 
+  std::string name_;
+
  public:
   explicit MultiBody(bool isFloating = false) : is_floating_(isFloating) {}
+
+  template <typename AlgebraTo = Algebra>
+  MultiBody<AlgebraTo> clone() const {
+    typedef Conversion<Algebra, AlgebraTo> C;
+    MultiBody<AlgebraTo> conv(is_floating_);
+    conv.name_ = name_;
+    conv.dof_ = dof_;
+    conv.q_ = C::convert(q_);
+    conv.qd_ = C::convert(qd_);
+    conv.qdd_ = C::convert(qdd_);
+    conv.tau_ = C::convert(tau_);
+    for (const auto &link : links_) {
+      conv.links_.push_back(link.template clone<AlgebraTo>());
+    }
+    conv.control_indices_ = control_indices_;
+    conv.visual_ids_ = visual_ids_;
+    for (const auto &x : X_visuals_) {
+      conv.X_visuals_.push_back(x.template clone<AlgebraTo>());
+    }
+    for (const auto &x : X_collisions_) {
+      conv.X_collisions_.push_back(x.template clone<AlgebraTo>());
+    }
+    for (const auto *geom : collision_geometries_) {
+      conv.collision_geometries_.push_back(tds::clone<Algebra, AlgebraTo>(geom));
+    }
+    conv.base_rbi_ = base_rbi_.template clone<AlgebraTo>();
+    conv.base_applied_force_ = base_applied_force_.template clone<AlgebraTo>();
+    return conv;
+  }
+
+  std::string &name() { return name_; }
+  const std::string &name() const { return name_; }
 
   TINY_INLINE const LinkCollection &links() const { return links_; }
   TINY_INLINE std::size_t size() const { return links_.size(); }
@@ -171,18 +207,17 @@ class MultiBody {
     return X_visuals_;
   }
 
-  TINY_INLINE std::vector<const Geometry *> &collision_geometries() {
+  TINY_INLINE std::vector<Geometry *> &collision_geometries() {
     return collision_geometries_;
   }
-  TINY_INLINE const std::vector<const Geometry *> &collision_geometries()
-      const {
+  TINY_INLINE const std::vector<Geometry *> &collision_geometries() const {
     return collision_geometries_;
   }
-  TINY_INLINE std::vector<const Geometry *> &collision_geometries(int link_id) {
+  TINY_INLINE std::vector<Geometry *> &collision_geometries(int link_id) {
     if (link_id == -1) return collision_geometries_;
     return links_[link_id].collision_geometries;
   }
-  TINY_INLINE const std::vector<const Geometry *> &collision_geometries(
+  TINY_INLINE const std::vector<Geometry *> &collision_geometries(
       int link_id) const {
     if (link_id == -1) return collision_geometries_;
     return links_[link_id].collision_geometries;
@@ -424,4 +459,10 @@ class MultiBody {
     links_.push_back(link);
   }
 };
+
+template <typename AlgebraFrom, typename AlgebraTo = AlgebraFrom>
+static TINY_INLINE MultiBody<AlgebraTo> clone(
+    const MultiBody<AlgebraFrom> &mb) {
+  return mb.template clone<AlgebraTo>();
+}
 }  // namespace tds

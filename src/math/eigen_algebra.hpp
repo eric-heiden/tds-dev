@@ -643,6 +643,12 @@ struct EigenAlgebraT {
   }
 
   template <typename T>
+  TINY_INLINE static auto pow(const T &s, const T &e) {
+    using std::pow;
+    return pow(s, e);
+  }
+
+  template <typename T>
   TINY_INLINE static auto exp(const T &s) {
     using std::exp;
     return exp(s);

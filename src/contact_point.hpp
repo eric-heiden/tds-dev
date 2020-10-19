@@ -12,6 +12,17 @@ struct ContactPoint {
   Vector3 world_point_on_a;
   Vector3 world_point_on_b;
   Scalar distance;
+
+  template <typename AlgebraTo = Algebra>
+  ContactPoint<AlgebraTo> clone() const {
+    typedef Conversion<Algebra, AlgebraTo> C;
+    ContactPoint<AlgebraTo> conv;
+    conv.world_normal_on_b = C::convert(world_normal_on_b);
+    conv.world_point_on_a = C::convert(world_point_on_a);
+    conv.world_point_on_b = C::convert(world_point_on_b);
+    conv.distance = C::convert(distance);
+    return conv;
+  }
 };
 
 template <typename Algebra>
