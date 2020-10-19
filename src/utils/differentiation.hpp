@@ -405,18 +405,20 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   F<ScalarAlgebra> f_scalar_;
   F<EigenAlgebraT<Dual>> f_ad_;
   mutable std::vector<Scalar> gradient_;
-  std::unique_ptr<CppAD::cg::DynamicLib<Scalar>> lib_;
+  static inline std::unique_ptr<CppAD::cg::DynamicLib<Scalar>> lib_;
 
-  void Init(bool verbose = true, bool use_clang = true,
-            int optimization_level = 0,
-            std::size_t max_assignments_per_func = 5000) {
+ public:
+  static void Compile(bool verbose = true, bool use_clang = true,
+                      int optimization_level = 3,
+                      std::size_t max_assignments_per_func = 5000) {
     std::vector<Dual> ax(F<ScalarAlgebra>::kDim);
     for (auto& axi : ax) {
       axi = ScalarAlgebra::zero();
     }
     CppAD::Independent(ax);
     std::vector<Dual> ay(1);
-    ay[0] = f_ad_(ax);
+    F<EigenAlgebraT<Dual>> f;
+    ay[0] = f(ax);
     CppAD::ADFun<CGScalar> tape;
     tape.Dependent(ax, ay);
 
@@ -468,15 +470,10 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     }
   }
 
- public:
-  GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra>() { Init(); }
-  GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra>(
-      const GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra>&) {
-    Init();
-  }
-
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
+    assert(lib_ != nullptr);
+    std::cout << "Gradient\n";
     gradient_ = lib_->model("model")->Jacobian(x);
     return gradient_;
   }
