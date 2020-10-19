@@ -52,6 +52,9 @@ struct NNBenchFunctor {
   static void BM_##diff_type##_NN_Grad(benchmark::State& state) {       \
     using ProblemType =                                                 \
         tds::OptimizationProblem<tds::diff_type, NNBenchFunctor>;       \
+    if constexpr (tds::diff_type == tds::DIFF_CPPAD_CODEGEN_AUTO) {     \
+      ProblemType::CostFunctor::Compile();                              \
+    }                                                                   \
     ProblemType problem;                                                \
     ProblemType::DoubleVector x(kParameterDim, 5.0);                    \
     problem.gradient(x);                                                \
@@ -64,6 +67,9 @@ struct NNBenchFunctor {
   static void BM_##diff_type##_Pendulum_Grad(benchmark::State& state) { \
     auto problem = create_problem<tds::diff_type>();                    \
     using ProblemType = decltype(problem);                              \
+    if constexpr (tds::diff_type == tds::DIFF_CPPAD_CODEGEN_AUTO) {     \
+      ProblemType::CostFunctor::Compile();                              \
+    }                                                                   \
     ProblemType::DoubleVector x(ProblemType::kParameterDim, 5.0);       \
     problem.gradient(x);                                                \
     for (auto _ : state) {                                              \
@@ -80,6 +86,9 @@ struct NNBenchFunctor {
         tds::OptimizationProblem<tds::diff_type, NNBenchFunctor>;            \
     using CeresProblemType =                                                 \
         tds::OptimizationProblem<tds::DIFF_CERES, NNBenchFunctor>;           \
+    if constexpr (tds::diff_type == tds::DIFF_CPPAD_CODEGEN_AUTO) {          \
+      DiffProblemType::CostFunctor::Compile();                               \
+    }                                                                        \
     DiffProblemType dproblem;                                                \
     CeresProblemType cproblem;                                               \
     DiffProblemType::DoubleVector dx(kParameterDim);                         \

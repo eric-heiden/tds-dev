@@ -426,9 +426,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     timer.start();
     CppAD::cg::ModelCSourceGen<Scalar> cgen(tape, "model");
     cgen.setCreateJacobian(true);
-    // cgen.setCreateSparseJacobian(true);
-    // cgen.setCreateSparseHessian(true);
-    cgen.setMaxAssignmentsPerFunc(max_assignments_per_func);
+    // cgen.setMaxAssignmentsPerFunc(max_assignments_per_func);
     if (verbose) {
       printf("Created CppAD::cg::ModelCSourceGen.\t(%.3fs)\n", timer.stop());
       fflush(stdout);
@@ -473,7 +471,6 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     assert(lib_ != nullptr);
-    std::cout << "Gradient\n";
     gradient_ = lib_->model("model")->Jacobian(x);
     return gradient_;
   }
