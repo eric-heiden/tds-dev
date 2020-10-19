@@ -46,7 +46,6 @@ public:  // pagmo interface
       pagmo_throw(std::invalid_argument, "Problem has multiple objectives: " + get_name() + " cannot apply gradient descent");
     }
 
-    // auto fit = pop.get_f();
     auto result = pop.get_x(); 
 
     // Optim should be initialized to use EIGEN
@@ -69,15 +68,13 @@ public:  // pagmo interface
 
     optim::algo_settings_t settings;
 
-    settings.gd_settings.method = 6;
-    settings.gd_settings.par_step_size = 0.1;
-    settings.iter_max = 100; // maxium iteration bounds
-    settings.vals_bound = true;
+    settings.gd_settings.method = 6; // Adam
+    settings.gd_settings.par_step_size = 0.1; // Learning rate
+    settings.iter_max = 100; // Maximum number of iterations in one evol
+    settings.vals_bound = true; // Must be true to apply bounds
 
-    auto std_lower_bounds = prob.get_bounds().first;
-    auto std_upper_bounds = prob.get_bounds().second;
-    settings.lower_bounds = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(std_lower_bounds.data(), std_lower_bounds.size());
-    settings.upper_bounds = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(std_upper_bounds.data(), std_upper_bounds.size());
+    settings.lower_bounds = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(lb.data(), lb.size());
+    settings.upper_bounds = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(ub.data(), ub.size());
 
     for (size_t i = 0; i < result.size(); i++) {
       optim::Vec_t input_x = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(result[i].data(), result[i].size());
