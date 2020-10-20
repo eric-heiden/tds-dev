@@ -15,7 +15,7 @@ if(Ceres_FOUND)
   add_test(EstimationTests test_ceres_estimation)
 
   add_executable(test_pagmo_estimation test_pagmo_estimation.cpp)
-  target_link_libraries(test_pagmo_estimation PRIVATE ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES} ${CERES_LIBRARIES})
+  target_link_libraries(test_pagmo_estimation PRIVATE ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES} ${CERES_LIBRARIES} ${CMAKE_DL_LIBS})
   add_test(EstimationTests test_pagmo_estimation)
 endif(Ceres_FOUND)
 

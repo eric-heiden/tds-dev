@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <thread>
+
 #include <pagmo/algorithm.hpp>
 #include <pagmo/algorithms/nlopt.hpp>
 #include <pagmo/algorithms/sade.hpp>
@@ -11,8 +13,19 @@
 
 constexpr double kEpsilon = 1e-5;
 
+bool sequential_mode = true;
+bool in_parallel() { return !sequential_mode; }
+std::size_t thread_id() { return std::hash<std::thread::id>{}(std::this_thread::get_id()); }
+
 TEST(PagmoEstimation, GradientDescent) {
-  pagmo::problem prob(create_problem<tds::DIFF_CERES>());
+  // CppAD::thread_alloc::parallel_setup(3, in_parallel, thread_id);
+  // CppAD::thread_alloc::hold_memory(true);
+  // CppAD::parallel_ad<double>();
+  // sequential_mode = false;
+  // auto problem = create_problem<tds::DIFF_CPPAD_AUTO>();
+  auto problem =  create_problem<tds::DIFF_CPPAD_CODEGEN_AUTO>();
+  problem.cost().Compile();
+  pagmo::problem prob(problem);
   pagmo::algorithm algo{tds::optim_gd()};
   pagmo::archipelago archi{3u, algo, prob, 3u};
   archi.evolve(10);

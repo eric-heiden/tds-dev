@@ -368,6 +368,8 @@ class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
 #endif
 };
 
+
+
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
   using Scalar = typename ScalarAlgebra::Scalar;
@@ -390,11 +392,16 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
   }
 
  public:
-  GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra>() { Init(); }
-  GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra>(
-      const GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra>& other) {
+  GradientFunctional() { Init(); }
+  GradientFunctional(
+      const GradientFunctional& other) {
     Init();
   }
+  GradientFunctional(GradientFunctional& f){
+    Init();
+  }
+  GradientFunctional& operator=(const GradientFunctional& other) = delete;
+
 
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
@@ -412,6 +419,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   F<EigenAlgebraT<Dual>> f_ad_;
   mutable std::vector<Scalar> gradient_;
   static inline std::unique_ptr<CppAD::cg::DynamicLib<Scalar>> lib_;
+  static inline std::unique_ptr<CppAD::cg::GenericModel<Scalar>> model_;
 
  public:
   static void Compile(bool verbose = true, bool use_clang = true,
@@ -472,12 +480,13 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
       printf("Finished compiling dynamic library.\t(%.3fs)\n", timer.stop());
       fflush(stdout);
     }
+    model_ = lib_->model("model");
   }
 
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     assert(lib_ != nullptr);
-    gradient_ = lib_->model("model")->Jacobian(x);
+    gradient_ = model_->Jacobian(x);
     return gradient_;
   }
 };
