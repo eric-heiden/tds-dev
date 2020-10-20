@@ -42,6 +42,13 @@ struct RigidBodyInertia {
         inertia(m(0, 0), m(1, 0), m(2, 0), m(0, 1), m(1, 1), m(2, 1), m(0, 2),
                 m(1, 2), m(2, 2)) {}
 
+  template <typename AlgebraTo = Algebra>
+  RigidBodyInertia<AlgebraTo> clone() const {
+    typedef Conversion<Algebra, AlgebraTo> C;
+    return RigidBodyInertia<AlgebraTo>(C::convert(mass), C::convert(com),
+                                       C::convert(inertia));
+  }
+
   void set_zero() {
     mass = Algebra::zero();
     Algebra::set_zero(com);
@@ -130,6 +137,13 @@ struct ArticulatedBodyInertia {
     Algebra::assign_block(H, m, 0, 0, 3, 3, 0, 3);
     Algebra::assign_block(M, m, 0, 0, 3, 3, 3, 3);
     return *this;
+  }
+
+  template <typename AlgebraTo = Algebra>
+  ArticulatedBodyInertia<AlgebraTo> clone() const {
+    typedef Conversion<Algebra, AlgebraTo> C;
+    return ArticulatedBodyInertia<AlgebraTo>(C::convert(I), C::convert(H),
+                                             C::convert(M));
   }
 
   Matrix6 matrix() const {

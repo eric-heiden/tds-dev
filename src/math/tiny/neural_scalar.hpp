@@ -568,7 +568,7 @@ struct is_neural_algebra<NeuralAlgebra<Algebra>> {
 };
 
 template <typename Algebra>
-inline std::vector<typename Algebra::Scalar> to_neural(
+TINY_INLINE std::vector<typename Algebra::Scalar> to_neural(
     const std::vector<typename Algebra::Scalar::InnerAlgebra::Scalar>& values) {
   static_assert(is_neural_algebra<Algebra>::value, "");
   std::vector<typename Algebra::Scalar> output(values.begin(), values.end());
@@ -576,20 +576,35 @@ inline std::vector<typename Algebra::Scalar> to_neural(
 }
 
 template <typename Algebra>
-inline std::vector<typename Algebra::Scalar::InnerAlgebra::Scalar> from_neural(
-    const std::vector<typename Algebra::Scalar>& values) {
-  static_assert(is_neural_algebra<Algebra>::value, "");
-  std::vector<typename Algebra::Scalar::InnerAlgebra::Scalar> output(
+TINY_INLINE typename Algebra::Scalar from_neural(
+    const typename NeuralAlgebra<Algebra>::Scalar& value) {
+  return value.evaluate();
+}
+template <typename Algebra>
+TINY_INLINE typename Algebra::Scalar from_neural(
+    const typename Algebra::Scalar& value) {
+  return value;
+}
+
+template <typename Algebra>
+TINY_INLINE std::vector<typename Algebra::Scalar> from_neural(
+    const std::vector<typename NeuralAlgebra<Algebra>::Scalar>& values) {
+  std::vector<typename Algebra::Scalar> output(
       values.size());
   for (std::size_t i = 0; i < values.size(); ++i) {
     output[i] = values[i].evaluate();
   }
   return output;
 }
+template <typename Algebra>
+TINY_INLINE std::vector<typename Algebra::Scalar> from_neural(
+    const std::vector<typename Algebra::Scalar>& values) {
+  return values;
+}
 
-#define NEURAL_ASSIGN(var, name)                                      \
-  if constexpr (is_neural_scalar<TinyScalar, TinyConstants>::value) { \
-    var.assign(name);                                                 \
+#define NEURAL_ASSIGN(var, name)                     \
+  if constexpr (is_neural_algebra<Algebra>::value) { \
+    var.assign(name);                                \
   }
 
 }  // namespace tds

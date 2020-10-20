@@ -33,6 +33,62 @@ enum DiffMethod {
   DIFF_CPPAD_CODEGEN_AUTO,
 };
 
+TINY_INLINE std::string diff_method_name(DiffMethod m) {
+  switch (m) {
+    case DIFF_NUMERICAL:
+      return "NUMERICAL";
+    case DIFF_CERES:
+      return "CERES";
+    case DIFF_DUAL:
+      return "DUAL";
+    case DIFF_STAN_REVERSE:
+      return "STAN_REVERSE";
+    case DIFF_STAN_FORWARD:
+      return "STAN_FORWARD";
+    case DIFF_CPPAD_AUTO:
+      return "CPPAD_AUTO";
+    case DIFF_CPPAD_CODEGEN_AUTO:
+      return "CPPAD_CODEGEN_AUTO";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+template <DiffMethod Method, int Dim, typename Scalar>
+struct default_diff_algebra {};
+template <int Dim, typename Scalar>
+struct default_diff_algebra<DIFF_NUMERICAL, Dim, Scalar> {
+  using type = EigenAlgebraT<Scalar>;
+};
+template <int Dim, typename Scalar>
+struct default_diff_algebra<DIFF_CERES, Dim, Scalar> {
+  using ADScalar = ceres::Jet<Scalar, Dim>;
+  using type = TinyAlgebra<ADScalar, CeresUtils<Dim, Scalar>>;
+};
+template <int Dim, typename Scalar>
+struct default_diff_algebra<DIFF_DUAL, Dim, Scalar> {
+  using type = TinyAlgebra<TinyDual<Scalar>, TinyDualUtils<Scalar>>;
+};
+template <int Dim>
+struct default_diff_algebra<DIFF_STAN_REVERSE, Dim, double> {
+  using type = EigenAlgebraT<stan::math::var>;
+};
+template <int Dim, typename Scalar>
+struct default_diff_algebra<DIFF_STAN_FORWARD, Dim, Scalar> {
+  using type = EigenAlgebraT<stan::math::fvar<Scalar>>;
+};
+template <int Dim, typename Scalar>
+struct default_diff_algebra<DIFF_CPPAD_AUTO, Dim, Scalar> {
+  using ADScalar = typename CppAD::AD<Scalar>;
+  using type = EigenAlgebraT<ADScalar>;
+};
+template <int Dim, typename Scalar>
+struct default_diff_algebra<DIFF_CPPAD_CODEGEN_AUTO, Dim, Scalar> {
+  using CGScalar = typename CppAD::cg::CG<Scalar>;
+  using ADScalar = typename CppAD::AD<CGScalar>;
+  using type = EigenAlgebraT<ADScalar>;
+};
+
 /**
  * Central difference for scalar-valued function `f` given vector `x`.
  */
@@ -204,7 +260,7 @@ class GradientFunctional<DIFF_CERES, F, ScalarAlgebra> {
     GradientFunctional* parent;
 
     F<ScalarAlgebra> f_scalar;
-    F<TinyAlgebra<ADScalar, CeresUtils<kDim>>> f_jet;
+    F<TinyAlgebra<ADScalar, CeresUtils<kDim, Scalar>>> f_jet;
 
     CostFunctional(GradientFunctional* parent) : parent(parent) {}
 
@@ -321,8 +377,7 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
   mutable CppAD::ADFun<Scalar> tape_;
   mutable std::vector<Scalar> gradient_;
 
- public:
-  GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra>() {
+  void Init() {
     std::vector<Dual> ax(F<ScalarAlgebra>::kDim);
     for (auto& axi : ax) {
       axi = ScalarAlgebra::zero();
@@ -332,6 +387,13 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
     ay[0] = f_ad_(ax);
     tape_.Dependent(ax, ay);
     tape_.optimize();
+  }
+
+ public:
+  GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra>() { Init(); }
+  GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra>(
+      const GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra>& other) {
+    Init();
   }
 
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
@@ -349,18 +411,20 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   F<ScalarAlgebra> f_scalar_;
   F<EigenAlgebraT<Dual>> f_ad_;
   mutable std::vector<Scalar> gradient_;
-  std::unique_ptr<CppAD::cg::DynamicLib<Scalar>> lib_;
+  static inline std::unique_ptr<CppAD::cg::DynamicLib<Scalar>> lib_;
 
-  void Init(bool verbose = true, bool use_clang = true,
-            int optimization_level = 0,
-            std::size_t max_assignments_per_func = 5000) {
+ public:
+  static void Compile(bool verbose = true, bool use_clang = true,
+                      int optimization_level = 3,
+                      std::size_t max_assignments_per_func = 5000) {
     std::vector<Dual> ax(F<ScalarAlgebra>::kDim);
     for (auto& axi : ax) {
       axi = ScalarAlgebra::zero();
     }
     CppAD::Independent(ax);
     std::vector<Dual> ay(1);
-    ay[0] = f_ad_(ax);
+    F<EigenAlgebraT<Dual>> f;
+    ay[0] = f(ax);
     CppAD::ADFun<CGScalar> tape;
     tape.Dependent(ax, ay);
 
@@ -368,9 +432,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     timer.start();
     CppAD::cg::ModelCSourceGen<Scalar> cgen(tape, "model");
     cgen.setCreateJacobian(true);
-    // cgen.setCreateSparseJacobian(true);
-    // cgen.setCreateSparseHessian(true);
-    cgen.setMaxAssignmentsPerFunc(max_assignments_per_func);
+    // cgen.setMaxAssignmentsPerFunc(max_assignments_per_func);
     if (verbose) {
       printf("Created CppAD::cg::ModelCSourceGen.\t(%.3fs)\n", timer.stop());
       fflush(stdout);
@@ -412,15 +474,9 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     }
   }
 
- public:
-  GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra>() { Init(); }
-  GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra>(
-      const GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra>&) {
-    Init();
-  }
-
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
+    assert(lib_ != nullptr);
     gradient_ = lib_->model("model")->Jacobian(x);
     return gradient_;
   }

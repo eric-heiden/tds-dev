@@ -32,7 +32,8 @@ struct Link {
 
   JointType joint_type{JOINT_REVOLUTE_Z};
 
-  Transform X_T;               // parent_link_to_joint
+  Transform X_T;  // parent_link_to_joint
+
   mutable Transform X_J;       // joint_to_child_link    //depends on q
   mutable Transform X_parent;  // parent_link_to_child_link
 
@@ -59,7 +60,7 @@ struct Link {
   int parent_index{-1};  // index of parent link in MultiBody
   int index{-1};         // index of this link in MultiBody
 
-  std::vector<const Geometry<Algebra> *> collision_geometries;
+  std::vector<Geometry<Algebra> *> collision_geometries;
   std::vector<Transform> X_collisions;  // offset of collision geometries
   // (relative to this link frame)
   std::vector<int> visual_ids;
@@ -81,6 +82,33 @@ struct Link {
        const RigidBodyInertia &rbi)
       : X_T(parent_link_to_joint), rbi(rbi) {
     set_joint_type(joint_type);
+  }
+
+  template <typename AlgebraTo = Algebra>
+  Link<AlgebraTo> clone() const {
+    typedef Conversion<Algebra, AlgebraTo> C;
+    Link<AlgebraTo> conv(joint_type, tds::clone<Algebra, AlgebraTo>(X_T),
+                         rbi.template clone<AlgebraTo>());
+    conv.index = index;
+    conv.parent_index = parent_index;
+    conv.link_name = link_name;
+    conv.joint_name = joint_name;
+    conv.f_ext = tds::clone<Algebra, AlgebraTo>(f_ext);
+    conv.visual_ids = visual_ids;
+    for (const auto &x : X_visuals) {
+      conv.X_visuals.push_back(x.template clone<AlgebraTo>());
+    }
+    for (const auto &x : X_collisions) {
+      conv.X_collisions.push_back(x.template clone<AlgebraTo>());
+    }
+    for (auto *geom : collision_geometries) {
+      conv.collision_geometries.push_back(tds::clone<Algebra, AlgebraTo>(geom));
+    }
+    conv.q_index = q_index;
+    conv.qd_index = qd_index;
+    conv.stiffness = C::convert(stiffness);
+    conv.damping = C::convert(damping);
+    return conv;
   }
 
   void set_joint_type(JointType type,
@@ -235,4 +263,9 @@ struct Link {
     jcalc(qd, &vJ);
   }
 };
+
+template <typename AlgebraFrom, typename AlgebraTo = AlgebraFrom>
+static inline Link<AlgebraTo> clone(const Link<AlgebraFrom> &link) {
+  return link.template clone<AlgebraTo>();
+}
 }  // namespace tds

@@ -187,7 +187,7 @@ void forward_dynamics(MultiBody<Algebra> &mb,
       Scalar Ut_a = Algebra::dot(link.U, link.a);
       Scalar u_Ut_a = link.u - Ut_a;
       Scalar qdd_val = invD * u_Ut_a;
-      assert(!std::isnan(Algebra::to_double(qdd_val)));
+      //assert(!std::isnan(Algebra::to_double(qdd_val)));
       qdd[link.qd_index] = qdd_val;
       link.a += link.S * qdd_val;
     }

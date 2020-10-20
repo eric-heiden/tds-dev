@@ -359,14 +359,15 @@ struct EigenAlgebraT {
                                                     const VectorX &vec,
                                                     int start_row_index,
                                                     int start_col_index) {
-    mat.block(start_row_index, start_col_index, 1, vec.cols()) = vec;
+    mat.block(start_row_index, start_col_index, 1, vec.rows()) =
+        vec.transpose();
   }
 
   template <int Rows>
   EIGEN_ALWAYS_INLINE static void assign_vertical(
       MatrixX &mat, const Eigen::Matrix<Scalar, Rows, 1> &vec,
       int start_row_index, int start_col_index) {
-    mat.block(start_row_index, start_col_index, vec.cols(), 1) = vec;
+    mat.block(start_row_index, start_col_index, vec.rows(), 1) = vec;
   }
 
   template <int Rows, int Cols>
@@ -640,6 +641,12 @@ struct EigenAlgebraT {
   TINY_INLINE static auto tanh(const T &s) {
     using std::tanh;
     return tanh(s);
+  }
+
+  template <typename T>
+  TINY_INLINE static auto pow(const T &s, const T &e) {
+    using std::pow;
+    return pow(s, e);
   }
 
   template <typename T>
