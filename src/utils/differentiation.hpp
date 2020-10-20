@@ -377,8 +377,7 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
   mutable CppAD::ADFun<Scalar> tape_;
   mutable std::vector<Scalar> gradient_;
 
- public:
-  GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra>() {
+  void Init() {
     std::vector<Dual> ax(F<ScalarAlgebra>::kDim);
     for (auto& axi : ax) {
       axi = ScalarAlgebra::zero();
@@ -388,6 +387,13 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
     ay[0] = f_ad_(ax);
     tape_.Dependent(ax, ay);
     tape_.optimize();
+  }
+
+ public:
+  GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra>() { Init(); }
+  GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra>(
+      const GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra>& other) {
+    Init();
   }
 
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
