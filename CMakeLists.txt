@@ -215,8 +215,6 @@ if(USE_OPTIM)
 	add_definitions(-DOPTIM_ENABLE_EIGEN_WRAPPERS)
 endif(USE_OPTIM)
 
-
-
 SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/third_party/cpp_base64)
 
 include(ExternalProject)
