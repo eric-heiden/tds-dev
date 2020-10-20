@@ -76,41 +76,46 @@ class World {
         rb_constraint_solver_(new RigidBodyConstraintSolver<Algebra>),
         mb_constraint_solver_(new MultiBodyConstraintSolver<Algebra>) {}
 
+  // The default copy constructor and assignment operator will remove the RHS
+  // world and thereby its constructor will call clear which deletes the geoms
+  // etc.,, so that the new object will have invalid pointers to geoms etc.
+  // Instead, use the provided clone function to explicitly make a copy of the
+  // world and all its owned objects/pointers to the t arget pointer.
+  World(const World&) = delete;
+  World& operator=(const World&) = delete;
+
   virtual ~World() { clear(); }
 
   template <typename AlgebraTo = Algebra>
-  World<AlgebraTo> clone() const {
+  void clone(World<AlgebraTo>* conv) const {
     typedef Conversion<Algebra, AlgebraTo> C;
-    World<AlgebraTo> conv;
-    conv.gravity_acceleration_ = C::convert(gravity_acceleration_);
-    conv.num_solver_iterations = num_solver_iterations;
-    conv.default_friction = C::convert(default_friction);
-    conv.default_restitution = C::convert(default_restitution);
+    conv->gravity_acceleration_ = C::convert(gravity_acceleration_);
+    conv->num_solver_iterations = num_solver_iterations;
+    conv->default_friction = C::convert(default_friction);
+    conv->default_restitution = C::convert(default_restitution);
     for (const auto& rb : rigid_bodies_) {
       tds::RigidBody<AlgebraTo> cpy = tds::clone<Algebra, AlgebraTo>(rb);
-      conv.rigid_bodies_.push_back(cpy);
+      conv->rigid_bodies_.push_back(cpy);
       // world manages geom pointers
-      conv.geoms_.push_back(cpy.geometry());
+      conv->geoms_.push_back(cpy.geometry());
     }
     for (const auto& mb : multi_bodies_) {
       tds::MultiBody<AlgebraTo> cpy = tds::clone<Algebra, AlgebraTo>(mb);
-      conv.multi_bodies_.push_back(cpy);
+      conv->multi_bodies_.push_back(cpy);
       // world manages geom pointers
       for (auto* geom : cpy.collision_geometries()) {
-        conv.geoms_.push_back(geom);
+        conv->geoms_.push_back(geom);
       }
       for (auto& link : cpy) {
         for (auto* geom : link.collision_geometries) {
-          conv.geoms_.push_back(geom);
+          conv->geoms_.push_back(geom);
         }
       }
     }
-    // XXX this will only copy the base constraint solver instances
-    // *conv.rb_constraint_solver_ =
-    //     tds::clone<Algebra, AlgebraTo>(*rb_constraint_solver_);
-    // *conv.mb_constraint_solver_ =
-    //     tds::clone<Algebra, AlgebraTo>(*mb_constraint_solver_);
-    return conv;
+    *(conv->rb_constraint_solver_) =
+        tds::clone<Algebra, AlgebraTo>(*rb_constraint_solver_);
+    *(conv->mb_constraint_solver_) =
+        tds::clone<Algebra, AlgebraTo>(*mb_constraint_solver_);
   }
 
   inline void submit_profile_timing(const std::string& name) const {
@@ -120,10 +125,9 @@ class World {
   }
 
   void set_mb_constraint_solver(MultiBodyConstraintSolver<Algebra>* solver) {
-    // TODO reactivate
-    // if (mb_constraint_solver_) {
-    //   delete mb_constraint_solver_;
-    // }
+    if (mb_constraint_solver_) {
+      delete mb_constraint_solver_;
+    }
     mb_constraint_solver_ = solver;
   }
 
@@ -133,15 +137,8 @@ class World {
     }
     geoms_.clear();
 
-    // for (std::size_t i = 0; i < rigid_bodies_.size(); i++) {
-    //   delete rigid_bodies_[i];
-    // }
-    // rigid_bodies_.clear();
-
-    // for (std::size_t i = 0; i < multi_bodies_.size(); i++) {
-    //   delete multi_bodies_[i];
-    // }
-    // multi_bodies_.clear();
+    rigid_bodies_.clear();
+    multi_bodies_.clear();
 
     if (rb_constraint_solver_) {
       delete rb_constraint_solver_;
@@ -412,7 +409,9 @@ class World {
 };
 
 template <typename AlgebraFrom, typename AlgebraTo = AlgebraFrom>
-static TINY_INLINE World<AlgebraTo> clone(const World<AlgebraFrom>& world) {
-  return world.template clone<AlgebraTo>();
+static TINY_INLINE World<AlgebraTo>* clone(const World<AlgebraFrom>& world) {
+  auto* new_world = new World<AlgebraTo>;
+  world.template clone<AlgebraTo>(new_world);
+  return new_world;
 }
 }  // namespace tds
