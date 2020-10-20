@@ -208,6 +208,13 @@ if(USE_PAGMO)
   add_definitions(-DUSE_PAGMO)
 endif(USE_PAGMO)
 
+OPTION(USE_OPTIM "Use OptimLib" ON)
+if(USE_OPTIM)
+	include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/optim)
+	add_definitions(-DUSE_OPTIM)
+	add_definitions(-DOPTIM_ENABLE_EIGEN_WRAPPERS)
+endif(USE_OPTIM)
+
 SUBDIRS(${CMAKE_CURRENT_LIST_DIR}/third_party/cpp_base64)
 
 include(ExternalProject)

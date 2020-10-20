@@ -18,6 +18,10 @@
 #include <pagmo/problem.hpp>
 #endif
 
+#if USE_OPTIM
+#include "utils/optim_gd.hpp"
+#endif
+
 #include "ceres_estimator.hpp"
 #include "neural_augmentation.hpp"
 #include "optimization_problem.hpp"
@@ -45,6 +49,24 @@ class Experiment {
     log["settings"]["pagmo"]["nlopt"]["xtol_abs"] = 1e-10;
     log["settings"]["pagmo"]["nlopt"]["verbosity"] = 1;
     log["settings"]["pagmo"]["nlopt"]["max_time"] = 10.;
+    log["settings"]["pagmo"]["optimlib"]["method"] = 6;
+    log["settings"]["pagmo"]["optimlib"]["iter_max"] = 20;
+    log["settings"]["pagmo"]["optimlib"]["print_level"] = 0;
+    log["settings"]["pagmo"]["optimlib"]["par_step_size"] = 0.1;
+    log["settings"]["pagmo"]["optimlib"]["step_decay"] = true;
+    log["settings"]["pagmo"]["optimlib"]["step_decay_periods"] = 10;
+    log["settings"]["pagmo"]["optimlib"]["step_decay_val"] = 0.5;
+    log["settings"]["pagmo"]["optimlib"]["par_momentum"] = 0.9;
+    log["settings"]["pagmo"]["optimlib"]["par_ada_norm_term"] = 1e-8;
+    log["settings"]["pagmo"]["optimlib"]["par_ada_rho"] = 0.9;
+    log["settings"]["pagmo"]["optimlib"]["ada_max"] = false;
+    log["settings"]["pagmo"]["optimlib"]["par_adam_beta_1"] = 0.9;
+    log["settings"]["pagmo"]["optimlib"]["par_adam_beta_2"] = 0.999;
+    log["settings"]["pagmo"]["optimlib"]["clip_grad"] = false;
+    log["settings"]["pagmo"]["optimlib"]["clip_max_norm"] = false;
+    log["settings"]["pagmo"]["optimlib"]["clip_min_norm"] = false;
+    log["settings"]["pagmo"]["optimlib"]["clip_norm_type"] = 2;
+    log["settings"]["pagmo"]["optimlib"]["clip_norm_bound"] = 5.0;
     log["settings"]["pagmo"]["num_islands"] = 5;
     log["settings"]["pagmo"]["num_individuals"] = 7;
     log["settings"]["pagmo"]["num_evolutions"] = 20;
@@ -139,20 +161,79 @@ class Experiment {
     }
   }
 
+  pagmo::algorithm get_pagmo_algorithm() const {
+    if (log["settings"]["pagmo"]["solver"] == "nlopt") {
+      pagmo::nlopt solver(log["settings"]["pagmo"]["nlopt"]["solver"]);
+      solver.set_maxtime(
+          log["settings"]["pagmo"]["nlopt"]["max_time"]);  // in seconds
+      solver.set_verbosity(log["settings"]["pagmo"]["nlopt"]
+                              ["verbosity"]);  // print every n function evals
+      solver.set_xtol_abs(log["settings"]["pagmo"]["nlopt"]["xtol_abs"]);
+      solver.set_xtol_rel(log["settings"]["pagmo"]["nlopt"]["xtol_rel"]);
+
+      pagmo::algorithm algo{solver};
+      return algo;
+    }
+    if (log["settings"]["pagmo"]["solver"] == "optimlib") {
+#if USE_OPTIM
+      auto gd = tds::optim_gd();
+      gd.settings.gd_settings.method =
+          log["settings"]["pagmo"]["optimlib"]["method"];
+      gd.settings.iter_max = log["settings"]["pagmo"]["optimlib"]["iter_max"];
+      gd.settings.print_level =
+          log["settings"]["pagmo"]["optimlib"]["print_level"];
+      gd.settings.gd_settings.par_step_size =
+          log["settings"]["pagmo"]["optimlib"]["par_step_size"];
+      gd.settings.gd_settings.step_decay =
+          log["settings"]["pagmo"]["optimlib"]["step_decay"];
+      gd.settings.gd_settings.step_decay_periods =
+          log["settings"]["pagmo"]["optimlib"]["step_decay_periods"];
+      gd.settings.gd_settings.step_decay_val =
+          log["settings"]["pagmo"]["optimlib"]["step_decay_val"];
+      gd.settings.gd_settings.par_momentum =
+          log["settings"]["pagmo"]["optimlib"]["par_momentum"];
+      gd.settings.gd_settings.par_ada_norm_term =
+          log["settings"]["pagmo"]["optimlib"]["par_ada_norm_term"];
+      gd.settings.gd_settings.par_ada_rho =
+          log["settings"]["pagmo"]["optimlib"]["par_ada_rho"];
+      gd.settings.gd_settings.ada_max =
+          log["settings"]["pagmo"]["optimlib"]["ada_max"];
+      gd.settings.gd_settings.par_adam_beta_1 =
+          log["settings"]["pagmo"]["optimlib"]["par_adam_beta_1"];
+      gd.settings.gd_settings.par_adam_beta_2 =
+          log["settings"]["pagmo"]["optimlib"]["par_adam_beta_2"];
+      gd.settings.gd_settings.clip_grad =
+          log["settings"]["pagmo"]["optimlib"]["clip_grad"];
+      gd.settings.gd_settings.clip_max_norm =
+          log["settings"]["pagmo"]["optimlib"]["clip_max_norm"];
+      gd.settings.gd_settings.clip_min_norm =
+          log["settings"]["pagmo"]["optimlib"]["clip_min_norm"];
+      gd.settings.gd_settings.clip_norm_type =
+          log["settings"]["pagmo"]["optimlib"]["clip_norm_type"];
+      gd.settings.gd_settings.clip_norm_bound =
+          log["settings"]["pagmo"]["optimlib"]["clip_norm_bound"];
+      pagmo::algorithm algo{gd};
+      return algo;
+#else
+      throw std::runtime_error(
+          "'USE_OPTIM' option must be set to use the OptimLib optimizers in "
+          "Pagmo.");
+#endif
+    }
+    if (log["settings"]["pagmo"]["solver"] == "sade") {
+      pagmo::algorithm algo { pagmo::sade() };
+      return algo;
+    }
+    throw std::runtime_error("Unknown Pagmo solver: " +
+                             (std::string)log["settings"]["pagmo"]["solver"]);
+  }
+
   template <typename OptimizationProblemT>
   void run_pagmo(OptimizationProblemT& problem) {
     update_log(problem);
 #if USE_PAGMO
     pagmo::problem prob(problem);
-    pagmo::nlopt solver(log["settings"]["pagmo"]["nlopt"]["solver"]);
-    solver.set_maxtime(
-        log["settings"]["pagmo"]["nlopt"]["max_time"]);  // in seconds
-    solver.set_verbosity(log["settings"]["pagmo"]["nlopt"]
-                            ["verbosity"]);  // print every n function evals
-    solver.set_xtol_abs(log["settings"]["pagmo"]["nlopt"]["xtol_abs"]);
-    solver.set_xtol_rel(log["settings"]["pagmo"]["nlopt"]["xtol_rel"]);
-
-    pagmo::algorithm algo{solver};
+    pagmo::algorithm algo = get_pagmo_algorithm();
     // pagmo::algorithm algo{pagmo::sade()};
     // pagmo::algorithm algo{pagmo::ipopt()};
     std::size_t num_islands = log["settings"]["pagmo"]["num_islands"];
