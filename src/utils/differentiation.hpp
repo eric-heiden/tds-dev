@@ -368,8 +368,6 @@ class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
 #endif
 };
 
-
-
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
   using Scalar = typename ScalarAlgebra::Scalar;
@@ -393,15 +391,9 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
 
  public:
   GradientFunctional() { Init(); }
-  GradientFunctional(
-      const GradientFunctional& other) {
-    Init();
-  }
-  GradientFunctional(GradientFunctional& f){
-    Init();
-  }
+  GradientFunctional(const GradientFunctional& other) { Init(); }
+  GradientFunctional(GradientFunctional& f) { Init(); }
   GradientFunctional& operator=(const GradientFunctional& other) = delete;
-
 
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
@@ -409,6 +401,11 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
     return gradient_;
   }
 };
+
+namespace {
+// make sure every model has its own ID
+static inline int cpp_ad_codegen_model_counter = 0;
+}  // namespace
 
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
@@ -418,7 +415,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   F<ScalarAlgebra> f_scalar_;
   F<EigenAlgebraT<Dual>> f_ad_;
   mutable std::vector<Scalar> gradient_;
-  static inline std::unique_ptr<CppAD::cg::DynamicLib<Scalar>> lib_;
+  static inline std::unique_ptr<CppAD::cg::DynamicLib<Scalar>> lib_{nullptr};
   static inline std::unique_ptr<CppAD::cg::GenericModel<Scalar>> model_;
 
  public:
@@ -438,9 +435,11 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
 
     Stopwatch timer;
     timer.start();
-    CppAD::cg::ModelCSourceGen<Scalar> cgen(tape, "model");
+    std::string model_name =
+        "model_" + std::to_string(cpp_ad_codegen_model_counter++);
+    CppAD::cg::ModelCSourceGen<Scalar> cgen(tape, model_name);
     cgen.setCreateJacobian(true);
-    // cgen.setMaxAssignmentsPerFunc(max_assignments_per_func);
+    cgen.setMaxAssignmentsPerFunc(max_assignments_per_func);
     if (verbose) {
       printf("Created CppAD::cg::ModelCSourceGen.\t(%.3fs)\n", timer.stop());
       fflush(stdout);
@@ -475,17 +474,22 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
       fflush(stdout);
       timer.start();
     }
-    lib_ = p.createDynamicLibrary(*compiler);
+    if (lib_ == nullptr) {
+      lib_ = p.createDynamicLibrary(*compiler);
+      std::cout << "Created new dynamic library.\n";
+    }
     if (verbose) {
       printf("Finished compiling dynamic library.\t(%.3fs)\n", timer.stop());
       fflush(stdout);
     }
-    model_ = lib_->model("model");
+    model_ = lib_->model(model_name);
+    std::cout << "Model pointer: " << model_.get() << std::endl;
   }
 
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
-    assert(lib_ != nullptr);
+    assert(lib_ != nullptr && model_ != nullptr);
+    // assert(model_ != nullptr);
     gradient_ = model_->Jacobian(x);
     return gradient_;
   }

@@ -138,6 +138,10 @@ class Experiment {
 
   template <typename OptimizationProblem>
   void run(OptimizationProblem& problem) {
+    if constexpr (OptimizationProblem::kDiffMethod ==
+                  tds::DIFF_CPPAD_CODEGEN_AUTO) {
+      OptimizationProblem::CostFunctor::Compile();
+    }
     if (log["settings"]["optimizer"] == "pagmo") {
       run_pagmo(problem);
       return;
@@ -221,7 +225,7 @@ class Experiment {
 #endif
     }
     if (log["settings"]["pagmo"]["solver"] == "sade") {
-      pagmo::algorithm algo { pagmo::sade() };
+      pagmo::algorithm algo{pagmo::sade()};
       return algo;
     }
     throw std::runtime_error("Unknown Pagmo solver: " +

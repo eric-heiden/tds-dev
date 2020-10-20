@@ -111,6 +111,9 @@ struct NNBenchFunctor {
     auto dproblem = create_problem<tds::diff_type>();                        \
     auto cproblem = create_problem<tds::DIFF_CERES>();                       \
     using DiffProblemType = decltype(dproblem);                              \
+    if constexpr (tds::diff_type == tds::DIFF_CPPAD_CODEGEN_AUTO) {          \
+      DiffProblemType::CostFunctor::Compile();                               \
+    }                                                                        \
     using CeresProblemType = decltype(cproblem);                             \
     DiffProblemType::DoubleVector dx(DiffProblemType::kParameterDim);        \
     CeresProblemType::DoubleVector cx(CeresProblemType::kParameterDim);      \
