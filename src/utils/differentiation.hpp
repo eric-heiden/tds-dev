@@ -486,7 +486,11 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     std::cout << "Model pointer: " << model_.get() << std::endl;
   }
 
-  Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
+  Scalar value(const std::vector<Scalar>& x) const { 
+    auto fx = model_->ForwardZero(x);
+    return fx[0]; 
+    // return f_scalar_(x); 
+  }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     assert(lib_ != nullptr && model_ != nullptr);
     // assert(model_ != nullptr);
