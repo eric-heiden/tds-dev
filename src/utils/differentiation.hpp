@@ -439,6 +439,18 @@ namespace {
 static inline int cpp_ad_codegen_model_counter = 0;
 }  // namespace
 
+struct CodeGenSettings {
+  bool verbose{true};
+  bool use_clang{true};
+  int optimization_level{3};
+  std::size_t max_assignments_per_func{5000};
+  std::string sources_folder{"cppadcg_src"};
+  bool save_to_disk{true};
+
+  // function arguments used while generating the code (will be zero if not set)
+  std::vector<double> default_x;
+};
+
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
  public:
@@ -446,12 +458,14 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   using CGScalar = typename CppAD::cg::CG<Scalar>;
   using Dual = typename CppAD::AD<CGScalar>;
 
-  static void Compile(bool verbose = true, bool use_clang = true,
-                      int optimization_level = 3,
-                      std::size_t max_assignments_per_func = 5000) {
+  static void Compile(const CodeGenSettings& settings = CodeGenSettings()) {
     std::vector<Dual> ax(F<ScalarAlgebra>::kDim);
-    for (auto& axi : ax) {
-      axi = ScalarAlgebra::zero();
+    for (std::size_t i = 0; i < F<ScalarAlgebra>::kDim; ++i) {
+      if (i >= settings.default_x.size()) {
+        ax[i] = ScalarAlgebra::zero();
+      } else {
+        ax[i] = settings.default_x[i];
+      }
     }
     CppAD::Independent(ax);
     std::vector<Dual> ay(1);
@@ -466,37 +480,37 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
         "model_" + std::to_string(cpp_ad_codegen_model_counter++);
     CppAD::cg::ModelCSourceGen<Scalar> cgen(tape, model_name);
     cgen.setCreateJacobian(true);
-    cgen.setMaxAssignmentsPerFunc(max_assignments_per_func);
-    if (verbose) {
+    cgen.setMaxAssignmentsPerFunc(settings.max_assignments_per_func);
+    if (settings.verbose) {
       printf("Created CppAD::cg::ModelCSourceGen.\t(%.3fs)\n", timer.stop());
       fflush(stdout);
       timer.start();
     }
     CppAD::cg::ModelLibraryCSourceGen<Scalar> libcgen(cgen);
-    libcgen.setVerbose(verbose);
-    if (verbose) {
+    libcgen.setVerbose(settings.verbose);
+    if (settings.verbose) {
       printf("Created CppAD::cg::ModelLibraryCSourceGen.\t(%.3fs)\n",
              timer.stop());
       fflush(stdout);
       timer.start();
     }
     CppAD::cg::DynamicModelLibraryProcessor<Scalar> p(libcgen);
-    if (verbose) {
+    if (settings.verbose) {
       printf("Created CppAD::cg::DynamicModelLibraryProcessor.\t(%.3fs)\n",
              timer.stop());
       fflush(stdout);
       timer.start();
     }
     std::unique_ptr<CppAD::cg::AbstractCCompiler<Scalar>> compiler;
-    if (use_clang) {
+    if (settings.use_clang) {
       compiler = std::make_unique<CppAD::cg::ClangCompiler<Scalar>>();
     } else {
       compiler = std::make_unique<CppAD::cg::GccCompiler<Scalar>>();
     }
-    compiler->setSourcesFolder("cppadcg_src");
-    compiler->setSaveToDiskFirst(true);
-    compiler->addCompileFlag("-O" + std::to_string(optimization_level));
-    if (verbose) {
+    compiler->setSourcesFolder(settings.sources_folder);
+    compiler->setSaveToDiskFirst(settings.save_to_disk);
+    compiler->addCompileFlag("-O" + std::to_string(settings.optimization_level));
+    if (settings.verbose) {
       printf("Created CppAD::cg::GccCompiler.\t(%.3fs)\n", timer.stop());
       fflush(stdout);
       timer.start();
@@ -505,7 +519,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
       lib_ = p.createDynamicLibrary(*compiler);
       std::cout << "Created new dynamic library.\n";
     }
-    if (verbose) {
+    if (settings.verbose) {
       printf("Finished compiling dynamic library.\t(%.3fs)\n", timer.stop());
       fflush(stdout);
     }
