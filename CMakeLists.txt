@@ -253,6 +253,7 @@ target_include_directories(CppADCodeGen
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/googletest)
 set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/benchmark)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/HighFive)
 
 subdirs(${CMAKE_CURRENT_LIST_DIR}/src/visualizer/opengl)
 subdirs(${CMAKE_CURRENT_LIST_DIR}/src/visualizer/pybullet)
