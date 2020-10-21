@@ -509,29 +509,26 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     }
     compiler->setSourcesFolder(settings.sources_folder);
     compiler->setSaveToDiskFirst(settings.save_to_disk);
-    compiler->addCompileFlag("-O" + std::to_string(settings.optimization_level));
+    compiler->addCompileFlag("-O" +
+                             std::to_string(settings.optimization_level));
     if (settings.verbose) {
       printf("Created CppAD::cg::GccCompiler.\t(%.3fs)\n", timer.stop());
       fflush(stdout);
       timer.start();
     }
-    if (lib_ == nullptr) {
-      lib_ = p.createDynamicLibrary(*compiler);
-      std::cout << "Created new dynamic library.\n";
-    }
+    p.createDynamicLibrary(*compiler, false);
+    std::cout << "Created new dynamic library.\n";
     if (settings.verbose) {
       printf("Finished compiling dynamic library.\t(%.3fs)\n", timer.stop());
       fflush(stdout);
     }
-    model_ = lib_->model(model_name);
-    std::cout << "Model pointer: " << model_.get() << std::endl;
   }
 
   Scalar value(const std::vector<Scalar>& x) const {
     const auto fx = model_->ForwardZero(x);
 #ifndef NDEBUG
     const auto fx_slow = f_scalar_(x);
-    const bool close = std::fabs(fx_slow - fx[0]) < 1e-9;
+    const bool close = std::fabs(fx_slow - fx[0]) < 1e-6;
     if (!close) {
       std::cout << "Scalar/CodeGen 0th order mismatch: " << fx_slow << " vs "
                 << fx[0] << "\n";
@@ -550,7 +547,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     assert(ceres_gradient.size() == gradient_.size());
     bool allclose = true;
     for (size_t i = 0; i < ceres_gradient.size(); ++i) {
-      const bool close = std::fabs(ceres_gradient[i] - gradient_[i]) < 1e-9;
+      const bool close = std::fabs(ceres_gradient[i] - gradient_[i]) < 1e-6;
       if (!close) {
         std::cout << "Ceres/CodeGen gradient mismatch at " << i << ": "
                   << ceres_gradient[i] << " vs " << gradient_[i] << "\n";
@@ -562,6 +559,15 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     return gradient_;
   }
 
+  void Init() {
+    lib_ = std::make_unique<CppAD::cg::LinuxDynamicLib<Scalar>>(
+        "./cppad_cg_model.so");
+    model_ = lib_->model("model_0");
+  }
+
+  GradientFunctional() { Init(); }
+  GradientFunctional(const GradientFunctional& other) { Init(); }
+
  private:
 #ifndef NDEBUG
   GradientFunctional<tds::DIFF_CERES, F, ScalarAlgebra> ceres_functional_;
@@ -569,7 +575,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   F<ScalarAlgebra> f_scalar_;
   F<EigenAlgebraT<Dual>> f_ad_;
   mutable std::vector<Scalar> gradient_;
-  static inline std::unique_ptr<CppAD::cg::DynamicLib<Scalar>> lib_{nullptr};
-  static inline std::unique_ptr<CppAD::cg::GenericModel<Scalar>> model_;
+  std::unique_ptr<CppAD::cg::LinuxDynamicLib<Scalar>> lib_{nullptr};
+  std::unique_ptr<CppAD::cg::GenericModel<Scalar>> model_;
 };
 }  // namespace tds
