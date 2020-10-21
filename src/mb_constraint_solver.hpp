@@ -19,6 +19,7 @@
 #include "contact_point.hpp"
 #include "dynamics/jacobian.hpp"
 #include "dynamics/mass_matrix.hpp"
+#include "math/conditionals.hpp"
 #include "multi_body.hpp"
 
 namespace tds {
@@ -118,16 +119,14 @@ class MultiBodyConstraintSolver {
         Scalar s = Algebra::one();
         if (!limit_dependency_.empty() && limit_dependency_[i] >= 0) {
           s = x[limit_dependency_[i]];
-          if (s < Algebra::zero()) {
-            s = Algebra::one();
-          }
+          s = where_lt(s, Algebra::zero(), Algebra::one(), s);
         }
 
-        if (lo && x[i] < (*lo)[i] * s) {
-          x[i] = (*lo)[i] * s;
+        if (lo) {
+          x[i] = Algebra::max(x[i], (*lo)[i] * s);
         }
-        if (hi && x[i] > (*hi)[i] * s) {
-          x[i] = (*hi)[i] * s;
+        if (hi) {
+          x[i] = Algebra::min(x[i], (*hi)[i] * s);
         }
         // Scalar diff = x[i] - x_old;
         // least_squares_residual += Algebra::getDouble(diff * diff);
@@ -229,8 +228,13 @@ class MultiBodyConstraintSolver {
 
     for (int i = 0; i < n_c; ++i) {
       const ContactPoint& cp = cps[i];
-      // all contact points are already assumed to have distance < 0
-      if (cp.distance > Algebra::zero()) continue;
+      // if constexpr (!is_cppad_scalar<Scalar>::value) {
+      //   // all contact points are already assumed to have distance < 0
+      //   if (cp.distance > Algebra::zero()) continue;
+      // }
+
+      const Scalar collision = where_lt(cp.distance, Algebra::zero(),
+                                        Algebra::one(), Algebra::zero());
 
       const Vector3& world_point_a = cp.world_point_on_a;
       Matrix3X jac_a = point_jacobian(*mb_a, cp.link_a, world_point_a);
@@ -250,11 +254,11 @@ class MultiBodyConstraintSolver {
       std::vector<Scalar> qd_empty;
       int szb = cp.multi_body_b->dof_qd();
       qd_empty.resize(szb, Algebra::zero());
-      std::vector<Scalar> tau_jac;
-      tau_jac.resize(szb);
-      for (int i = 0; i < szb; i++) {
-        tau_jac[i] = -jac_b_i[i];
-      }
+      // std::vector<Scalar> tau_jac;
+      // tau_jac.resize(szb);
+      // for (int i = 0; i < szb; i++) {
+      //   tau_jac[i] = -jac_b_i[i];
+      // }
 
       // compare with unit impulse method
       // std::vector<Scalar> qdd_delta_unit_impulse;
@@ -281,9 +285,14 @@ class MultiBodyConstraintSolver {
 
       lcp_b[i] = -(Algebra::one() + cp.restitution) * normal_rel_vel -
                  baumgarte_rel_vel;
+      lcp_b[i] *= collision;
 
       // friction direction
       Vector3 lateral_rel_vel = rel_vel - normal_rel_vel * cp.world_normal_on_b;
+      if constexpr (is_cppad_scalar<Scalar>::value) {
+        // add epsilon to make prevent division by zero in gradient of norm
+        lateral_rel_vel[2] += 1e-5;
+      }
       // lateral_rel_vel.print("lateral_rel_vel");
       const Scalar lateral = Algebra::norm(lateral_rel_vel);
       // printf("Algebra::norm(lateral_rel_vel): %.6f\n",
@@ -292,14 +301,23 @@ class MultiBodyConstraintSolver {
       Vector3 fr_direction1, fr_direction2;
       //      cp.world_normal_on_b.print("contact normal");
       //      fflush(stdout);
-      if (lateral < Algebra::fraction(1, 10000)) {
-        // use the plane space of the contact normal as friction directions
-        plane_space(cp.world_normal_on_b, fr_direction1, fr_direction2);
-      } else {
+      if constexpr (is_cppad_scalar<Scalar>::value) {
         // use the negative lateral velocity and its orthogonal as friction
         // directions
-        fr_direction1 = lateral_rel_vel * (Algebra::one() / lateral);
-        fr_direction2 = Algebra::cross(fr_direction1, cp.world_normal_on_b);
+        fr_direction1 =
+            lateral_rel_vel * (Algebra::one() / lateral) * collision;
+        fr_direction2 =
+            Algebra::cross(fr_direction1, cp.world_normal_on_b) * collision;
+      } else {
+        if (lateral < Algebra::fraction(1, 10000)) {
+          // use the plane space of the contact normal as friction directions
+          plane_space(cp.world_normal_on_b, fr_direction1, fr_direction2);
+        } else {
+          // use the negative lateral velocity and its orthogonal as friction
+          // directions
+          fr_direction1 = lateral_rel_vel * (Algebra::one() / lateral);
+          fr_direction2 = Algebra::cross(fr_direction1, cp.world_normal_on_b);
+        }
       }
 
       Scalar l1 = Algebra::dot(fr_direction1, rel_vel);
@@ -439,14 +457,13 @@ class MultiBodyConstraintSolver {
     }
   }
 
- private:
   /**
    * Treat this vector as normal vector of a plane and compute two
    * orthogonal direction vectors of that plane.
    * p and q will be unit vectors, the normal vector does not need to be unit
    * length.
    */
-  inline void plane_space(const Vector3& n, Vector3& p, Vector3& q) const {
+  static inline void plane_space(const Vector3& n, Vector3& p, Vector3& q) {
     if (n[2] * n[2] > Algebra::half()) {
       // choose p in y-z plane
       Scalar a = n[1] * n[1] + n[2] * n[2];
@@ -472,6 +489,7 @@ class MultiBodyConstraintSolver {
     }
   }
 
+ private:
   TINY_INLINE void submit_profile_timing(const std::string& name) const {
     if (profile_timing_func_) {
       profile_timing_func_(name);

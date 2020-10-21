@@ -17,6 +17,7 @@
 #pragma once
 
 #include "contact_point.hpp"
+#include "math/conditionals.hpp"
 #include "mb_constraint_solver.hpp"
 #include "multi_body.hpp"
 
@@ -310,6 +311,7 @@ class MultiBodyConstraintSolverSpring
     if (cps.empty()) return;
 
     const ContactPoint& cp0 = cps[0];
+    const Scalar kEpsilon = Algebra::from_double(1e-5);
 
     MultiBody<Algebra>* mb_a = cp0.multi_body_a;
     MultiBody<Algebra>* mb_b = cp0.multi_body_b;
@@ -328,113 +330,130 @@ class MultiBodyConstraintSolverSpring
     Algebra::set_zero(tau_b);
 
     for (const ContactPoint& cp : cps) {
-      if (!hard_contact_condition_ || cp.distance < Algebra::zero()) {
-        const Vector3& world_point_a = cp.world_point_on_a;
-        const Vector3& world_point_b = cp.world_point_on_b;
-        const Vector3& world_normal = -cp.world_normal_on_b;  // !!!
-        Matrix3X jac_a =
-            point_jacobian(*mb_a, mb_a->q(), cp.link_a, world_point_a);
-        Matrix3X jac_b =
-            point_jacobian(*mb_b, mb_b->q(), cp.link_b, world_point_b);
+      const Vector3& world_point_a = cp.world_point_on_a;
+      const Vector3& world_point_b = cp.world_point_on_b;
+      const Vector3& world_normal = -cp.world_normal_on_b;  // !!!
+      Matrix3X jac_a =
+          point_jacobian(*mb_a, mb_a->q(), cp.link_a, world_point_a);
+      Matrix3X jac_b =
+          point_jacobian(*mb_b, mb_b->q(), cp.link_b, world_point_b);
 
-        // Algebra::print("jac_b", jac_b);
-        mb_b->print_state();
-        // Matrix3X jac_a =
-        //     point_jacobian_fd(*mb_a, mb_a->q(), cp.link_a, world_point_a);
-        // Matrix3X jac_b_fd =
-        //     point_jacobian_fd(*mb_b, mb_b->q(), cp.link_b, world_point_b);
-        // Algebra::print("jac_b_fd", jac_b_fd);
+      // Algebra::print("jac_b", jac_b);
+      // mb_b->print_state();
+      // Matrix3X jac_a =
+      //     point_jacobian_fd(*mb_a, mb_a->q(), cp.link_a, world_point_a);
+      // Matrix3X jac_b_fd =
+      //     point_jacobian_fd(*mb_b, mb_b->q(), cp.link_b, world_point_b);
+      // Algebra::print("jac_b_fd", jac_b_fd);
 
-        // jac_b = jac_b_fd;
+      // jac_b = jac_b_fd;
 
-        VectorX qd_a(mb_a->qd());
-        VectorX qd_b(mb_b->qd());
-        vel_a = jac_a * qd_a;
-        vel_b = jac_b * qd_b;
-        Vector3 rel_vel = vel_a - vel_b;
-        // rel_vel.print("rel_vel");
+      VectorX qd_a(mb_a->qd());
+      VectorX qd_b(mb_b->qd());
+      vel_a = jac_a * qd_a;
+      vel_b = jac_b * qd_b;
+      Vector3 rel_vel = vel_a - vel_b;
+      // rel_vel.print("rel_vel");
 
-        // contact normal force
-        Scalar normal_rel_vel = world_normal.dot(rel_vel);
-        Scalar force_normal =
-            compute_contact_force(-cp.distance, normal_rel_vel);
+      // contact normal force
+      Scalar normal_rel_vel = world_normal.dot(rel_vel);
+      Scalar force_normal = compute_contact_force(-cp.distance, normal_rel_vel);
 #ifdef DEBUG
-        printf("Contact normal force magnitude: %.5f\n", force_normal);
+      printf("Contact normal force magnitude: %.5f\n", force_normal);
 #endif
-        Vector3 force_vector = world_normal * force_normal;
-        tau_a += Algebra::mul_transpose(jac_a, force_vector);
-        tau_b -= Algebra::mul_transpose(jac_b, force_vector);
+      Vector3 force_vector = world_normal * force_normal;
 
-        // if (friction_model_ == FRICTION_NONE) {
-        // continue;
-        // }
-        // unilateral friction force
-        Vector3 lateral_rel_vel =
-            rel_vel - normal_rel_vel * cp.world_normal_on_b;
-        // lateral_rel_vel.print("lateral_rel_vel");
+      // only apply force if distance < 0
+      Scalar collision = where_lt(cp.distance, Algebra::zero(), Algebra::one(),
+                                  Algebra::zero());
+      force_vector *= collision;
 
-        // TODO remove offset
-        Scalar lateral = Algebra::norm(lateral_rel_vel);
-        // + Algebra::scalar_from_double(0.001);
-        // printf("lateral_rel_vel.length(): %.6f\n",
-        //        Algebra::getDouble(lateral));
+      tau_a += Algebra::mul_transpose(jac_a, force_vector);
+      tau_b -= Algebra::mul_transpose(jac_b, force_vector);
 
-        Vector3 fr_direction1, fr_direction2;
-        // if (lateral < Algebra::fraction(1, 1000)) {
-        //   // use the plane space of the contact normal as friction directions
-        //   cp.world_normal_on_b.plane_space(fr_direction1, fr_direction2);
-        // } else {
+      if (friction_model_ == FRICTION_NONE) {
+        continue;
+      }
+      // unilateral friction force
+      Vector3 lateral_rel_vel = rel_vel - normal_rel_vel * cp.world_normal_on_b;
+      // lateral_rel_vel.print("lateral_rel_vel");
+
+      // to prevent division by zero in norm function
+      lateral_rel_vel[2] += kEpsilon;
+      Scalar lateral = Algebra::norm(lateral_rel_vel);
+      // + Algebra::scalar_from_double(0.001);
+      // printf("lateral_rel_vel.length(): %.6f\n",
+      //        Algebra::getDouble(lateral));
+
+      // Vector3 coulomb_fr_direction2 =
+      // coulomb_fr_direction1.cross(cp.world_normal_on_b);
+
+      // if lateral < Algebra::fraction(1, 1000) ...
+      Scalar fr_case = where_lt(lateral, Algebra::fraction(1, 1000),
+                                Algebra::one(), Algebra::zero());
+      Vector3 fr_direction1;
+      if constexpr (is_cppad_scalar<Scalar>::value) {
         // use the negative lateral velocity and its orthogonal as friction
         // directions
         fr_direction1 = lateral_rel_vel * (Algebra::one() / lateral);
-        // fr_direction2 = fr_direction1.cross(cp.world_normal_on_b);
-        // }
-
-        // if (lateral > Algebra::fraction(10000, 1)) {
-        //   lateral_rel_vel.print("lateral_rel_vel");
-        //   printf("lateral_rel_vel.length(): %.6f\n",
-        //          Algebra::getDouble(lateral));
-        //   rel_vel.print("rel_vel");
-        //   cp.world_normal_on_b.print("cp.world_normal_on_b");
-        //   // lateral = Algebra::fraction(10000, 1);
-        // }
-
-        Scalar friction =
-            compute_friction_force(force_normal, lateral, cp.friction);
-        // if (friction > Algebra::fraction(10000, 1)) {
-        // printf("friction: %.6f\n", Algebra::getDouble(friction));
-
-        // printf("force_normal: %.6f\n",
-        // Algebra::getDouble(force_normal)); printf("lateral: %.6f\n",
-        // Algebra::getDouble(lateral)); friction =
-        // Algebra::fraction(10000, 1);
-        // }
-        Vector3 friction_vector = fr_direction1 * friction;
-
-        // if constexpr (is_neural_scalar<Algebra>::value) {
-        //   force_normal.assign("friction/fn");
-        //   world_point_a.x.assign("friction/point.x");
-        //   world_point_a.y.assign("friction/point.y");
-        //   world_point_a.z.assign("friction/point.z");
-        //   rel_vel.x.assign("friction/rel_vel.x");
-        //   rel_vel.y.assign("friction/rel_vel.y");
-        //   rel_vel.z.assign("friction/rel_vel.z");
-        //   friction_vector.x.assign("friction/fr_vec.x");
-        //   friction_vector.y.assign("friction/fr_vec.y");
-        //   friction_vector.z.assign("friction/fr_vec.z");
-
-        //   friction_vector.x.evaluate();
-        //   friction_vector.y.evaluate();
-        //   friction_vector.z.evaluate();
-        // }
-
-        tau_a += Algebra::mul_transpose(jac_a, friction_vector);
-        tau_b -= Algebra::mul_transpose(jac_b, friction_vector);
-
-        // friction_vector = fr_direction2 * friction;
-        // tau_a += Algebra::mul_transpose(jac_a, friction_vector);
-        // tau_b -= Algebra::mul_transpose(jac_b, friction_vector);
+      } else {
+        if (lateral < Algebra::fraction(1, 1000)) {
+          Vector3 plane_fr_direction1, plane_fr_direction2;
+          // use the plane space of the contact normal as friction directions
+          MultiBodyConstraintSolver<Algebra>::plane_space(
+              cp.world_normal_on_b, plane_fr_direction1, plane_fr_direction2);
+          fr_direction1 = plane_fr_direction1;
+        } else {
+          // use the negative lateral velocity and its orthogonal as friction
+          // directions
+          fr_direction1 = lateral_rel_vel * (Algebra::one() / lateral);
+        }
       }
+
+      // if (lateral > Algebra::fraction(10000, 1)) {
+      //   lateral_rel_vel.print("lateral_rel_vel");
+      //   printf("lateral_rel_vel.length(): %.6f\n",
+      //          Algebra::getDouble(lateral));
+      //   rel_vel.print("rel_vel");
+      //   cp.world_normal_on_b.print("cp.world_normal_on_b");
+      //   // lateral = Algebra::fraction(10000, 1);
+      // }
+
+      Scalar friction = collision * compute_friction_force(
+                                        force_normal, lateral, cp.friction);
+      // if (friction > Algebra::fraction(10000, 1)) {
+      // printf("friction: %.6f\n", Algebra::getDouble(friction));
+
+      // printf("force_normal: %.6f\n",
+      // Algebra::getDouble(force_normal)); printf("lateral: %.6f\n",
+      // Algebra::getDouble(lateral)); friction =
+      // Algebra::fraction(10000, 1);
+      // }
+      Vector3 friction_vector = fr_direction1 * friction;
+
+      // if constexpr (is_neural_scalar<Algebra>::value) {
+      //   force_normal.assign("friction/fn");
+      //   world_point_a.x.assign("friction/point.x");
+      //   world_point_a.y.assign("friction/point.y");
+      //   world_point_a.z.assign("friction/point.z");
+      //   rel_vel.x.assign("friction/rel_vel.x");
+      //   rel_vel.y.assign("friction/rel_vel.y");
+      //   rel_vel.z.assign("friction/rel_vel.z");
+      //   friction_vector.x.assign("friction/fr_vec.x");
+      //   friction_vector.y.assign("friction/fr_vec.y");
+      //   friction_vector.z.assign("friction/fr_vec.z");
+
+      //   friction_vector.x.evaluate();
+      //   friction_vector.y.evaluate();
+      //   friction_vector.z.evaluate();
+      // }
+
+      tau_a += Algebra::mul_transpose(jac_a, friction_vector);
+      tau_b -= Algebra::mul_transpose(jac_b, friction_vector);
+
+      // friction_vector = fr_direction2 * friction;
+      // tau_a += Algebra::mul_transpose(jac_a, friction_vector);
+      // tau_b -= Algebra::mul_transpose(jac_b, friction_vector);
     }
     // apply forces
     // Algebra::print("tau_b", tau_b);

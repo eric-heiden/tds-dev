@@ -78,6 +78,9 @@ struct NeuralAugmentation {
         "not be of NeuralScalar type.\n");
 
     using NAlgebra = NeuralAlgebra<Algebra>;
+    if (param_index_offset >= params.size()) {
+      return;
+    }
 
     NAlgebra::Scalar::clear_all_blueprints();
     typedef typename NAlgebra::Scalar::NeuralNetworkType NeuralNetwork;

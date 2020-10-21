@@ -84,3 +84,17 @@ target_link_libraries(adtest
     ${STAN_LIBRARIES}
     ${CERES_LIBRARIES}
 )
+
+
+add_executable(test_codegen test_codegen.cpp)
+target_include_directories(test_codegen PRIVATE ../src)
+target_link_libraries(test_codegen
+  PRIVATE
+    ${CMAKE_DL_LIBS}
+    benchmark
+    gtest_main
+    gmock
+    CppADCodeGen
+    ${STAN_LIBRARIES}
+    ${CERES_LIBRARIES}
+)
