@@ -513,19 +513,45 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     std::cout << "Model pointer: " << model_.get() << std::endl;
   }
 
-  Scalar value(const std::vector<Scalar>& x) const { 
-    auto fx = model_->ForwardZero(x);
-    return fx[0]; 
-    // return f_scalar_(x); 
+  Scalar value(const std::vector<Scalar>& x) const {
+    const auto fx = model_->ForwardZero(x);
+#ifndef NDEBUG
+    const auto fx_slow = f_scalar_(x);
+    const bool close = std::fabs(fx_slow - fx[0]) < 1e-9;
+    if (!close) {
+      std::cout << "Scalar/CodeGen 0th order mismatch: " << fx_slow << " vs "
+                << fx[0] << "\n";
+    }
+    assert(close);
+#endif
+    return fx[0];
   }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     assert(lib_ != nullptr && model_ != nullptr);
-    // assert(model_ != nullptr);
     gradient_ = model_->Jacobian(x);
+#ifndef NDEBUG
+    // In debug mode, verify the gradient matches the (slower) Ceres gradient.
+    // This can help catch if/else branches that CppAD isn't aware of.
+    const auto ceres_gradient = ceres_functional_.gradient(x);
+    assert(ceres_gradient.size() == gradient_.size());
+    bool allclose = true;
+    for (size_t i = 0; i < ceres_gradient.size(); ++i) {
+      const bool close = std::fabs(ceres_gradient[i] - gradient_[i]) < 1e-9;
+      if (!close) {
+        std::cout << "Ceres/CodeGen gradient mismatch at " << i << ": "
+                  << ceres_gradient[i] << " vs " << gradient_[i] << "\n";
+        allclose = false;
+      }
+    }
+    assert(allclose);
+#endif
     return gradient_;
   }
 
  private:
+#ifndef NDEBUG
+  GradientFunctional<tds::DIFF_CERES, F, ScalarAlgebra> ceres_functional_;
+#endif
   F<ScalarAlgebra> f_scalar_;
   F<EigenAlgebraT<Dual>> f_ad_;
   mutable std::vector<Scalar> gradient_;
