@@ -3,6 +3,7 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <thread>
 
 // clang-format off
 // Stan Math needs to be included first to get its Eigen plugins
@@ -368,15 +369,53 @@ class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
 #endif
 };
 
+static bool gCppADParallelMode = false;
+template <typename GradientFunctional>
+inline void CppADParallelSetup(int num_threads) {
+  auto in_parallel = []() { return gCppADParallelMode; };
+  auto thread_num = []() {
+    static std::map<std::thread::id, std::size_t> thread_ids;
+    static std::mutex thread_ids_mutex;
+    std::lock_guard<std::mutex> thread_ids_lock(thread_ids_mutex);
+    const std::thread::id my_id = std::this_thread::get_id();
+    if (thread_ids.find(my_id) == thread_ids.end()) {
+      thread_ids[my_id] = thread_ids.size();
+    }
+    return thread_ids[my_id];
+  };
+
+  CppAD::thread_alloc::parallel_setup(num_threads, in_parallel, thread_num);
+  // Try enabling this for faster execution.
+  CppAD::thread_alloc::hold_memory(true);
+  CppAD::parallel_ad<typename GradientFunctional::Scalar>();
+  CppAD::parallel_ad<typename GradientFunctional::Dual>();
+  gCppADParallelMode = true;
+}
+
+template <typename GradientFunctional>
+inline void CppADParallelShutdown() {
+  CppAD::thread_alloc::parallel_setup(1, CPPAD_NULL, CPPAD_NULL);
+  gCppADParallelMode = false;
+}
+
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
+ public:
   using Scalar = typename ScalarAlgebra::Scalar;
   using Dual = typename CppAD::AD<Scalar>;
-  F<ScalarAlgebra> f_scalar_;
-  F<EigenAlgebraT<Dual>> f_ad_;
-  mutable CppAD::ADFun<Scalar> tape_;
-  mutable std::vector<Scalar> gradient_;
 
+  GradientFunctional() { Init(); }
+  GradientFunctional(const GradientFunctional& other) { Init(); }
+  GradientFunctional(GradientFunctional& f) { Init(); }
+  GradientFunctional& operator=(const GradientFunctional& other) = delete;
+
+  Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
+  const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
+    gradient_ = tape_.Jacobian(x);
+    return gradient_;
+  }
+
+ private:
   void Init() {
     std::vector<Dual> ax(F<ScalarAlgebra>::kDim);
     for (auto& axi : ax) {
@@ -389,17 +428,10 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
     tape_.optimize();
   }
 
- public:
-  GradientFunctional() { Init(); }
-  GradientFunctional(const GradientFunctional& other) { Init(); }
-  GradientFunctional(GradientFunctional& f) { Init(); }
-  GradientFunctional& operator=(const GradientFunctional& other) = delete;
-
-  Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
-  const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
-    gradient_ = tape_.Jacobian(x);
-    return gradient_;
-  }
+  F<ScalarAlgebra> f_scalar_;
+  F<EigenAlgebraT<Dual>> f_ad_;
+  mutable CppAD::ADFun<Scalar> tape_;
+  mutable std::vector<Scalar> gradient_;
 };
 
 namespace {
@@ -409,16 +441,11 @@ static inline int cpp_ad_codegen_model_counter = 0;
 
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
+ public:
   using Scalar = typename ScalarAlgebra::Scalar;
   using CGScalar = typename CppAD::cg::CG<Scalar>;
   using Dual = typename CppAD::AD<CGScalar>;
-  F<ScalarAlgebra> f_scalar_;
-  F<EigenAlgebraT<Dual>> f_ad_;
-  mutable std::vector<Scalar> gradient_;
-  static inline std::unique_ptr<CppAD::cg::DynamicLib<Scalar>> lib_{nullptr};
-  static inline std::unique_ptr<CppAD::cg::GenericModel<Scalar>> model_;
 
- public:
   static void Compile(bool verbose = true, bool use_clang = true,
                       int optimization_level = 3,
                       std::size_t max_assignments_per_func = 5000) {
@@ -497,5 +524,12 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     gradient_ = model_->Jacobian(x);
     return gradient_;
   }
+
+ private:
+  F<ScalarAlgebra> f_scalar_;
+  F<EigenAlgebraT<Dual>> f_ad_;
+  mutable std::vector<Scalar> gradient_;
+  static inline std::unique_ptr<CppAD::cg::DynamicLib<Scalar>> lib_{nullptr};
+  static inline std::unique_ptr<CppAD::cg::GenericModel<Scalar>> model_;
 };
 }  // namespace tds
