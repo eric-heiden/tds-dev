@@ -182,13 +182,13 @@ class MultiBodyConstraintSolverSpring
     const Scalar zero = Algebra::zero();
 
     // use abs(x) as base since x may be negative and pow() would yield NaN
-    Scalar xn =
-        Algebra::pow(Algebra::abs(x), x < zero ? exponent_n_air_ : exponent_n_);
+    Scalar x_exp = tds::where_lt(x, zero, exponent_n_air_, exponent_n_);
+    Scalar xn = Algebra::pow(Algebra::abs(x), x_exp);
     if (x < zero) {
       xn = -xn;
     }
-    Scalar xdn =
-        Algebra::pow(Algebra::abs(xd), xd < zero ? exponent_vel_air_ : one);
+    Scalar xd_exp = tds::where_lt(xd, zero, exponent_vel_air_, one);
+    Scalar xdn = Algebra::pow(Algebra::abs(xd), xd_exp);
     if (xd < zero) {
       xdn = -xdn;
     }
