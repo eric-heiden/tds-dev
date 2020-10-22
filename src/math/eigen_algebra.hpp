@@ -13,6 +13,8 @@
 #include <Eigen/Geometry>
 #include <iostream>
 
+#include "math/conditionals.hpp"
+
 #include "spatial_vector.hpp"
 
 namespace tds {
@@ -663,14 +665,12 @@ struct EigenAlgebraT {
 
   template <typename T>
   TINY_INLINE static auto max(const T &x, const T &y) {
-    using std::max;
-    return max(x, y);
+    return tds::where_gt(x, y, x, y);
   }
 
   template <typename T>
   TINY_INLINE static auto min(const T &x, const T &y) {
-    using std::min;
-    return min(x, y);
+    return tds::where_lt(x, y, x, y);
   }
 
   EigenAlgebraT<Scalar>() = delete;

@@ -183,15 +183,12 @@ class MultiBodyConstraintSolverSpring
 
     // use abs(x) as base since x may be negative and pow() would yield NaN
     Scalar x_exp = tds::where_lt(x, zero, exponent_n_air_, exponent_n_);
-    Scalar xn = Algebra::pow(Algebra::abs(x), x_exp);
-    if (x < zero) {
-      xn = -xn;
-    }
+    Scalar xn_pow = Algebra::pow(Algebra::abs(x), x_exp);
+    Scalar xn = tds::where_lt(x, zero, xn_pow, -xn_pow);
+
     Scalar xd_exp = tds::where_lt(xd, zero, exponent_vel_air_, one);
-    Scalar xdn = Algebra::pow(Algebra::abs(xd), xd_exp);
-    if (xd < zero) {
-      xdn = -xdn;
-    }
+    Scalar xdn_pow = Algebra::pow(Algebra::abs(xd), xd_exp);
+    Scalar xdn = tds::where_lt(xd, zero, xdn_pow, -xdn_pow);
 
     // magnitude of contact normal force
     Scalar force;
@@ -219,8 +216,8 @@ class MultiBodyConstraintSolverSpring
     // normal spring
     if (smooth_alpha_normal_ > zero) {
       force -= spring_k_ * Algebra::exp(-smooth_alpha_normal_ * x);
-    } else if (x > zero) {
-      force -= spring_k_ * xn;
+    } else {
+      force = tds::where_gt(x, zero, force - spring_k_ * xn, force);
     }
 
     // if constexpr (is_neural_scalar<Algebra>::value) {

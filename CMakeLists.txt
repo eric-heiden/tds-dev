@@ -1,4 +1,4 @@
-#
+
 # Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -254,8 +254,13 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/googletest)
 set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/benchmark)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/HighFive)
-set(MINIGLOG ON)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/ceres-solver)
+# set(MINIGLOG ON)
+# set(BUILD_TESTING OFF)
+# set(BUILD_EXAMPLES OFF)
+# add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/ceres-solver)
+set(CXXOPTS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(CXXOPTS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(CXXOPTS_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/cxxopts)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/fmt)
 
