@@ -35,6 +35,8 @@ class Experiment {
   NeuralAugmentation augmentation;
 
  public:
+  virtual ~Experiment() {}
+
   Experiment(const std::string& name) : name(name) {
     log["name"] = name;
     auto t = std::time(nullptr);
