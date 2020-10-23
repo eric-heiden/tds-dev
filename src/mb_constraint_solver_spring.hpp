@@ -214,10 +214,18 @@ class MultiBodyConstraintSolverSpring
     }
 
     // normal spring
-    if (smooth_alpha_normal_ > zero) {
-      force -= spring_k_ * Algebra::exp(-smooth_alpha_normal_ * x);
+    if constexpr (is_cppad_scalar<Scalar>::value) {
+      Scalar pos_n = tds::where_gt(smooth_alpha_normal_, zero, one, zero);
+      Scalar else_f = tds::where_gt(x, zero, force - spring_k_ * xn, force);
+      force = pos_n * (force -
+                       spring_k_ * Algebra::exp(-smooth_alpha_normal_ * x)) +
+              (one - pos_n) * else_f;
     } else {
-      force = tds::where_gt(x, zero, force - spring_k_ * xn, force);
+      if (smooth_alpha_normal_ > zero) {
+        force -= spring_k_ * Algebra::exp(-smooth_alpha_normal_ * x);
+      } else {
+        force = tds::where_gt(x, zero, force - spring_k_ * xn, force);
+      }
     }
 
     // if constexpr (is_neural_scalar<Algebra>::value) {
@@ -268,7 +276,7 @@ class MultiBodyConstraintSolverSpring
     switch (friction_model_) {
       default:
       case FRICTION_COULOMB:
-        return mu * fn * (v < zero ? -one : one);
+        return mu * fn * tds::where_lt(v, zero, -one, one);
       case FRICTION_ANDERSSON:
         return fn *
                (mu + (mu_static_ - mu) *

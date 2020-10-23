@@ -19,6 +19,7 @@
 #include "base.hpp"
 #include "geometry.hpp"
 #include "math/pose.hpp"
+#include "math/conditionals.hpp"
 
 namespace tds {
 template <typename Algebra>

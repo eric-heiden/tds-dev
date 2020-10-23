@@ -569,7 +569,6 @@ struct TinyAlgebra {
   }
 
   TINY_INLINE static Scalar max(const Scalar &a, const Scalar &b) {
-    printf("TinyAlgebra::max\n");
     return TinyConstants::max1(a, b);
   }
 

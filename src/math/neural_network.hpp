@@ -24,6 +24,8 @@
 #include <random>
 #include <vector>
 
+#include "math/conditionals.hpp"
+
 namespace tds {
 
 enum NeuralNetworkActivation {
@@ -204,8 +206,8 @@ class NeuralNetworkSpecification {
             current[ci] = Algebra::log(one + Algebra::exp(current[ci]));
             break;
           case NN_ACT_ELU:
-            current[ci] = current[ci] >= zero ? current[ci]
-                                              : Algebra::exp(current[ci]) - one;
+            current[ci] = tds::where_ge(current[ci], zero, current[ci],
+                                        Algebra::exp(current[ci]) - one);
             break;
           case NN_ACT_SIGMOID: {
             typename Algebra::Scalar exp_x = Algebra::exp(current[ci]);

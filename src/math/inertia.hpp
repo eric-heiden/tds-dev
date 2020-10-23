@@ -45,8 +45,9 @@ struct RigidBodyInertia {
   template <typename AlgebraTo = Algebra>
   RigidBodyInertia<AlgebraTo> clone() const {
     typedef Conversion<Algebra, AlgebraTo> C;
-    return RigidBodyInertia<AlgebraTo>(C::convert(mass), C::convert(com),
-                                       C::convert(inertia));
+    RigidBodyInertia<AlgebraTo> rbi(C::convert(mass), C::convert(com),
+                                    C::convert(inertia));
+    return rbi;
   }
 
   void set_zero() {

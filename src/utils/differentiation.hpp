@@ -21,6 +21,7 @@
 #include "math/eigen_algebra.hpp"
 #include "math/tiny/tiny_algebra.hpp"
 #include "math/tiny/ceres_utils.h"
+#include "math/tiny/cppad_utils.h"
 #include "stopwatch.hpp"
 
 namespace tds {
@@ -33,6 +34,12 @@ enum DiffMethod {
   DIFF_CPPAD_AUTO,
   DIFF_CPPAD_CODEGEN_AUTO,
 };
+
+/**
+ * Choose whether to use TinyAlgebra (true) or EigenAlgebra for differentiation
+ * with CppADCodeGen.
+ */
+static const inline bool DiffCppAdCodeGenUsesTinyAlgebra = true;
 
 TINY_INLINE std::string diff_method_name(DiffMethod m) {
   switch (m) {
@@ -87,7 +94,9 @@ template <int Dim, typename Scalar>
 struct default_diff_algebra<DIFF_CPPAD_CODEGEN_AUTO, Dim, Scalar> {
   using CGScalar = typename CppAD::cg::CG<Scalar>;
   using ADScalar = typename CppAD::AD<CGScalar>;
-  using type = EigenAlgebraT<ADScalar>;
+  using type = std::conditional_t<DiffCppAdCodeGenUsesTinyAlgebra,
+                                  TinyAlgebra<ADScalar, CppADUtils<CGScalar>>,
+                                  EigenAlgebraT<ADScalar>>;
 };
 
 /**
@@ -457,6 +466,9 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   using Scalar = typename ScalarAlgebra::Scalar;
   using CGScalar = typename CppAD::cg::CG<Scalar>;
   using Dual = typename CppAD::AD<CGScalar>;
+  using DualAlgebra =
+      typename default_diff_algebra<DIFF_CPPAD_CODEGEN_AUTO,
+                                    F<ScalarAlgebra>::kDim, Scalar>::type;
 
   static void Compile(const CodeGenSettings& settings = CodeGenSettings()) {
     std::vector<Dual> ax(F<ScalarAlgebra>::kDim);
@@ -469,7 +481,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     }
     CppAD::Independent(ax);
     std::vector<Dual> ay(1);
-    F<EigenAlgebraT<Dual>> f;
+    F<DualAlgebra> f;
     ay[0] = f(ax);
     CppAD::ADFun<CGScalar> tape;
     tape.Dependent(ax, ay);
@@ -573,7 +585,6 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   GradientFunctional<tds::DIFF_CERES, F, ScalarAlgebra> ceres_functional_;
 #endif
   F<ScalarAlgebra> f_scalar_;
-  F<EigenAlgebraT<Dual>> f_ad_;
   mutable std::vector<Scalar> gradient_;
   std::unique_ptr<CppAD::cg::LinuxDynamicLib<Scalar>> lib_{nullptr};
   std::unique_ptr<CppAD::cg::GenericModel<Scalar>> model_;
