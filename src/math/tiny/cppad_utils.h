@@ -100,7 +100,8 @@ struct CppADUtils {
   }
 
   template <class T>
-  static T max1(const T& a, const T& b) {
+  static T max1(const T& a, const T
+  & b) {
 #if DEBUG
     printf("Called CppAD CondExpGt\n");
 #endif

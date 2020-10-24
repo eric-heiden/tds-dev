@@ -1,9 +1,15 @@
 #pragma once
 
 #include <cmath>
+
+#include <cppad/cg.hpp>
+#include <cppad/example/cppad_eigen.hpp>
+#include <cppad/cg/support/cppadcg_eigen.hpp>
+
 #include <limits>
 #include <stdexcept>
 #include <thread>
+#include <mutex>
 
 // clang-format off
 // Stan Math needs to be included first to get its Eigen plugins
@@ -14,7 +20,6 @@
 #include <ceres/autodiff_cost_function.h>
 // clang-format on
 
-#include <cppad/cg.hpp>
 #include "base.hpp"
 #include "math/tiny/tiny_dual.h"
 #include "math/tiny/tiny_dual_utils.h"
@@ -39,7 +44,7 @@ enum DiffMethod {
  * Choose whether to use TinyAlgebra (true) or EigenAlgebra for differentiation
  * with CppADCodeGen.
  */
-static const inline bool DiffCppAdCodeGenUsesTinyAlgebra = true;
+static const inline bool DiffCppAdCodeGenUsesTinyAlgebra = false;
 
 TINY_INLINE std::string diff_method_name(DiffMethod m) {
   switch (m) {
@@ -79,11 +84,25 @@ struct default_diff_algebra<DIFF_DUAL, Dim, Scalar> {
 };
 template <int Dim>
 struct default_diff_algebra<DIFF_STAN_REVERSE, Dim, double> {
+#if USE_STAN
   using type = EigenAlgebraT<stan::math::var>;
+#else
+  using type = EigenAlgebra;
+  // static_assert(false,
+  //               "Need to set USE_STAN option to ON to use Stan's autodiff "
+  //               "functionality.");
+#endif
 };
 template <int Dim, typename Scalar>
 struct default_diff_algebra<DIFF_STAN_FORWARD, Dim, Scalar> {
+#if USE_STAN
   using type = EigenAlgebraT<stan::math::fvar<Scalar>>;
+#else
+  using type = EigenAlgebra;
+  // static_assert(false,
+  //               "Need to set USE_STAN option to ON to use Stan's autodiff "
+  //               "functionality.");
+#endif
 };
 template <int Dim, typename Scalar>
 struct default_diff_algebra<DIFF_CPPAD_AUTO, Dim, Scalar> {
@@ -338,9 +357,9 @@ class GradientFunctional<DIFF_DUAL, F, ScalarAlgebra> {
 
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_STAN_REVERSE, F, ScalarAlgebra> {
-#if USE_STAN
   using Scalar = typename ScalarAlgebra::Scalar;
   F<ScalarAlgebra> f_scalar_;
+#if USE_STAN
   F<EigenAlgebraT<stan::math::var>> f_ad_;
   mutable std::vector<Scalar> gradient_;
 
@@ -351,17 +370,21 @@ class GradientFunctional<DIFF_STAN_REVERSE, F, ScalarAlgebra> {
     return gradient_;
   }
 #else
-  throw std::runtime_error(
-      "Variable 'USE_STAN' must be set to use automatic "
-      "differentiation functions from Stan Math.");
+ public:
+  Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
+  const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
+    throw std::runtime_error(
+        "Variable 'USE_STAN' must be set to use automatic "
+        "differentiation functions from Stan Math.");
+  }
 #endif
 };
 
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
-#if USE_STAN
   using Scalar = typename ScalarAlgebra::Scalar;
   F<ScalarAlgebra> f_scalar_;
+#if USE_STAN
   F<EigenAlgebraT<stan::math::fvar<Scalar>>> f_ad_;
   mutable std::vector<Scalar> gradient_;
 
@@ -372,9 +395,13 @@ class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
     return gradient_;
   }
 #else
-  throw std::runtime_error(
-      "Variable 'USE_STAN' must be set to use automatic "
-      "differentiation functions from Stan Math.");
+ public:
+  Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
+  const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
+    throw std::runtime_error(
+        "Variable 'USE_STAN' must be set to use automatic "
+        "differentiation functions from Stan Math.");
+  }
 #endif
 };
 
@@ -481,6 +508,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     }
     CppAD::Independent(ax);
     std::vector<Dual> ay(1);
+    std::cout << "Creating ad f\n";
     F<DualAlgebra> f;
     ay[0] = f(ax);
     CppAD::ADFun<CGScalar> tape;

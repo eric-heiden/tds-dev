@@ -140,13 +140,13 @@ class Experiment {
   void run(OptimizationProblem& problem) {
     if constexpr (OptimizationProblem::kDiffMethod ==
                   tds::DIFF_CPPAD_CODEGEN_AUTO) {
-      CodeGenSettings settings;
-      // use current parameter values as function arguments for generating the
-      // gradient code
-      for (const auto& param : problem.parameters()) {
-        settings.default_x.push_back(param.value);
-      }
-      OptimizationProblem::CostFunctor::Compile(settings);
+      // CodeGenSettings settings;
+      // // use current parameter values as function arguments for generating the
+      // // gradient code
+      // for (const auto& param : problem.parameters()) {
+      //   settings.default_x.push_back(param.value);
+      // }
+      // OptimizationProblem::CostFunctor::Compile(settings);
     }
     if (log["settings"]["optimizer"] == "pagmo") {
       run_pagmo(problem);

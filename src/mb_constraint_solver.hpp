@@ -181,10 +181,17 @@ class MultiBodyConstraintSolver {
                               Algebra::num_cols(mass_matrix_a));
     if (Algebra::num_cols(mass_matrix_a) * Algebra::num_rows(mass_matrix_a) >
         0) {
-      submit_profile_timing("inverse_mass_matrix_a");
-      is_positive_definite_a =
-          Algebra::symmetric_inverse(mass_matrix_a, mass_matrix_a_inv);
-      submit_profile_timing("");
+      // if constexpr (is_cppad_scalar<Scalar>::value) {
+      //   using InnerScalar = typename Scalar::value_type;
+      //   static atomic_eigen_mat_inv<InnerScalar> mat_inv_op_a;
+      //   mass_matrix_a_inv = mat_inv_op_a.op(mass_matrix_a);
+      //   is_positive_definite_a = true;
+      // } else {
+        submit_profile_timing("inverse_mass_matrix_a");
+        is_positive_definite_a =
+            Algebra::symmetric_inverse(mass_matrix_a, mass_matrix_a_inv);
+        submit_profile_timing("");
+      // }
     }
 
     MatrixX mass_matrix_b(n_b, n_b);
@@ -193,10 +200,17 @@ class MultiBodyConstraintSolver {
                               Algebra::num_cols(mass_matrix_b));
     if (Algebra::num_cols(mass_matrix_b) * Algebra::num_rows(mass_matrix_b) >
         0) {
-      submit_profile_timing("inverse_mass_matrix_b");
-      is_positive_definite_b =
-          Algebra::symmetric_inverse(mass_matrix_b, mass_matrix_b_inv);
-      submit_profile_timing("");
+      // if constexpr (is_cppad_scalar<Scalar>::value) {
+      //   using InnerScalar = typename Scalar::value_type;
+      //   static atomic_eigen_mat_inv<InnerScalar> mat_inv_op_b;
+      //   mass_matrix_b_inv = mat_inv_op_b.op(mass_matrix_b);
+      //   is_positive_definite_b = true;
+      // } else {
+        submit_profile_timing("inverse_mass_matrix_b");
+        is_positive_definite_b =
+            Algebra::symmetric_inverse(mass_matrix_b, mass_matrix_b_inv);
+        submit_profile_timing("");
+      // }
     }
     if (!is_positive_definite_a) {
       printf("LCP: mass matrix a is not positive definite\n");

@@ -7,6 +7,7 @@
 
 // clang-format off
 #include <cppad/cg.hpp>
+#include "math/cppad/eigen_mat_inv.hpp"
 // clang-format on
 
 #include <Eigen/Core>
@@ -106,16 +107,69 @@ struct EigenAlgebraT {
   }
 
   /**
+   * CppAD-friendly matrix inverse operation that assumes the input matrix is
+   * positive-definite.
+   */
+  static bool plain_symmetric_inverse(const MatrixX &mat, MatrixX &mat_inv) {
+    assert(mat.rows() == mat.cols());
+    VectorX diagonal = mat.diagonal();
+    mat_inv = mat;
+    const int n = mat.rows();
+    int i, j, k;
+    Scalar sum;
+    for (i = 0; i < n; i++) {
+      mat_inv(i, i) = one() / diagonal[i];
+      for (j = i + 1; j < n; j++) {
+        sum = zero();
+        for (k = i; k < j; k++) {
+          sum -= mat_inv(j, k) * mat_inv(k, i);
+        }
+        mat_inv(j, i) = sum / diagonal[j];
+      }
+    }
+    for (i = 0; i < n; i++) {
+      for (j = i + 1; j < n; j++) {
+        mat_inv(i, j) = zero();
+      }
+    }
+    for (i = 0; i < n; i++) {
+      mat_inv(i, i) = mat_inv(i, i) * mat_inv(i, i);
+      for (k = i + 1; k < n; k++) {
+        mat_inv(i, i) += mat_inv(k, i) * mat_inv(k, i);
+      }
+      for (j = i + 1; j < n; j++) {
+        for (k = j; k < n; k++) {
+          mat_inv(i, j) += mat_inv(k, i) * mat_inv(k, j);
+        }
+      }
+    }
+    for (i = 0; i < n; i++) {
+      for (j = 0; j < i; j++) {
+        mat_inv(i, j) = mat_inv(j, i);
+      }
+    }
+  }
+
+  /**
    * Returns true if the matrix `mat` is positive-definite, and assigns
    * `mat_inv` to the inverse of mat.
    * `mat` must be a symmetric matrix.
    */
   static bool symmetric_inverse(const MatrixX &mat, MatrixX &mat_inv) {
-    Eigen::LLT<MatrixX> llt(mat);
-    if (llt.info() == Eigen::NumericalIssue) {
-      return false;
+    if constexpr (!is_cppad_scalar<Scalar>::value) {
+      Eigen::LLT<MatrixX> llt(mat);
+      if (llt.info() == Eigen::NumericalIssue) {
+        return false;
+      }
+      mat_inv = mat.inverse();
+    } else {
+      plain_symmetric_inverse(mat, mat_inv);
+      // // FIXME the atomic op needs to remain in memory but it will fail when the
+      // // dimensions of the input matrix are not always the same
+      // using InnerScalar = typename Scalar::value_type;
+      // static atomic_eigen_mat_inv<InnerScalar> mat_inv_op;
+      // mat_inv = mat_inv_op.op(mat);
     }
-    mat_inv = mat.inverse();
     return true;
   }
 
@@ -394,7 +448,66 @@ struct EigenAlgebraT {
     return Quaternion(w, x, y, z).toRotationMatrix();
   }
   EIGEN_ALWAYS_INLINE static Quaternion matrix_to_quat(const Matrix3 &m) {
-    return Quaternion(m);
+    if constexpr (is_cppad_scalar<Scalar>::value) {
+      // add epsilon to denominator to prevent division by zero
+      const Scalar eps = from_double(1e-6);
+      Scalar tr = m(0, 0) + m(1, 1) + m(2, 2);
+      Scalar q1[4], q2[4], q3[4], q4[4];
+      // if (tr > 0)
+      {
+        Scalar S = sqrt(abs(tr + 1.0)) * two() + eps;
+        q1[0] = fraction(1, 4) * S;
+        q1[1] = (m(2, 1) - m(1, 2)) / S;
+        q1[2] = (m(0, 2) - m(2, 0)) / S;
+        q1[3] = (m(1, 0) - m(0, 1)) / S;
+      }
+      // else if ((m(0,0) > m(1,1))&(m(0,0) > m(2,2)))
+      {
+        Scalar S = sqrt(abs(1.0 + m(0, 0) - m(1, 1) - m(2, 2))) * two() + eps;
+        q2[0] = (m(2, 1) - m(1, 2)) / S;
+        q2[1] = fraction(1, 4) * S;
+        q2[2] = (m(0, 1) + m(1, 0)) / S;
+        q2[3] = (m(0, 2) + m(2, 0)) / S;
+      }
+      // else if (m(1,1) > m(2,2))
+      {
+        Scalar S = sqrt(abs(1.0 + m(1, 1) - m(0, 0) - m(2, 2))) * two() + eps;
+        q3[0] = (m(0, 2) - m(2, 0)) / S;
+        q3[1] = (m(0, 1) + m(1, 0)) / S;
+        q3[2] = fraction(1, 4) * S;
+        q3[3] = (m(1, 2) + m(2, 1)) / S;
+      }
+      // else
+      {
+        Scalar S = sqrt(abs(1.0 + m(2, 2) - m(0, 0) - m(1, 1))) * two() + eps;
+        q4[0] = (m(1, 0) - m(0, 1)) / S;
+        q4[1] = (m(0, 2) + m(2, 0)) / S;
+        q4[2] = (m(1, 2) + m(2, 1)) / S;
+        q4[3] = fraction(1, 4) * S;
+      }
+      Quaternion q;
+      // (m(0,0) > m(1,1))&(m(0,0) > m(2,2))
+      Scalar m00_is_max = where_gt(
+          m(0, 0), m(1, 1), where_gt(m(0, 0), m(2, 2), one(), zero()), zero());
+      Scalar m11_is_max =
+          (one() - m00_is_max) * where_gt(m(1, 1), m(2, 2), one(), zero());
+      Scalar m22_is_max = (one() - m00_is_max) * (one() - m11_is_max);
+      q.w() = where_gt(
+          tr, zero(), q1[0],
+          m00_is_max * q2[0] + m11_is_max * q3[0] + m22_is_max * q4[0]);
+      q.x() = where_gt(
+          tr, zero(), q1[1],
+          m00_is_max * q2[1] + m11_is_max * q3[1] + m22_is_max * q4[1]);
+      q.y() = where_gt(
+          tr, zero(), q1[2],
+          m00_is_max * q2[2] + m11_is_max * q3[2] + m22_is_max * q4[2]);
+      q.z() = where_gt(
+          tr, zero(), q1[3],
+          m00_is_max * q2[3] + m11_is_max * q3[3] + m22_is_max * q4[3]);
+      return q;
+    } else {
+      return Quaternion(m);
+    }
   }
   EIGEN_ALWAYS_INLINE static Quaternion axis_angle_quaternion(
       const Vector3 &axis, const Scalar &angle) {

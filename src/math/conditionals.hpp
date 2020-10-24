@@ -4,7 +4,19 @@
 
 #include "base.hpp"
 
+// template <class T>
+// static CppAD::AD<T> max(const CppAD::AD<T>& a, const CppAD::AD<T>& b) {
+//   std::cout << "max\n";
+//   return CppAD::CondExpGt(a, b, a, b);
+// }
+// template <class T>
+// static CppAD::AD<T> min(const CppAD::AD<T>& a, const CppAD::AD<T>& b) {
+//   std::cout << "min\n";
+//   return CppAD::CondExpLt(a, b, a, b);
+// }
+
 namespace tds {
+
 template <typename Scalar>
 struct is_cppad_scalar {
   static constexpr bool value = false;
