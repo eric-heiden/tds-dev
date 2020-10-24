@@ -22,6 +22,7 @@
 
 #include <cppad/cg.hpp>
 #include <cppad/cppad.hpp>
+#include <string>
 
 #include "math.h"
 
@@ -134,6 +135,11 @@ struct CppADUtils {
   template <class T>
   static Scalar scalar_from_double(const T& value) {
     return Scalar(double(value));
+  }
+
+  template <class T>
+  static Scalar scalar_from_string(const T& value) {
+    return Scalar(std::stod(value));
   }
 
   template <class T>
