@@ -517,7 +517,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     Stopwatch timer;
     timer.start();
     std::string model_name =
-        "model_" + std::to_string(cpp_ad_codegen_model_counter++);
+        "model_" + std::to_string(++cpp_ad_codegen_model_counter);
     CppAD::cg::ModelCSourceGen<Scalar> cgen(tape, model_name);
     cgen.setCreateJacobian(true);
     cgen.setMaxAssignmentsPerFunc(settings.max_assignments_per_func);
@@ -602,7 +602,9 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   void Init() {
     lib_ = std::make_unique<CppAD::cg::LinuxDynamicLib<Scalar>>(
         "./cppad_cg_model.so");
-    model_ = lib_->model("model_0");
+    std::string model_name =
+        "model_" + std::to_string(cpp_ad_codegen_model_counter);
+    model_ = lib_->model(model_name);
   }
 
   GradientFunctional() { Init(); }

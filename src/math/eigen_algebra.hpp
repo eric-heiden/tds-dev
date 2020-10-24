@@ -110,7 +110,7 @@ struct EigenAlgebraT {
    * CppAD-friendly matrix inverse operation that assumes the input matrix is
    * positive-definite.
    */
-  static bool plain_symmetric_inverse(const MatrixX &mat, MatrixX &mat_inv) {
+  static void plain_symmetric_inverse(const MatrixX &mat, MatrixX &mat_inv) {
     assert(mat.rows() == mat.cols());
     VectorX diagonal = mat.diagonal();
     mat_inv = mat;
