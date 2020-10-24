@@ -68,7 +68,6 @@ target_link_libraries(adbench
     ${CMAKE_DL_LIBS}
     benchmark
     CppADCodeGen
-    ${STAN_LIBRARIES}
     ${CERES_LIBRARIES}
 )
 
@@ -81,7 +80,6 @@ target_link_libraries(adtest
     gtest_main
     gmock
     CppADCodeGen
-    ${STAN_LIBRARIES}
     ${CERES_LIBRARIES}
 )
 
