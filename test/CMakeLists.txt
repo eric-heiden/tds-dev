@@ -97,4 +97,5 @@ target_link_libraries(test_codegen
     CppADCodeGen
     ${STAN_LIBRARIES}
     ${CERES_LIBRARIES}
+    tinyxml2
 )

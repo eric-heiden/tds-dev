@@ -7,6 +7,10 @@
 #include "world.hpp"
 #include "dynamics/forward_dynamics.hpp"
 #include "dynamics/integrator.hpp"
+#include "urdf/system_constructor.hpp"
+#include "urdf/urdf_cache.hpp"
+#include "utils/file_utils.hpp"
+#include "mb_constraint_solver_spring.hpp"
 // clang-format on
 
 template <typename Algebra>
@@ -57,16 +61,94 @@ struct MatrixInverseFunctor {
   }
 };
 
-// template <typename Algebra>
-// struct SimpleContactFunctor {
-//   static const inline int kDim = 3;
-//   using Scalar = typename Algebra::Scalar;
+template <typename Algebra, bool UseSpringContact>
+struct ContactModelFunctor {
+  static const inline int kDim = 5;
+  using Scalar = typename Algebra::Scalar;
 
-//   Scalar operator()(const std::vector<Scalar>& x) const {
-//     tds::World<Algebra> world;
-//     world.create_multi_body
-//   }
-// };
+  std::string urdf_filename;
+  std::string plane_filename;
+
+  ContactModelFunctor() {
+    tds::FileUtils::find_file("pendulum5.urdf", urdf_filename);
+    tds::FileUtils::find_file("plane_implicit.urdf", plane_filename);
+  }
+
+  Scalar operator()(const std::vector<Scalar>& x) const {
+    tds::World<Algebra> world;
+    if constexpr (UseSpringContact) {
+      world.set_mb_constraint_solver(
+          new tds::MultiBodyConstraintSolverSpring<Algebra>);
+    }
+    tds::UrdfCache<Algebra> cache;
+    auto* system = cache.construct(urdf_filename, world, false, false);
+    system->base_X_world().translation = Algebra::unit3_z();
+    for (int i = 0; i < system->dof() && i < static_cast<int>(x.size()); ++i) {
+      system->qd(i) = x[i];
+    }
+    Scalar mse = Algebra::zero();
+    Scalar dt = Algebra::fraction(1, 1000);
+    int step_limit = 5000;
+    for (int t = 0; t < step_limit; ++t) {
+      tds::forward_dynamics(*system, world.get_gravity());
+      world.step(dt);
+      tds::integrate_euler(*system, dt);
+      if constexpr (std::is_same_v<Scalar, double>) {
+        if (t % 100 == 0) {
+          system->print_state();
+        }
+      }
+      for (int i = 0; i < system->dof(); ++i) {
+        mse += system->q(i) / Algebra::from_double(system->dof() * step_limit);
+      }
+    }
+    return mse;
+  }
+};
+
+template<typename Algebra>
+using LCPContactModelFunctor = ContactModelFunctor<Algebra, false>;
+template<typename Algebra>
+using SpringContactModelFunctor = ContactModelFunctor<Algebra, true>;
+
+TEST(CppAdCogeGen, ContactModel) {
+  typedef tds::GradientFunctional<tds::DIFF_CPPAD_CODEGEN_AUTO,
+                                  SpringContactModelFunctor>
+      CGFun;
+  typedef tds::GradientFunctional<tds::DIFF_CERES, SpringContactModelFunctor>
+      CeresFun;
+  std::srand(123);
+  std::vector<double> x;
+  std::cout << "x = [";
+  for (int i = 0; i < CGFun::kDim; ++i) {
+    x.push_back(std::rand() / RAND_MAX * 2.);
+    std::cout << " " << x.back();
+  }
+  std::cout << " ]\n";
+  CGFun::Compile();
+  CGFun f_cg;
+  double v_cg = f_cg.value(x);
+  std::cout << "f_cg(x) = " << v_cg << std::endl;
+  CGFun f_ceres;
+  double v_ceres = f_ceres.value(x);
+  std::cout << "f_ceres(x) = " << v_ceres << std::endl;
+  EXPECT_NEAR(v_cg, v_ceres, 1e-9);
+  const auto& grad_cg = f_cg.gradient(x);
+  std::cout << "d/dx f_cg(x) = [";
+  for (int i = 0; i < CGFun::kDim; ++i) {
+    std::cout << " " << grad_cg[i];
+  }
+  std::cout << "]" << std::endl;
+  const auto& grad_ceres = f_ceres.gradient(x);
+  std::cout << "d/dx f_ceres(x) = [";
+  for (int i = 0; i < CGFun::kDim; ++i) {
+    std::cout << " " << grad_ceres[i];
+  }
+  std::cout << "]" << std::endl;
+  for (int i = 0; i < CGFun::kDim; ++i) {
+    EXPECT_NEAR(grad_cg[i], grad_ceres[i], 1e-9);
+  }
+}
 
 TEST(CppAdCogeGen, ConditionalExpressions) {
   typedef tds::GradientFunctional<tds::DIFF_CPPAD_CODEGEN_AUTO,

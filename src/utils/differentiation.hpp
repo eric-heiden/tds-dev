@@ -1,15 +1,13 @@
 #pragma once
 
 #include <cmath>
-
 #include <cppad/cg.hpp>
-#include <cppad/example/cppad_eigen.hpp>
 #include <cppad/cg/support/cppadcg_eigen.hpp>
-
+#include <cppad/example/cppad_eigen.hpp>
 #include <limits>
+#include <mutex>
 #include <stdexcept>
 #include <thread>
-#include <mutex>
 
 // clang-format off
 // Stan Math needs to be included first to get its Eigen plugins
@@ -258,6 +256,7 @@ static std::enable_if_t<Method == DIFF_STAN_FORWARD, void> compute_gradient(
 template <DiffMethod Method, template <typename> typename F,
           typename ScalarAlgebra = EigenAlgebra>
 struct GradientFunctional {
+  static const int kDim = F<ScalarAlgebra>::kDim;
   using Scalar = typename ScalarAlgebra::Scalar;
   virtual Scalar value(const std::vector<Scalar>&) const = 0;
   virtual const std::vector<Scalar>& gradient(
@@ -271,6 +270,7 @@ class GradientFunctional<DIFF_NUMERICAL, F, ScalarAlgebra> {
   mutable std::vector<Scalar> gradient_;
 
  public:
+  static const int kDim = F<ScalarAlgebra>::kDim;
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     tds::compute_gradient<tds::DIFF_NUMERICAL>(f_scalar_, x, gradient_);
@@ -280,7 +280,10 @@ class GradientFunctional<DIFF_NUMERICAL, F, ScalarAlgebra> {
 
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_CERES, F, ScalarAlgebra> {
+ public:
   static const int kDim = F<ScalarAlgebra>::kDim;
+
+ private:
   using Scalar = typename ScalarAlgebra::Scalar;
   using ADScalar = ceres::Jet<Scalar, kDim>;
   mutable std::vector<Scalar> gradient_;
@@ -348,6 +351,7 @@ class GradientFunctional<DIFF_DUAL, F, ScalarAlgebra> {
   mutable std::vector<Scalar> gradient_;
 
  public:
+  static const int kDim = F<ScalarAlgebra>::kDim;
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     tds::compute_gradient<tds::DIFF_DUAL>(f_ad_, x, gradient_);
@@ -371,6 +375,7 @@ class GradientFunctional<DIFF_STAN_REVERSE, F, ScalarAlgebra> {
   }
 #else
  public:
+  static const int kDim = F<ScalarAlgebra>::kDim;
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     throw std::runtime_error(
@@ -396,6 +401,7 @@ class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
   }
 #else
  public:
+  static const int kDim = F<ScalarAlgebra>::kDim;
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     throw std::runtime_error(
@@ -439,6 +445,7 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
  public:
   using Scalar = typename ScalarAlgebra::Scalar;
   using Dual = typename CppAD::AD<Scalar>;
+  static const int kDim = F<ScalarAlgebra>::kDim;
 
   GradientFunctional() { Init(); }
   GradientFunctional(const GradientFunctional& other) { Init(); }
@@ -494,14 +501,14 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   using Scalar = typename ScalarAlgebra::Scalar;
   using CGScalar = typename CppAD::cg::CG<Scalar>;
   using Dual = typename CppAD::AD<CGScalar>;
-  using DualAlgebra =
-      typename default_diff_algebra<DIFF_CPPAD_CODEGEN_AUTO,
-                                    F<ScalarAlgebra>::kDim, Scalar>::type;
+  static const int kDim = F<ScalarAlgebra>::kDim;
+  using DualAlgebra = typename default_diff_algebra<DIFF_CPPAD_CODEGEN_AUTO,
+                                                    kDim, Scalar>::type;
 
   static void Compile(const CodeGenSettings& settings = CodeGenSettings(),
                       std::vector<Dual>* dynamic = nullptr) {
-    std::vector<Dual> ax(F<ScalarAlgebra>::kDim);
-    for (std::size_t i = 0; i < F<ScalarAlgebra>::kDim; ++i) {
+    std::vector<Dual> ax(kDim);
+    for (std::size_t i = 0; i < kDim; ++i) {
       if (i >= settings.default_x.size()) {
         ax[i] = ScalarAlgebra::zero();
       } else {
