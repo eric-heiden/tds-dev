@@ -52,7 +52,7 @@ class UrdfCache {
       }
       data_[urdf_filename] = UrdfStructures();
       UrdfImport::extract_urdf_structs(data_[urdf_filename], robotId, sim, vis);
-      sim->removeBody(robotId);
+      // sim->removeBody(robotId);
     }
     return data_[urdf_filename];
   }

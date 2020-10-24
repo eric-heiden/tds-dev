@@ -123,8 +123,8 @@ int main(int argc, char *argv[]) {
   }
 #endif
 
-  // world.set_mb_constraint_solver(
-  //     new tds::MultiBodyConstraintSolverSpring<Algebra>);
+  world.set_mb_constraint_solver(
+      new tds::MultiBodyConstraintSolverSpring<Algebra>);
 
   fflush(stdout);
 

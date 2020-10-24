@@ -67,11 +67,14 @@ struct NNBenchFunctor {
   */                                                                    \
                                                                         \
   static void BM_##diff_type##_Pendulum_Grad(benchmark::State& state) { \
+    if constexpr (tds::diff_type == tds::DIFF_CPPAD_CODEGEN_AUTO) {     \
+      std::cout << "Compiling...\n";                                    \
+      tds::OptimizationProblem<tds::diff_type,                          \
+                               PendulumCost>::CostFunctor::Compile();   \
+      std::cout << "Compiled.\n";                                       \
+    }                                                                   \
     auto problem = create_problem<tds::diff_type>();                    \
     using ProblemType = decltype(problem);                              \
-    std::cout << "Compiling...\n";                                      \
-    ProblemType::CostFunctor::Compile();                                \
-    std::cout << "Compiled...\n";                                       \
     ProblemType::DoubleVector x(ProblemType::kParameterDim, 5.0);       \
     problem.gradient(x);                                                \
     for (auto _ : state) {                                              \
