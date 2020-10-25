@@ -95,7 +95,8 @@ class MultiBody {
       conv.X_collisions_.push_back(x.template clone<AlgebraTo>());
     }
     for (const auto *geom : collision_geometries_) {
-      conv.collision_geometries_.push_back(tds::clone<Algebra, AlgebraTo>(geom));
+      conv.collision_geometries_.push_back(
+          tds::clone<Algebra, AlgebraTo>(geom));
     }
     conv.base_rbi_ = base_rbi_.template clone<AlgebraTo>();
     conv.base_applied_force_ = base_applied_force_.template clone<AlgebraTo>();
@@ -314,28 +315,43 @@ class MultiBody {
         qdd_(mb.qdd_),
         tau_(mb.tau_) {}
 
-  void print_state() const {
-    printf("q: [");
-    for (int i = 0; i < dof(); ++i) {
-      if (i > 0) printf(" ");
-      printf("%.2f", Algebra::to_double(q_[i]));
+  void print_state(bool print_tau = true, bool print_qdd = true,
+                   bool print_qd = true, bool print_q = true) const {
+    if (print_q) {
+      printf("q: [");
+      for (int i = 0; i < dof(); ++i) {
+        if (i > 0) printf(" ");
+        printf("%.2f", Algebra::to_double(q_[i]));
+      }
+      printf("]\t");
     }
-    printf("] \tqd: [");
-    for (int i = 0; i < dof_qd(); ++i) {
-      if (i > 0) printf(" ");
-      printf("%.2f", Algebra::to_double(qd_[i]));
+    if (print_qd) {
+      printf("qd: [");
+      for (int i = 0; i < dof_qd(); ++i) {
+        if (i > 0) printf(" ");
+        printf("%.2f", Algebra::to_double(qd_[i]));
+      }
+      printf("]\t");
     }
-    printf("] \tqdd: [");
-    for (int i = 0; i < dof_qd(); ++i) {
-      if (i > 0) printf(" ");
-      printf("%.2f", Algebra::to_double(qdd_[i]));
+    if (print_qdd) {
+      printf("qdd: [");
+      for (int i = 0; i < dof_qd(); ++i) {
+        if (i > 0) printf(" ");
+        printf("%.2f", Algebra::to_double(qdd_[i]));
+      }
+      printf("]\t");
     }
-    printf("] \ttau: [");
-    for (int i = 0; i < dof_actuated(); ++i) {
-      if (i > 0) printf(" ");
-      printf("%.2f", Algebra::to_double(tau_[i]));
+    if (print_tau) {
+      printf("tau: [");
+      for (int i = 0; i < dof_actuated(); ++i) {
+        if (i > 0) printf(" ");
+        printf("%.2f", Algebra::to_double(tau_[i]));
+      }
+      printf("]");
     }
-    printf("]\n");
+    if (print_q || print_qd || print_qdd || print_tau) {
+      printf("\n");
+    }
   }
 
   const Transform &get_world_transform(int link) const {

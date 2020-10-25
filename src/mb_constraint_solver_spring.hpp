@@ -216,15 +216,14 @@ class MultiBodyConstraintSolverSpring
     // normal spring
     if constexpr (is_cppad_scalar<Scalar>::value) {
       Scalar pos_n = tds::where_gt(smooth_alpha_normal_, zero, one, zero);
+      Scalar if_f = force - spring_k_ * Algebra::exp(-smooth_alpha_normal_ * x);
       Scalar else_f = tds::where_gt(x, zero, force - spring_k_ * xn, force);
-      force = pos_n * (force -
-                       spring_k_ * Algebra::exp(-smooth_alpha_normal_ * x)) +
-              (one - pos_n) * else_f;
+      force = pos_n * if_f + (one - pos_n) * else_f;
     } else {
       if (smooth_alpha_normal_ > zero) {
         force -= spring_k_ * Algebra::exp(-smooth_alpha_normal_ * x);
-      } else {
-        force = tds::where_gt(x, zero, force - spring_k_ * xn, force);
+      } else if (x > zero) {
+        force -= spring_k_ * xn;
       }
     }
 
