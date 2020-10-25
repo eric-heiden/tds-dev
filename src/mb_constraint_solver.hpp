@@ -305,7 +305,7 @@ class MultiBodyConstraintSolver {
       Vector3 lateral_rel_vel = rel_vel - normal_rel_vel * cp.world_normal_on_b;
       if constexpr (is_cppad_scalar<Scalar>::value) {
         // add epsilon to make prevent division by zero in gradient of norm
-        lateral_rel_vel[2] += 1e-5;
+        lateral_rel_vel[2] += Algebra::from_double(1e-5);
       }
       // lateral_rel_vel.print("lateral_rel_vel");
       const Scalar lateral = Algebra::norm(lateral_rel_vel);

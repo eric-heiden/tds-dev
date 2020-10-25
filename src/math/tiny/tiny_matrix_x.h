@@ -22,6 +22,7 @@
 // #include "tiny_spatial_motion_vector.h"
 #include "tiny_vector3.h"
 #include "tiny_vector_x.h"
+#include "math/eigen_algebra.hpp"
 
 /**
  * Represents a matrix with arbitrary number of columns and custom column type.
@@ -300,7 +301,13 @@ class TinyMatrixXxX_ {
 
     const TinyMatrixXxX_<TinyScalar, TinyConstants, TinyVectorX>& A = *this;
 
-    bool is_positive_definite = inverse_cholesky_decomposition(A, a);
+    bool is_positive_definite;
+    if constexpr (tds::is_cppad_scalar<TinyScalar>::value) {
+      // the comparisons cannot be traced, we assume the matrix is always PD
+      is_positive_definite = true;
+    } else {
+      is_positive_definite = inverse_cholesky_decomposition(A, a);
+    }
     if (is_positive_definite) {
       int n = m_cols;
       int i, j, k;

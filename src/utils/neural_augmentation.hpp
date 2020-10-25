@@ -1,10 +1,8 @@
 #ifndef NEURAL_AUGMENTATION_H
 #define NEURAL_AUGMENTATION_H
 
-#include "math/tiny/neural_scalar.hpp"
-#include "math/tiny/tiny_algebra.hpp"
-#include "math/tiny/tiny_double_utils.h"
 #include "parameter.hpp"
+#include "math/tiny/neural_algebra.hpp"
 
 namespace tds {
 

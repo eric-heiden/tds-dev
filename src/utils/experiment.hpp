@@ -25,6 +25,7 @@
 #include "ceres_estimator.hpp"
 #include "neural_augmentation.hpp"
 #include "optimization_problem.hpp"
+#include "utils/stopwatch.hpp"
 
 namespace tds {
 class Experiment {
@@ -33,6 +34,9 @@ class Experiment {
   nlohmann::json log;
 
   NeuralAugmentation augmentation;
+
+  Stopwatch watch_evolution;
+  Stopwatch watch_total;
 
  public:
   virtual ~Experiment() {}
@@ -143,13 +147,32 @@ class Experiment {
     if constexpr (OptimizationProblem::kDiffMethod ==
                   tds::DIFF_CPPAD_CODEGEN_AUTO) {
       // CodeGenSettings settings;
-      // // use current parameter values as function arguments for generating the
+      // // use current parameter values as function arguments for generating
+      // the
       // // gradient code
       // for (const auto& param : problem.parameters()) {
       //   settings.default_x.push_back(param.value);
       // }
       // OptimizationProblem::CostFunctor::Compile(settings);
     }
+
+    std::cout << std::endl;
+    std::cout << "Running experiment \"" << name << "\" with "
+              << OptimizationProblem::kParameterDim
+              << " parameters, consisting of "
+              << augmentation.num_total_parameters()
+              << " neural network parameters." << std::endl;
+
+    if (!problem.parameters().empty()) {
+      std::cout << "Parameters:\n";
+      for (const auto& p : problem.parameters()) {
+        std::cout << "\t" << p << "\t[" << p.minimum << ", " << p.maximum << "]"
+                  << std::endl;
+      }
+    }
+    std::cout << std::endl;
+
+    watch_total.start();
     if (log["settings"]["optimizer"] == "pagmo") {
       run_pagmo(problem);
       return;
@@ -254,8 +277,11 @@ class Experiment {
     pagmo::archipelago archi{num_islands, algo, prob, num_individuals};
     for (std::size_t evolution = 0; evolution < num_evolutions; ++evolution) {
       std::cout << "###### EVOLUTION " << evolution << " ######\n";
+      watch_evolution.start();
       archi.evolve();
       archi.wait_check();
+      log["episodes"][evolution]["runtime"] = watch_evolution.stop();
+      log["total_duration"] = watch_total.elapsed();
       int i = 0, best_island = 0;
       const auto& cost_functor = problem.cost();
       for (const auto& island : archi) {
@@ -315,6 +341,7 @@ class Experiment {
     std::cout << summary.FullReport() << std::endl;
     // parameters = problem.parameters();
     log["settings"]["solver"]["name"] = "ceres-LM";
+    log["total_duration"] = watch_total.elapsed();
   }
 
   virtual void save_settings() {}

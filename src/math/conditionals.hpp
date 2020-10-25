@@ -3,6 +3,7 @@
 #include <cppad/cg.hpp>
 
 #include "base.hpp"
+#include "math/eigen_algebra.hpp"
 
 // template <class T>
 // static CppAD::AD<T> max(const CppAD::AD<T>& a, const CppAD::AD<T>& b) {

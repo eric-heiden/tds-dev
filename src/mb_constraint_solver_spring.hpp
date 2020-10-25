@@ -20,12 +20,10 @@
 #include "math/conditionals.hpp"
 #include "mb_constraint_solver.hpp"
 #include "multi_body.hpp"
+#include "math/tiny/neural_scalar.hpp"
 
 //#define DEBUG
 
-#ifdef NEURAL_SIM
-// #include "examples/neural_scalar.h"
-#endif
 
 namespace tds {
 
@@ -435,22 +433,21 @@ class MultiBodyConstraintSolverSpring
       // }
       Vector3 friction_vector = fr_direction1 * friction;
 
-      // if constexpr (is_neural_scalar<Algebra>::value) {
-      //   force_normal.assign("friction/fn");
-      //   world_point_a.x.assign("friction/point.x");
-      //   world_point_a.y.assign("friction/point.y");
-      //   world_point_a.z.assign("friction/point.z");
-      //   rel_vel.x.assign("friction/rel_vel.x");
-      //   rel_vel.y.assign("friction/rel_vel.y");
-      //   rel_vel.z.assign("friction/rel_vel.z");
-      //   friction_vector.x.assign("friction/fr_vec.x");
-      //   friction_vector.y.assign("friction/fr_vec.y");
-      //   friction_vector.z.assign("friction/fr_vec.z");
-
-      //   friction_vector.x.evaluate();
-      //   friction_vector.y.evaluate();
-      //   friction_vector.z.evaluate();
-      // }
+      if constexpr (is_neural_algebra<Algebra>::value) {
+        force_normal.assign("friction/fn");
+        world_point_a[0].assign("friction/point.x");
+        world_point_a[1].assign("friction/point.y");
+        world_point_a[2].assign("friction/point.z");
+        rel_vel[0].assign("friction/rel_vel.x");
+        rel_vel[1].assign("friction/rel_vel.y");
+        rel_vel[2].assign("friction/rel_vel.z");
+        friction_vector[0].assign("friction/fr_vec.x");
+        friction_vector[1].assign("friction/fr_vec.y");
+        friction_vector[2].assign("friction/fr_vec.z");
+        friction_vector[0].evaluate();
+        friction_vector[1].evaluate();
+        friction_vector[2].evaluate();
+      }
 
       tau_a += Algebra::mul_transpose(jac_a, friction_vector);
       tau_b -= Algebra::mul_transpose(jac_b, friction_vector);

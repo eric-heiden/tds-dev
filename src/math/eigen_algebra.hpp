@@ -15,6 +15,7 @@
 #include <iostream>
 
 #include "math/conditionals.hpp"
+#include "math/tiny/neural_scalar.hpp"
 
 #include "spatial_vector.hpp"
 
@@ -164,7 +165,8 @@ struct EigenAlgebraT {
       mat_inv = mat.inverse();
     } else {
       plain_symmetric_inverse(mat, mat_inv);
-      // // FIXME the atomic op needs to remain in memory but it will fail when the
+      // // FIXME the atomic op needs to remain in memory but it will fail when
+      // the
       // // dimensions of the input matrix are not always the same
       // using InnerScalar = typename Scalar::value_type;
       // static atomic_eigen_mat_inv<InnerScalar> mat_inv_op;
@@ -790,5 +792,62 @@ struct EigenAlgebraT {
 };
 
 typedef EigenAlgebraT<double> EigenAlgebra;
+
+// Helpers for NeuralAlgebra
+
+template <typename Scalar>
+struct is_cppad_scalar<NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>>> {
+  static constexpr bool value = true;
+};
+
+template <typename Scalar>
+static TINY_INLINE NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> where_gt(
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &x,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &y,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &if_true,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &if_false) {
+  return CppAD::CondExpGt(x.evaluate(), y.evaluate(), if_true.evaluate(),
+                          if_false.evaluate());
+}
+
+template <typename Scalar>
+static TINY_INLINE NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> where_ge(
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &x,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &y,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &if_true,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &if_false) {
+  return CppAD::CondExpGe(x.evaluate(), y.evaluate(), if_true.evaluate(),
+                          if_false.evaluate());
+}
+
+template <typename Scalar>
+static TINY_INLINE NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> where_lt(
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &x,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &y,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &if_true,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &if_false) {
+  return CppAD::CondExpLt(x.evaluate(), y.evaluate(), if_true.evaluate(),
+                          if_false.evaluate());
+}
+
+template <typename Scalar>
+static TINY_INLINE NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> where_le(
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &x,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &y,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &if_true,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &if_false) {
+  return CppAD::CondExpLe(x.evaluate(), y.evaluate(), if_true.evaluate(),
+                          if_false.evaluate());
+}
+
+template <typename Scalar>
+static TINY_INLINE NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> where_eq(
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &x,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &y,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &if_true,
+    const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &if_false) {
+  return CppAD::CondExpEq(x.evaluate(), y.evaluate(), if_true.evaluate(),
+                          if_false.evaluate());
+}
 
 }  // end namespace tds

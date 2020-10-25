@@ -21,6 +21,7 @@
 
 #include "tiny_quaternion.h"
 #include "tiny_vector3.h"
+#include "math/eigen_algebra.hpp"
 
 template <typename TinyScalar, typename TinyConstants>
 class TinyMatrix3x3 {
@@ -231,34 +232,112 @@ class TinyMatrix3x3 {
   /**@brief Get the matrix represented as a quaternion
    * @param q The quaternion which will be set */
   void getRotation(TinyQuaternion& q) const {
-    TinyScalar trace = m_el[0].x() + m_el[1].y() + m_el[2].z();
-    TinyScalar temp[4];
-
-    if (trace < TinyConstants::zero()) {
-      int i = m_el[0].x() < m_el[1].y() ? (m_el[1].y() < m_el[2].z() ? 2 : 1)
-                                        : (m_el[0].x() < m_el[2].z() ? 2 : 0);
-      int j = (i + 1) % 3;
-      int k = (i + 2) % 3;
-
-      TinyScalar tmp =
-          ((m_el[i][i] - m_el[j][j]) - m_el[k][k]) + TinyConstants::one();
-      TinyScalar s = TinyConstants::sqrt1(tmp);
-      temp[i] = s * TinyConstants::half();
-      s = TinyConstants::half() / s;
-
-      temp[3] = (m_el[j][k] - m_el[k][j]) * s;
-      temp[j] = (m_el[i][j] + m_el[j][i]) * s;
-      temp[k] = (m_el[i][k] + m_el[k][i]) * s;
+    if constexpr (tds::is_cppad_scalar<TinyScalar>::value) {
+      const auto& m = *this;
+      // add epsilon to denominator to prevent division by zero
+      const TinyScalar eps = TinyConstants::fraction(1, 1000000);
+      TinyScalar tr = m(0, 0) + m(1, 1) + m(2, 2);
+      TinyScalar q1[4], q2[4], q3[4], q4[4];
+      // if (tr > 0)
+      {
+        TinyScalar S = TinyConstants::sqrt1(
+                           TinyConstants::abs(tr + TinyConstants::one())) *
+                           TinyConstants::two() +
+                       eps;
+        q1[0] = TinyConstants::fraction(1, 4) * S;
+        q1[1] = (m(2, 1) - m(1, 2)) / S;
+        q1[2] = (m(0, 2) - m(2, 0)) / S;
+        q1[3] = (m(1, 0) - m(0, 1)) / S;
+      }
+      // else if ((m(0,0) > m(1,1))&(m(0,0) > m(2,2)))
+      {
+        TinyScalar S =
+            TinyConstants::sqrt1(TinyConstants::abs(
+                TinyConstants::one() + m(0, 0) - m(1, 1) - m(2, 2))) *
+                TinyConstants::two() +
+            eps;
+        q2[0] = (m(2, 1) - m(1, 2)) / S;
+        q2[1] = TinyConstants::fraction(1, 4) * S;
+        q2[2] = (m(0, 1) + m(1, 0)) / S;
+        q2[3] = (m(0, 2) + m(2, 0)) / S;
+      }
+      // else if (m(1,1) > m(2,2))
+      {
+        TinyScalar S =
+            TinyConstants::sqrt1(TinyConstants::abs(
+                TinyConstants::one() + m(1, 1) - m(0, 0) - m(2, 2))) *
+                TinyConstants::two() +
+            eps;
+        q3[0] = (m(0, 2) - m(2, 0)) / S;
+        q3[1] = (m(0, 1) + m(1, 0)) / S;
+        q3[2] = TinyConstants::fraction(1, 4) * S;
+        q3[3] = (m(1, 2) + m(2, 1)) / S;
+      }
+      // else
+      {
+        TinyScalar S =
+            TinyConstants::sqrt1(TinyConstants::abs(
+                TinyConstants::one() + m(2, 2) - m(0, 0) - m(1, 1))) *
+                TinyConstants::two() +
+            eps;
+        q4[0] = (m(1, 0) - m(0, 1)) / S;
+        q4[1] = (m(0, 2) + m(2, 0)) / S;
+        q4[2] = (m(1, 2) + m(2, 1)) / S;
+        q4[3] = TinyConstants::fraction(1, 4) * S;
+      }
+      // (m(0,0) > m(1,1))&(m(0,0) > m(2,2))
+      TinyScalar m00_is_max =
+          tds::where_gt(m(0, 0), m(1, 1),
+                        tds::where_gt(m(0, 0), m(2, 2), TinyConstants::one(),
+                                      TinyConstants::zero()),
+                        TinyConstants::zero());
+      TinyScalar m11_is_max =
+          (TinyConstants::one() - m00_is_max) *
+          tds::where_gt(m(1, 1), m(2, 2), TinyConstants::one(),
+                        TinyConstants::zero());
+      TinyScalar m22_is_max = (TinyConstants::one() - m00_is_max) *
+                              (TinyConstants::one() - m11_is_max);
+      q[0] = tds::where_gt(
+          tr, TinyConstants::zero(), q1[0],
+          m00_is_max * q2[0] + m11_is_max * q3[0] + m22_is_max * q4[0]);
+      q[1] = tds::where_gt(
+          tr, TinyConstants::zero(), q1[1],
+          m00_is_max * q2[1] + m11_is_max * q3[1] + m22_is_max * q4[1]);
+      q[2] = tds::where_gt(
+          tr, TinyConstants::zero(), q1[2],
+          m00_is_max * q2[2] + m11_is_max * q3[2] + m22_is_max * q4[2]);
+      q[3] = tds::where_gt(
+          tr, TinyConstants::zero(), q1[3],
+          m00_is_max * q2[3] + m11_is_max * q3[3] + m22_is_max * q4[3]);
     } else {
-      TinyScalar s = TinyConstants::sqrt1(trace + TinyConstants::one());
-      temp[3] = (s * TinyConstants::half());
-      s = TinyConstants::half() / s;
+      TinyScalar trace = m_el[0].x() + m_el[1].y() + m_el[2].z();
+      TinyScalar temp[4];
+      if (trace < TinyConstants::zero()) {
+        int i = m_el[0].x() < m_el[1].y() ? (m_el[1].y() < m_el[2].z() ? 2 : 1)
+                                          : (m_el[0].x() < m_el[2].z() ? 2 : 0);
+        int j = (i + 1) % 3;
+        int k = (i + 2) % 3;
 
-      temp[0] = ((m_el[1][2] - m_el[2][1]) * s);
-      temp[1] = ((m_el[2][0] - m_el[0][2]) * s);
-      temp[2] = ((m_el[0][1] - m_el[1][0]) * s);
+        TinyScalar tmp =
+            ((m_el[i][i] - m_el[j][j]) - m_el[k][k]) + TinyConstants::one();
+        TinyScalar s = TinyConstants::sqrt1(tmp);
+        temp[i] = s * TinyConstants::half();
+        s = TinyConstants::half() / s;
+
+        temp[3] = (m_el[j][k] - m_el[k][j]) * s;
+        temp[j] = (m_el[i][j] + m_el[j][i]) * s;
+        temp[k] = (m_el[i][k] + m_el[k][i]) * s;
+      } else {
+        TinyScalar s = TinyConstants::sqrt1(trace + TinyConstants::one());
+        temp[3] = (s * TinyConstants::half());
+        s = TinyConstants::half() / s;
+
+        temp[0] = ((m_el[1][2] - m_el[2][1]) * s);
+        temp[1] = ((m_el[2][0] - m_el[0][2]) * s);
+        temp[2] = ((m_el[0][1] - m_el[1][0]) * s);
+      }
+      q.setValue(temp[0], temp[1], temp[2], temp[3]);
     }
-    q.setValue(temp[0], temp[1], temp[2], temp[3]);
   }
 
   /**@brief Return the transpose of the matrix */

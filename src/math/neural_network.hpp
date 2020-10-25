@@ -46,6 +46,48 @@ enum NeuralNetworkInitialization {
 };
 
 /**
+ * Statically sized NN specification with a predefined number of layers so that
+ * the number of parameters can be statically inferred at compile time.
+ */
+template <std::size_t NumLayers>
+struct StaticNeuralNetworkSpecification {
+  static const inline std::size_t kNumLayers = NumLayers;
+
+  std::array<NeuralNetworkActivation, kNumLayers> activations;
+  std::array<int, kNumLayers> layers;
+  std::array<bool, kNumLayers> use_bias;
+
+  constexpr StaticNeuralNetworkSpecification(
+      std::size_t default_num_hidden_units = 5, bool default_use_bias = true)
+      : activations(), layers(), use_bias() {
+    for (std::size_t i = 0; i < kNumLayers; ++i) {
+      layers[i] = default_num_hidden_units;
+      use_bias[i] = default_use_bias;
+    }
+  }
+
+  constexpr int input_dim() const { return layers[0]; }
+  constexpr int output_dim() const { return layers.back(); }
+  constexpr int num_weights() const {
+    int num = 0;
+    for (std::size_t i = 1; i < kNumLayers; ++i) {
+      num += layers[i - 1] * layers[i];
+    }
+    return num;
+  }
+  constexpr int num_units(int layer_id) const { return layers[layer_id]; }
+  constexpr int num_biases() const {
+    int num = 0;
+    for (std::size_t i = 0; i < kNumLayers; ++i) {
+      num += use_bias[i] ? layers[i] : 0;
+    }
+    return num;
+  }
+  constexpr int num_parameters() const { return num_weights() + num_biases(); }
+  constexpr int num_layers() const { return static_cast<int>(kNumLayers); }
+};
+
+/**
  * Implements a fully-connected neural network consisting of linear layers with
  * weights and optional biases to be stored externally.
  */
@@ -67,6 +109,19 @@ class NeuralNetworkSpecification {
     layers_[0] = input_dim;
     for (int size : layer_sizes) {
       add_linear_layer(activation, size, learn_bias);
+    }
+  }
+
+  template <std::size_t NumLayers>
+  NeuralNetworkSpecification(
+      const StaticNeuralNetworkSpecification<NumLayers>& spec) {
+    activations_.resize(NumLayers);
+    layers_.resize(NumLayers);
+    use_bias_.resize(NumLayers);
+    for (std::size_t i = 0; i < NumLayers; ++i) {
+      activations_[i] = spec.activations[i];
+      layers_[i] = spec.layers[i];
+      use_bias_[i] = spec.use_bias[i];
     }
   }
 
