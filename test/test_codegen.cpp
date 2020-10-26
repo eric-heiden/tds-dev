@@ -106,10 +106,34 @@ struct ContactModelFunctor {
   }
 };
 
-template<typename Algebra>
+template <typename Algebra>
 using LCPContactModelFunctor = ContactModelFunctor<Algebra, false>;
-template<typename Algebra>
+template <typename Algebra>
 using SpringContactModelFunctor = ContactModelFunctor<Algebra, true>;
+
+template <typename Algebra>
+struct NaNFunctor {
+  static const inline int kDim = 1;
+  using Scalar = typename Algebra::Scalar;
+
+  Scalar operator()(const std::vector<Scalar>& x) const {
+    Scalar is_nan = tds::where_eq(x[0], x[0], Algebra::zero(), Algebra::one());
+    return is_nan;
+  }
+};
+
+TEST(CppAdCogeGen, NaNCheck) {
+  typedef tds::GradientFunctional<tds::DIFF_CPPAD_CODEGEN_AUTO, NaNFunctor>
+      GradFun;
+  GradFun::Compile();
+  GradFun f;
+  double v = f.value({std::nan("!")});
+  std::cout << "isnan? = " << v << std::endl;
+  EXPECT_NEAR(v, 1., 1e-9);
+  v = f.value({123.});
+  std::cout << "isnan? = " << v << std::endl;
+  EXPECT_NEAR(v, 0., 1e-9);
+}
 
 TEST(CppAdCogeGen, ContactModel) {
   typedef tds::GradientFunctional<tds::DIFF_CPPAD_CODEGEN_AUTO,
