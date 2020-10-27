@@ -491,17 +491,9 @@ struct CodeGenSettings {
   std::string sources_folder{"cppadcg_src"};
   bool save_to_disk{true};
 
-  struct DynamicParameters {
-    using Scalar = double;
-    using CGScalar = typename CppAD::cg::CG<Scalar>;
-    using Dual = typename CppAD::AD<CGScalar>;
-    virtual void AppendToVec(std::vector<Dual>* output) const = 0;
-    virtual ~DynamicParameters() {}
-  };
-  std::unique_ptr<DynamicParameters> dynamic_parameters;
-
   // function arguments used while generating the code (will be zero if not set)
   std::vector<double> default_x;
+  std::vector<double> default_nograd_x;
 };
 
 template <template <typename> typename F, typename ScalarAlgebra>
@@ -524,9 +516,10 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
       }
     }
 
-    const std::size_t true_problem_size = ax.size();
-    if (settings.dynamic_parameters) {
-      settings.dynamic_parameters->AppendToVec(&ax);
+    ax.reserve(ax.size() + default_nograd_x.size());
+    const std::size_t grad_problem_size = ax.size();
+    for (std::size_t i = 0; i < default_nograd_x.size(); ++i) {
+      ax[i] = default_nograd_x[i];
     }
 
     CppAD::Independent(ax);
@@ -544,7 +537,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
         "model_" + std::to_string(++cpp_ad_codegen_model_counter);
     CppAD::cg::ModelCSourceGen<Scalar> cgen(tape, model_name);
     cgen.setCreateSparseJacobian(true);
-    if (settings.dynamic_parameters) {
+    if (settings.default_nograd_x.size() > 0) {
       if (settings.verbose) {
         printf(
             "Dynamic parameters provided, creating sparsity pattern. (%ld "
