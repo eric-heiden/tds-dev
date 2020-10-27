@@ -609,7 +609,10 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     assert(lib_ != nullptr && model_ != nullptr);
-    gradient_ = model_->SparseJacobian(x);
+    gradient_.resize(kDim);
+    rows_.resize(kDim);
+    cols_.resize(kDim);
+    model_->SparseJacobian(x, gradient_, rows_, cols_);
 #ifndef NDEBUG
     // In debug mode, verify the gradient matches the (slower) Ceres gradient.
     // This can help catch if/else branches that CppAD isn't aware of.
@@ -646,6 +649,8 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
 #endif
   F<ScalarAlgebra> f_scalar_;
   mutable std::vector<Scalar> gradient_;
+  mutable std::vector<std::size_t> rows_;
+  mutable std::vector<std::size_t> cols_;
   std::unique_ptr<CppAD::cg::LinuxDynamicLib<Scalar>> lib_{nullptr};
   std::unique_ptr<CppAD::cg::GenericModel<Scalar>> model_;
 };
