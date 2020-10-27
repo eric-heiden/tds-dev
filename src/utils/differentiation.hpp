@@ -516,10 +516,10 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
       }
     }
 
-    ax.reserve(ax.size() + default_nograd_x.size());
+    ax.reserve(ax.size() + settings.default_nograd_x.size());
     const std::size_t grad_problem_size = ax.size();
-    for (std::size_t i = 0; i < default_nograd_x.size(); ++i) {
-      ax[i] = default_nograd_x[i];
+    for (std::size_t i = 0; i < settings.default_nograd_x.size(); ++i) {
+      ax[i] = settings.default_nograd_x[i];
     }
 
     CppAD::Independent(ax);
