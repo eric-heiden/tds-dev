@@ -31,6 +31,7 @@ namespace tds {
 class Experiment {
  protected:
   const std::string name;
+  const std::filesystem::path logdir;
   nlohmann::json log;
 
   NeuralAugmentation augmentation;
@@ -41,7 +42,8 @@ class Experiment {
  public:
   virtual ~Experiment() {}
 
-  Experiment(const std::string& name) : name(name) {
+  Experiment(const std::string& name) : name(name), logdir("./logs/" + name) {
+    std::filesystem::create_directories(logdir);
     log["name"] = name;
     auto t = std::time(nullptr);
     auto tm = *std::localtime(&t);
@@ -86,14 +88,14 @@ class Experiment {
 
   bool save_log(const std::string& filename) const {
     namespace fs = std::filesystem;
-    std::ofstream file(filename);
+    std::ofstream file(logdir / filename);
     if (!file.good()) {
       std::cerr << "Failed to save experiment log at " << filename << std::endl;
       return false;
     }
     file << log.dump(2);
     file.close();
-    std::string abs_filename = fs::canonical(fs::path(filename)).u8string();
+    std::string abs_filename = fs::canonical(logdir / filename).u8string();
     std::cout << "Saved experiment log at " << abs_filename << std::endl;
     return true;
   }
@@ -317,13 +319,14 @@ class Experiment {
         log["episodes"][evolution]["parameters"][p.name] = p.value;
       }
 
-      augmentation.save_graphviz(best_params,
-                                 name + "_" + std::to_string(evolution));
+      std::string dotfilename = name + "_" + std::to_string(evolution);
+      augmentation.save_graphviz(best_params, logdir / dotfilename);
 
       after_iteration();
 
-      std::string filename = name + "_" + std::to_string(evolution) + ".json";
-      save_log(filename);
+      std::string logfilename =
+          name + "_" + std::to_string(evolution) + ".json";
+      save_log(logfilename);
     }
 #else
     throw std::runtime_error(
