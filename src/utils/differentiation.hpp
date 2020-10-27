@@ -542,10 +542,10 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
         printf(
             "Dynamic parameters provided, creating sparsity pattern. (%ld "
             "active, %ld inactive)\n",
-            true_problem_size, ax.size() - true_problem_size);
+            grad_problem_size, ax.size() - grad_problem_size);
       }
-      std::vector<size_t> rows(true_problem_size, 0);
-      std::vector<size_t> cols(true_problem_size, 0);
+      std::vector<size_t> rows(grad_problem_size, 0);
+      std::vector<size_t> cols(grad_problem_size, 0);
       std::iota(cols.begin(), cols.end(), 0);
       cgen.setCustomSparseJacobianElements(rows, cols);
     }
