@@ -588,8 +588,10 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
       fflush(stdout);
       timer.start();
     }
+    
+    p.setLibraryName(model_name);
     p.createDynamicLibrary(*compiler, false);
-    std::cout << "Created new dynamic library.\n";
+    std::cout << "Created new dynamic library at " << p.getLibraryName() << ".so.\n";
     if (settings.verbose) {
       printf("Finished compiling dynamic library.\t(%.3fs)\n", timer.stop());
       fflush(stdout);
@@ -632,11 +634,12 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   }
 
   void Init() {
-    lib_ = std::make_unique<CppAD::cg::LinuxDynamicLib<Scalar>>(
-        "./cppad_cg_model.so");
     std::string model_name =
         "model_" + std::to_string(cpp_ad_codegen_model_counter);
+    lib_ = std::make_unique<CppAD::cg::LinuxDynamicLib<Scalar>>(
+        "./" + model_name + ".so");
     model_ = lib_->model(model_name);
+    std::cout << "Loaded compiled model \"" << model_name << "\".\n";
   }
 
   GradientFunctional() { Init(); }
