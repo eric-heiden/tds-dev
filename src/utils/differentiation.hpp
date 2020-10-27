@@ -491,6 +491,15 @@ struct CodeGenSettings {
   std::string sources_folder{"cppadcg_src"};
   bool save_to_disk{true};
 
+  struct DynamicParameters {
+    using Scalar = double;
+    using CGScalar = typename CppAD::cg::CG<Scalar>;
+    using Dual = typename CppAD::AD<CGScalar>;
+    virtual void AppendToVec(std::vector<Dual>* output) const = 0;
+    virtual ~DynamicParameters() {}
+  };
+  std::unique_ptr<DynamicParameters> dynamic_parameters;
+
   // function arguments used while generating the code (will be zero if not set)
   std::vector<double> default_x;
 };
@@ -505,8 +514,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   using DualAlgebra = typename default_diff_algebra<DIFF_CPPAD_CODEGEN_AUTO,
                                                     kDim, Scalar>::type;
 
-  static void Compile(const CodeGenSettings& settings = CodeGenSettings(),
-                      std::vector<Dual>* dynamic = nullptr) {
+  static void Compile(const CodeGenSettings& settings = CodeGenSettings()) {
     std::vector<Dual> ax(kDim);
     for (std::size_t i = 0; i < kDim; ++i) {
       if (i >= settings.default_x.size()) {
@@ -515,11 +523,13 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
         ax[i] = settings.default_x[i];
       }
     }
-    if (dynamic != nullptr) {
-      CppAD::Independent(ax, *dynamic);
-    } else {
-      CppAD::Independent(ax);
+
+    const std::size_t true_problem_size = ax.size();
+    if (settings.dynamic_parameters) {
+      settings.dynamic_parameters->AppendToVec(&ax);
     }
+
+    CppAD::Independent(ax);
     std::vector<Dual> ay(1);
     std::cout << "Creating ad f\n";
     F<DualAlgebra> f;
@@ -533,7 +543,19 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     std::string model_name =
         "model_" + std::to_string(++cpp_ad_codegen_model_counter);
     CppAD::cg::ModelCSourceGen<Scalar> cgen(tape, model_name);
-    cgen.setCreateJacobian(true);
+    cgen.setCreateSparseJacobian(true);
+    if (settings.dynamic_parameters) {
+      if (settings.verbose) {
+        printf(
+            "Dynamic parameters provided, creating sparsity pattern. (%ld "
+            "active, %ld inactive)\n",
+            true_problem_size, ax.size() - true_problem_size);
+      }
+      std::vector<size_t> rows(true_problem_size, 0);
+      std::vector<size_t> cols(true_problem_size, 0);
+      std::iota(cols.begin(), cols.end(), 0);
+      cgen.setCustomSparseJacobianElements(rows, cols);
+    }
     cgen.setMaxAssignmentsPerFunc(settings.max_assignments_per_func);
     cgen.setMaxOperationsPerAssignment(settings.max_operations_per_assignment);
     if (settings.verbose) {
@@ -596,7 +618,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     assert(lib_ != nullptr && model_ != nullptr);
-    gradient_ = model_->Jacobian(x);
+    gradient_ = model_->SparseJacobian(x);
 #ifndef NDEBUG
     // In debug mode, verify the gradient matches the (slower) Ceres gradient.
     // This can help catch if/else branches that CppAD isn't aware of.
