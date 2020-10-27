@@ -283,7 +283,6 @@ class Experiment {
       log["episodes"][evolution]["runtime"] = watch_evolution.stop();
       log["total_duration"] = watch_total.elapsed();
       int i = 0, best_island = 0;
-      const auto& cost_functor = problem.cost();
       for (const auto& island : archi) {
         auto params = island.get_population().champion_x();
         double f = island.get_population().champion_f()[0];
