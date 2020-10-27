@@ -507,7 +507,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
                                                     kDim, Scalar>::type;
 
   static void Compile(const CodeGenSettings& settings = CodeGenSettings()) {
-    std::vector<Dual> ax(kDim);
+    std::vector<Dual> ax(kDim + settings.default_nograd_x.size());
     for (std::size_t i = 0; i < kDim; ++i) {
       if (i >= settings.default_x.size()) {
         ax[i] = ScalarAlgebra::zero();
@@ -516,10 +516,8 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
       }
     }
 
-    ax.reserve(ax.size() + settings.default_nograd_x.size());
-    const std::size_t grad_problem_size = ax.size();
     for (std::size_t i = 0; i < settings.default_nograd_x.size(); ++i) {
-      ax[i] = settings.default_nograd_x[i];
+      ax[i + kDim] = settings.default_nograd_x[i];
     }
 
     CppAD::Independent(ax);
@@ -540,12 +538,12 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     if (settings.default_nograd_x.size() > 0) {
       if (settings.verbose) {
         printf(
-            "Dynamic parameters provided, creating sparsity pattern. (%ld "
+            "Dynamic parameters provided, creating sparsity pattern. (%d "
             "active, %ld inactive)\n",
-            grad_problem_size, ax.size() - grad_problem_size);
+            kDim, ax.size() - kDim);
       }
-      std::vector<size_t> rows(grad_problem_size, 0);
-      std::vector<size_t> cols(grad_problem_size, 0);
+      std::vector<size_t> rows(kDim, 0);
+      std::vector<size_t> cols(kDim, 0);
       std::iota(cols.begin(), cols.end(), 0);
       cgen.setCustomSparseJacobianElements(rows, cols);
     }
@@ -613,7 +611,10 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     assert(lib_ != nullptr && model_ != nullptr);
-    gradient_ = model_->SparseJacobian(x);
+    gradient_.resize(kDim);
+    rows_.resize(kDim);
+    cols_.resize(kDim);
+    model_->SparseJacobian(x, gradient_, rows_, cols_);
 #ifndef NDEBUG
     // In debug mode, verify the gradient matches the (slower) Ceres gradient.
     // This can help catch if/else branches that CppAD isn't aware of.
@@ -651,6 +652,8 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
 #endif
   F<ScalarAlgebra> f_scalar_;
   mutable std::vector<Scalar> gradient_;
+  mutable std::vector<std::size_t> rows_;
+  mutable std::vector<std::size_t> cols_;
   std::unique_ptr<CppAD::cg::LinuxDynamicLib<Scalar>> lib_{nullptr};
   std::unique_ptr<CppAD::cg::GenericModel<Scalar>> model_;
 };
