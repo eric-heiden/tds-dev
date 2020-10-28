@@ -303,7 +303,8 @@ class MultiBodyConstraintSolver {
 
       // friction direction
       Vector3 lateral_rel_vel = rel_vel - normal_rel_vel * cp.world_normal_on_b;
-      if constexpr (is_cppad_scalar<Scalar>::value) {
+      // if constexpr (is_cppad_scalar<Scalar>::value) {
+      if constexpr (true) {
         // add epsilon to make prevent division by zero in gradient of norm
         lateral_rel_vel[2] += Algebra::from_double(1e-5);
       }
@@ -315,7 +316,8 @@ class MultiBodyConstraintSolver {
       Vector3 fr_direction1, fr_direction2;
       //      cp.world_normal_on_b.print("contact normal");
       //      fflush(stdout);
-      if constexpr (is_cppad_scalar<Scalar>::value) {
+      // if constexpr (is_cppad_scalar<Scalar>::value) {
+      if constexpr (true) {
         // use the negative lateral velocity and its orthogonal as friction
         // directions
         fr_direction1 =

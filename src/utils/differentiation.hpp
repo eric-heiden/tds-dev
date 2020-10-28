@@ -506,6 +506,10 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   using DualAlgebra = typename default_diff_algebra<DIFF_CPPAD_CODEGEN_AUTO,
                                                     kDim, Scalar>::type;
 
+  // name of the model and library to load, uses latest compiled model by
+  // default
+  std::string model_name{""};
+
   static void Compile(const CodeGenSettings& settings = CodeGenSettings()) {
     std::vector<Dual> ax(kDim + settings.default_nograd_x.size());
     for (std::size_t i = 0; i < kDim; ++i) {
@@ -522,7 +526,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
 
     CppAD::Independent(ax);
     std::vector<Dual> ay(1);
-    std::cout << "Creating ad f\n";
+    std::cout << "Tracing cost functor for code generation...\n";
     F<DualAlgebra> f;
     ay[0] = f(ax);
     CppAD::ADFun<CGScalar> tape;
@@ -581,15 +585,21 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     compiler->setSaveToDiskFirst(settings.save_to_disk);
     compiler->addCompileFlag("-O" +
                              std::to_string(settings.optimization_level));
+    std::cout << "{ ";
+    for (const auto& flag : compiler->getCompileFlags()) {
+      std::cout << flag << " ";
+    }
+    std::cout << "}\t";
     if (settings.verbose) {
       printf("(%.3fs)\n", timer.stop());
       fflush(stdout);
       timer.start();
     }
-    
+
     p.setLibraryName(model_name);
     p.createDynamicLibrary(*compiler, false);
-    std::cout << "Created new dynamic library at " << p.getLibraryName() << ".so.\n";
+    std::cout << "Created new dynamic library at " << p.getLibraryName()
+              << ".so.\n";
     if (settings.verbose) {
       printf("Finished compiling dynamic library.\t(%.3fs)\n", timer.stop());
       fflush(stdout);
@@ -618,33 +628,49 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
 #ifndef NDEBUG
     // In debug mode, verify the gradient matches the (slower) Ceres gradient.
     // This can help catch if/else branches that CppAD isn't aware of.
-    const auto ceres_gradient = ceres_functional_.gradient(x);
-    assert(ceres_gradient.size() == gradient_.size());
-    bool allclose = true;
-    for (size_t i = 0; i < ceres_gradient.size(); ++i) {
-      const bool close = std::fabs(ceres_gradient[i] - gradient_[i]) < 1e-6;
-      if (!close) {
-        std::cout << "Ceres/CodeGen gradient mismatch at " << i << ": "
-                  << ceres_gradient[i] << " vs " << gradient_[i] << "\n";
-        allclose = false;
+    if (kDim != static_cast<int>(x.size())) {
+      std::cout << "Cannot compare codegen gradient against Ceres at the "
+                   "moment if the functor has non-grad variables as input.\n";
+    } else {
+      const auto ceres_gradient = ceres_functional_.gradient(x);
+      assert(ceres_gradient.size() == gradient_.size());
+      bool allclose = true;
+      for (size_t i = 0; i < ceres_gradient.size(); ++i) {
+        const bool close = std::fabs(ceres_gradient[i] - gradient_[i]) < 1e-6;
+        if (!close) {
+          std::cout << "Ceres/CodeGen gradient mismatch at " << i << ": "
+                    << ceres_gradient[i] << " vs " << gradient_[i] << "\n";
+          allclose = false;
+        }
       }
+      assert(allclose);
     }
-    assert(allclose);
 #endif
     return gradient_;
   }
 
   void Init() {
-    std::string model_name =
-        "model_" + std::to_string(cpp_ad_codegen_model_counter);
     lib_ = std::make_unique<CppAD::cg::LinuxDynamicLib<Scalar>>(
         "./" + model_name + ".so");
     model_ = lib_->model(model_name);
     std::cout << "Loaded compiled model \"" << model_name << "\".\n";
   }
 
-  GradientFunctional() { Init(); }
-  GradientFunctional(const GradientFunctional& other) { Init(); }
+  GradientFunctional(const std::string& model_name =
+                         "model_" +
+                         std::to_string(cpp_ad_codegen_model_counter))
+      : model_name(model_name) {
+    Init();
+  }
+  GradientFunctional(const GradientFunctional& other)
+      : model_name(other.model_name) {
+    Init();
+  }
+  GradientFunctional& operator=(const GradientFunctional& other) {
+    model_name = other.model_name;
+    Init();
+    return *this;
+  }
 
  private:
 #ifndef NDEBUG

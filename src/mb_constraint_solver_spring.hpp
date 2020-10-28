@@ -213,6 +213,7 @@ class MultiBodyConstraintSolverSpring
 
     // normal spring
     if constexpr (is_cppad_scalar<Scalar>::value) {
+    // if constexpr (true) {
       Scalar pos_n = tds::where_gt(smooth_alpha_normal_, zero, one, zero);
       Scalar if_f = force - spring_k_ * Algebra::exp(-smooth_alpha_normal_ * x);
       Scalar else_f = tds::where_gt(x, zero, force - spring_k_ * xn, force);
@@ -394,7 +395,8 @@ class MultiBodyConstraintSolverSpring
       Scalar fr_case = where_lt(lateral, Algebra::fraction(1, 1000),
                                 Algebra::one(), Algebra::zero());
       Vector3 fr_direction1;
-      if constexpr (is_cppad_scalar<Scalar>::value) {
+      // if constexpr (is_cppad_scalar<Scalar>::value) {
+      if constexpr (true) {
         // use the negative lateral velocity and its orthogonal as friction
         // directions
         fr_direction1 = lateral_rel_vel * (Algebra::one() / lateral);
