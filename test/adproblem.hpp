@@ -8,6 +8,13 @@
 #include "math/tiny/tiny_double_utils.h"
 #include "utils/optimization_problem.hpp"
 #include "estimation_utils.hpp"
+#include "world.hpp"
+#include "dynamics/forward_dynamics.hpp"
+#include "dynamics/integrator.hpp"
+#include "urdf/system_constructor.hpp"
+#include "urdf/urdf_cache.hpp"
+#include "utils/file_utils.hpp"
+#include "mb_constraint_solver_spring.hpp"
 #include <random>
 
 constexpr int kInputDim = 5;
@@ -48,13 +55,65 @@ struct NNBenchFunctor {
   }
 };
 
+template <typename Algebra, bool UseSpringContact>
+struct ContactModelFunctor {
+  static const inline int kDim = 5;
+  using Scalar = typename Algebra::Scalar;
+
+  std::string urdf_filename;
+  std::string plane_filename;
+
+  ContactModelFunctor() {
+    tds::FileUtils::find_file("pendulum5.urdf", urdf_filename);
+    tds::FileUtils::find_file("plane_implicit.urdf", plane_filename);
+  }
+
+  Scalar operator()(const std::vector<Scalar>& x) const {
+    tds::World<Algebra> world;
+    if constexpr (UseSpringContact) {
+      world.set_mb_constraint_solver(
+          new tds::MultiBodyConstraintSolverSpring<Algebra>);
+    }
+    tds::UrdfCache<Algebra> cache;
+    auto* system = cache.construct(urdf_filename, world, false, false);
+    system->base_X_world().translation = Algebra::unit3_z();
+    for (int i = 0; i < system->dof() && i < static_cast<int>(x.size()); ++i) {
+      system->qd(i) = x[i];
+    }
+    Scalar mse = Algebra::zero();
+    Scalar dt = Algebra::fraction(1, 1000);
+    int step_limit = 5000;
+    for (int t = 0; t < step_limit; ++t) {
+      tds::forward_dynamics(*system, world.get_gravity());
+      world.step(dt);
+      tds::integrate_euler(*system, dt);
+      if constexpr (std::is_same_v<Scalar, double>) {
+        if (t % 100 == 0) {
+          system->print_state();
+        }
+      }
+      for (int i = 0; i < system->dof(); ++i) {
+        mse += system->q(i) / Algebra::from_double(system->dof() * step_limit);
+      }
+    }
+    return mse;
+  }
+};
+
+template <typename Algebra>
+using LCPContactModelFunctor = ContactModelFunctor<Algebra, false>;
+template <typename Algebra>
+using SpringContactModelFunctor = ContactModelFunctor<Algebra, true>;
+
+
 #define TDS_AD_BENCH(diff_type)                                         \
-  /*                                                                    \
+                                                                        \
   static void BM_##diff_type##_NN_Grad(benchmark::State& state) {       \
     using ProblemType =                                                 \
         tds::OptimizationProblem<tds::diff_type, NNBenchFunctor>;       \
     if constexpr (tds::diff_type == tds::DIFF_CPPAD_CODEGEN_AUTO) {     \
-      ProblemType::CostFunctor::Compile();                              \
+      tds::OptimizationProblem<tds::DIFF_CPPAD_CODEGEN_AUTO,            \
+                               NNBenchFunctor>::CostFunctor::Compile(); \
     }                                                                   \
     ProblemType problem;                                                \
     ProblemType::DoubleVector x(kParameterDim, 5.0);                    \
@@ -64,12 +123,27 @@ struct NNBenchFunctor {
     }                                                                   \
   }                                                                     \
   BENCHMARK(BM_##diff_type##_NN_Grad);                                  \
-  */                                                                    \
+  \
+  static void BM_##diff_type##_LCPContactModel_Grad(benchmark::State& state) {       \
+    using ProblemType =                                                 \
+        tds::OptimizationProblem<tds::diff_type, LCPContactModelFunctor>;       \
+    if constexpr (tds::diff_type == tds::DIFF_CPPAD_CODEGEN_AUTO) {     \
+      tds::OptimizationProblem<tds::DIFF_CPPAD_CODEGEN_AUTO,            \
+                               LCPContactModelFunctor>::CostFunctor::Compile(); \
+    }                                                                   \
+    ProblemType problem;                                                \
+    ProblemType::DoubleVector x(kParameterDim, 5.0);                    \
+    problem.gradient(x);                                                \
+    for (auto _ : state) {                                              \
+      problem.gradient(x);                                              \
+    }                                                                   \
+  }                                                                     \
+  BENCHMARK(BM_##diff_type##_LCPContactModel_Grad);                                  \
                                                                         \
   static void BM_##diff_type##_Pendulum_Grad(benchmark::State& state) { \
     if constexpr (tds::diff_type == tds::DIFF_CPPAD_CODEGEN_AUTO) {     \
       std::cout << "Compiling...\n";                                    \
-      tds::OptimizationProblem<tds::diff_type,                          \
+      tds::OptimizationProblem<tds::DIFF_CPPAD_CODEGEN_AUTO,            \
                                PendulumCost>::CostFunctor::Compile();   \
       std::cout << "Compiled.\n";                                       \
     }                                                                   \

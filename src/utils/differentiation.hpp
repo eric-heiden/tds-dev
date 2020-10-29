@@ -1,13 +1,6 @@
 #pragma once
 
 #include <cmath>
-#include <cppad/cg.hpp>
-#include <cppad/cg/support/cppadcg_eigen.hpp>
-#include <cppad/example/cppad_eigen.hpp>
-#include <limits>
-#include <mutex>
-#include <stdexcept>
-#include <thread>
 
 // clang-format off
 // Stan Math needs to be included first to get its Eigen plugins
@@ -18,9 +11,18 @@
 #include <ceres/autodiff_cost_function.h>
 // clang-format on
 
+#include <cppad/cg.hpp>
+#include <cppad/cg/support/cppadcg_eigen.hpp>
+#include <cppad/example/cppad_eigen.hpp>
+#include <limits>
+#include <mutex>
+#include <stdexcept>
+#include <thread>
+
 #include "base.hpp"
 #include "math/tiny/tiny_dual.h"
 #include "math/tiny/tiny_dual_utils.h"
+#include "math/tiny/tiny_dual_double_utils.h"
 #include "math/eigen_algebra.hpp"
 #include "math/tiny/tiny_algebra.hpp"
 #include "math/tiny/ceres_utils.h"
@@ -78,7 +80,8 @@ struct default_diff_algebra<DIFF_CERES, Dim, Scalar> {
 };
 template <int Dim, typename Scalar>
 struct default_diff_algebra<DIFF_DUAL, Dim, Scalar> {
-  using type = TinyAlgebra<TinyDual<Scalar>, TinyDualUtils<Scalar>>;
+  // using type = TinyAlgebra<TinyDual<Scalar>, TinyDualUtils<Scalar>>;
+  using type = TinyAlgebra<TinyDualDouble, TinyDualDoubleUtils>;
 };
 template <int Dim>
 struct default_diff_algebra<DIFF_STAN_REVERSE, Dim, double> {
@@ -183,7 +186,8 @@ static std::enable_if_t<Method == DIFF_CERES, void> compute_gradient(
 template <DiffMethod Method, typename F, typename Scalar = double>
 static std::enable_if_t<Method == DIFF_DUAL, void> compute_gradient(
     F f, const std::vector<Scalar>& x, std::vector<Scalar>& dfx) {
-  typedef TinyDual<Scalar> Dual;
+  // typedef TinyDual<Scalar> Dual;
+  typedef TinyDualDouble Dual;
   dfx.resize(x.size());
   std::vector<Dual> x_dual(x.size());
   for (std::size_t i = 0; i < x.size(); ++i) {
@@ -347,7 +351,8 @@ template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_DUAL, F, ScalarAlgebra> {
   using Scalar = typename ScalarAlgebra::Scalar;
   F<ScalarAlgebra> f_scalar_;
-  F<TinyAlgebra<TinyDual<Scalar>, TinyDualUtils<Scalar>>> f_ad_;
+  // F<TinyAlgebra<TinyDual<Scalar>, TinyDualUtils<Scalar>>> f_ad_;
+  F<TinyAlgebra<TinyDualDouble, TinyDualDoubleUtils>> f_ad_;
   mutable std::vector<Scalar> gradient_;
 
  public:
@@ -608,15 +613,15 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
 
   Scalar value(const std::vector<Scalar>& x) const {
     const auto fx = model_->ForwardZero(x);
-#ifndef NDEBUG
-    const auto fx_slow = f_scalar_(x);
-    const bool close = std::fabs(fx_slow - fx[0]) < 1e-6;
-    if (!close) {
-      std::cout << "Scalar/CodeGen 0th order mismatch: " << fx_slow << " vs "
-                << fx[0] << "\n";
-    }
-    assert(close);
-#endif
+// #ifndef NDEBUG
+//     const auto fx_slow = f_scalar_(x);
+//     const bool close = std::fabs(fx_slow - fx[0]) < 1e-6;
+//     if (!close) {
+//       std::cout << "Scalar/CodeGen 0th order mismatch: " << fx_slow << " vs "
+//                 << fx[0] << "\n";
+//     }
+//     assert(close);
+// #endif
     return fx[0];
   }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
@@ -625,27 +630,27 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     rows_.resize(kDim);
     cols_.resize(kDim);
     model_->SparseJacobian(x, gradient_, rows_, cols_);
-#ifndef NDEBUG
-    // In debug mode, verify the gradient matches the (slower) Ceres gradient.
-    // This can help catch if/else branches that CppAD isn't aware of.
-    if (kDim != static_cast<int>(x.size())) {
-      std::cout << "Cannot compare codegen gradient against Ceres at the "
-                   "moment if the functor has non-grad variables as input.\n";
-    } else {
-      const auto ceres_gradient = ceres_functional_.gradient(x);
-      assert(ceres_gradient.size() == gradient_.size());
-      bool allclose = true;
-      for (size_t i = 0; i < ceres_gradient.size(); ++i) {
-        const bool close = std::fabs(ceres_gradient[i] - gradient_[i]) < 1e-6;
-        if (!close) {
-          std::cout << "Ceres/CodeGen gradient mismatch at " << i << ": "
-                    << ceres_gradient[i] << " vs " << gradient_[i] << "\n";
-          allclose = false;
-        }
-      }
-      assert(allclose);
-    }
-#endif
+// #ifndef NDEBUG
+//     // In debug mode, verify the gradient matches the (slower) Ceres gradient.
+//     // This can help catch if/else branches that CppAD isn't aware of.
+//     if (kDim != static_cast<int>(x.size())) {
+//       std::cout << "Cannot compare codegen gradient against Ceres at the "
+//                    "moment if the functor has non-grad variables as input.\n";
+//     } else {
+//       const auto ceres_gradient = ceres_functional_.gradient(x);
+//       assert(ceres_gradient.size() == gradient_.size());
+//       bool allclose = true;
+//       for (size_t i = 0; i < ceres_gradient.size(); ++i) {
+//         const bool close = std::fabs(ceres_gradient[i] - gradient_[i]) < 1e-6;
+//         if (!close) {
+//           std::cout << "Ceres/CodeGen gradient mismatch at " << i << ": "
+//                     << ceres_gradient[i] << " vs " << gradient_[i] << "\n";
+//           allclose = false;
+//         }
+//       }
+//       assert(allclose);
+//     }
+// #endif
     return gradient_;
   }
 

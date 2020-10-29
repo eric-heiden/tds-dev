@@ -69,7 +69,12 @@ target_link_libraries(adbench
     benchmark
     CppADCodeGen
     ${CERES_LIBRARIES}
+    tinyxml2
 )
+
+if (USE_STAN)
+    target_link_libraries(adbench PRIVATE ${STAN_LIBRARIES})
+endif(USE_STAN)
 
 add_executable(adtest adtest.cpp)
 target_include_directories(adtest PRIVATE ../src)
