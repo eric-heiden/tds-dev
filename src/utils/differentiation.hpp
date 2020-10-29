@@ -511,10 +511,6 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   using DualAlgebra = typename default_diff_algebra<DIFF_CPPAD_CODEGEN_AUTO,
                                                     kDim, Scalar>::type;
 
-  // name of the model and library to load, uses latest compiled model by
-  // default
-  std::string model_name{""};
-
   static void Compile(const CodeGenSettings& settings = CodeGenSettings()) {
     std::vector<Dual> ax(kDim + settings.default_nograd_x.size());
     for (std::size_t i = 0; i < kDim; ++i) {
@@ -613,15 +609,16 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
 
   Scalar value(const std::vector<Scalar>& x) const {
     const auto fx = model_->ForwardZero(x);
-// #ifndef NDEBUG
-//     const auto fx_slow = f_scalar_(x);
-//     const bool close = std::fabs(fx_slow - fx[0]) < 1e-6;
-//     if (!close) {
-//       std::cout << "Scalar/CodeGen 0th order mismatch: " << fx_slow << " vs "
-//                 << fx[0] << "\n";
-//     }
-//     assert(close);
-// #endif
+    // #ifndef NDEBUG
+    //     const auto fx_slow = f_scalar_(x);
+    //     const bool close = std::fabs(fx_slow - fx[0]) < 1e-6;
+    //     if (!close) {
+    //       std::cout << "Scalar/CodeGen 0th order mismatch: " << fx_slow << "
+    //       vs "
+    //                 << fx[0] << "\n";
+    //     }
+    //     assert(close);
+    // #endif
     return fx[0];
   }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
@@ -630,58 +627,74 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     rows_.resize(kDim);
     cols_.resize(kDim);
     model_->SparseJacobian(x, gradient_, rows_, cols_);
-// #ifndef NDEBUG
-//     // In debug mode, verify the gradient matches the (slower) Ceres gradient.
-//     // This can help catch if/else branches that CppAD isn't aware of.
-//     if (kDim != static_cast<int>(x.size())) {
-//       std::cout << "Cannot compare codegen gradient against Ceres at the "
-//                    "moment if the functor has non-grad variables as input.\n";
-//     } else {
-//       const auto ceres_gradient = ceres_functional_.gradient(x);
-//       assert(ceres_gradient.size() == gradient_.size());
-//       bool allclose = true;
-//       for (size_t i = 0; i < ceres_gradient.size(); ++i) {
-//         const bool close = std::fabs(ceres_gradient[i] - gradient_[i]) < 1e-6;
-//         if (!close) {
-//           std::cout << "Ceres/CodeGen gradient mismatch at " << i << ": "
-//                     << ceres_gradient[i] << " vs " << gradient_[i] << "\n";
-//           allclose = false;
-//         }
-//       }
-//       assert(allclose);
-//     }
-// #endif
+    // #ifndef NDEBUG
+    //     // In debug mode, verify the gradient matches the (slower) Ceres
+    //     gradient.
+    //     // This can help catch if/else branches that CppAD isn't aware of.
+    //     if (kDim != static_cast<int>(x.size())) {
+    //       std::cout << "Cannot compare codegen gradient against Ceres at the
+    //       "
+    //                    "moment if the functor has non-grad variables as
+    //                    input.\n";
+    //     } else {
+    //       const auto ceres_gradient = ceres_functional_.gradient(x);
+    //       assert(ceres_gradient.size() == gradient_.size());
+    //       bool allclose = true;
+    //       for (size_t i = 0; i < ceres_gradient.size(); ++i) {
+    //         const bool close = std::fabs(ceres_gradient[i] - gradient_[i]) <
+    //         1e-6; if (!close) {
+    //           std::cout << "Ceres/CodeGen gradient mismatch at " << i << ": "
+    //                     << ceres_gradient[i] << " vs " << gradient_[i] <<
+    //                     "\n";
+    //           allclose = false;
+    //         }
+    //       }
+    //       assert(allclose);
+    //     }
+    // #endif
     return gradient_;
   }
 
   void Init() {
-    lib_ = std::make_unique<CppAD::cg::LinuxDynamicLib<Scalar>>(
-        "./" + model_name + ".so");
-    model_ = lib_->model(model_name);
-    std::cout << "Loaded compiled model \"" << model_name << "\".\n";
+    if (library_name_.empty()) {
+      library_name_ = "./" + model_name_ + ".so";
+    }
+    lib_ = std::make_unique<CppAD::cg::LinuxDynamicLib<Scalar>>(library_name_);
+    model_ = lib_->model(model_name_);
+    std::cout << "Loaded compiled model \"" << model_name_ << "\" from \""
+              << library_name_ << "\".\n";
   }
 
   GradientFunctional(const std::string& model_name =
                          "model_" +
-                         std::to_string(cpp_ad_codegen_model_counter))
-      : model_name(model_name) {
+                         std::to_string(cpp_ad_codegen_model_counter),
+                     const std::string& library_name = "")
+      : model_name_(model_name), library_name_(library_name) {
     Init();
   }
   GradientFunctional(const GradientFunctional& other)
-      : model_name(other.model_name) {
+      : model_name_(other.model_name_), library_name_(other.library_name_) {
     Init();
   }
   GradientFunctional& operator=(const GradientFunctional& other) {
-    model_name = other.model_name;
+    model_name_ = other.model_name_;
+    library_name_ = other.library_name_;
     Init();
     return *this;
   }
 
  private:
-#ifndef NDEBUG
-  GradientFunctional<tds::DIFF_CERES, F, ScalarAlgebra> ceres_functional_;
-#endif
-  F<ScalarAlgebra> f_scalar_;
+  // name of the model and library to load, uses latest compiled model by
+  // default
+  std::string model_name_{""};
+
+  // file name of the dynamic library to load
+  std::string library_name_{""};
+
+  // #ifndef NDEBUG
+  //   GradientFunctional<tds::DIFF_CERES, F, ScalarAlgebra> ceres_functional_;
+  // #endif
+  // F<ScalarAlgebra> f_scalar_;
   mutable std::vector<Scalar> gradient_;
   mutable std::vector<std::size_t> rows_;
   mutable std::vector<std::size_t> cols_;
