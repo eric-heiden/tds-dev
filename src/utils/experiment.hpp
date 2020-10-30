@@ -321,12 +321,14 @@ class Experiment {
         log["episodes"][evolution]["parameters"][p.name] = p.value;
       }
 
-      std::string dotfilename = name + "_" + std::to_string(evolution);
+      std::string log_prefix = log["settings"]["log_prefix"];
+      std::string dotfilename =
+          log_prefix + name + "_" + std::to_string(evolution);
       augmentation.save_graphviz(best_params, logdir / dotfilename);
 
       after_iteration();
 
-      std::string logfilename = log["settings"]["log_prefix"] + name;
+      std::string logfilename = log_prefix + name;
       if (log["settings"]["separate_log_per_episode"]) {
         logfilename += "_" + std::to_string(evolution);
       }
