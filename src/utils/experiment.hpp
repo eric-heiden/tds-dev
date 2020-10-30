@@ -84,6 +84,8 @@ class Experiment {
     log["settings"]["augmentation"]["weight_limit"] = 0.5;
     log["settings"]["augmentation"]["bias_limit"] = 0.5;
     log["settings"]["augmentation"]["augmentation_is_residual"] = true;
+    log["settings"]["separate_log_per_episode"] = true;
+    log["settings"]["log_prefix"] = "";
   }
 
   bool save_log(const std::string& filename) const {
@@ -324,8 +326,11 @@ class Experiment {
 
       after_iteration();
 
-      std::string logfilename =
-          name + "_" + std::to_string(evolution) + ".json";
+      std::string logfilename = log["settings"]["log_prefix"] + name;
+      if (log["settings"]["separate_log_per_episode"]) {
+        logfilename += "_" + std::to_string(evolution);
+      }
+      logfilename += ".json";
       save_log(logfilename);
     }
 #else
