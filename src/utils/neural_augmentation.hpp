@@ -19,7 +19,7 @@ struct NeuralAugmentation {
   // L1 regularization for input weights (lasso) to encourage sparse inputs
   double input_lasso_regularization{0};
   // L2 regularization term for upper layers
-  double upper_l2_regularization{1};
+  double upper_l2_regularization{0};
 
   double weight_limit = 0.1;
   double bias_limit = 0.2;
