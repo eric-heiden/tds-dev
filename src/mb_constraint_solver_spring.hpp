@@ -356,7 +356,7 @@ class MultiBodyConstraintSolverSpring
       vel_a = jac_a * qd_a;
       vel_b = jac_b * qd_b;
       Vector3 rel_vel = vel_a - vel_b;
-      // rel_vel.print("rel_vel");
+      // Algebra::print("rel_vel", rel_vel);
 
       // contact normal force
       Scalar normal_rel_vel = world_normal.dot(rel_vel);
@@ -377,9 +377,10 @@ class MultiBodyConstraintSolverSpring
       if (friction_model_ == FRICTION_NONE) {
         continue;
       }
+      
       // unilateral friction force
       Vector3 lateral_rel_vel = rel_vel - normal_rel_vel * cp.world_normal_on_b;
-      // lateral_rel_vel.print("lateral_rel_vel");
+      // Algebra::print("lateral_rel_vel", lateral_rel_vel);
 
       // to prevent division by zero in norm function
       lateral_rel_vel[2] += kEpsilon;
@@ -392,8 +393,8 @@ class MultiBodyConstraintSolverSpring
       // coulomb_fr_direction1.cross(cp.world_normal_on_b);
 
       // if lateral < Algebra::fraction(1, 1000) ...
-      Scalar fr_case = where_lt(lateral, Algebra::fraction(1, 1000),
-                                Algebra::one(), Algebra::zero());
+      // Scalar fr_case = where_lt(lateral, Algebra::fraction(1, 1000),
+      //                           Algebra::one(), Algebra::zero());
       Vector3 fr_direction1;
       // if constexpr (is_cppad_scalar<Scalar>::value) {
       if constexpr (true) {
@@ -445,10 +446,11 @@ class MultiBodyConstraintSolverSpring
         rel_vel[2].assign("friction/rel_vel.z");
         friction_vector[0].assign("friction/fr_vec.x");
         friction_vector[1].assign("friction/fr_vec.y");
-        friction_vector[2].assign("friction/fr_vec.z");
+        // friction_vector[2].assign("friction/fr_vec.z");
         friction_vector[0].evaluate();
         friction_vector[1].evaluate();
-        friction_vector[2].evaluate();
+        // friction_vector[2].evaluate();
+        // Algebra::print("friction_vector", friction_vector);
       }
 
       tau_a += Algebra::mul_transpose(jac_a, friction_vector);

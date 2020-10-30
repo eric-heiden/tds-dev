@@ -1,8 +1,8 @@
 #ifndef NEURAL_AUGMENTATION_H
 #define NEURAL_AUGMENTATION_H
 
-#include "parameter.hpp"
 #include "math/tiny/neural_algebra.hpp"
+#include "parameter.hpp"
 
 namespace tds {
 
@@ -149,6 +149,44 @@ struct NeuralAugmentation {
         params[pi].value = init_biases[bi];
       }
     }
+  }
+
+  template <typename Algebra>
+  std::vector<NeuralNetwork<Algebra>> extract_neural_networks(
+      const std::map<std::string, double> &named_params) const {
+    std::vector<NeuralNetwork<Algebra>> result;
+    for (std::size_t i = 0; i < specs.size(); ++i) {
+      NeuralNetwork<Algebra> net(specs[i]);
+      net.weights.resize(net.num_weights());
+      net.biases.resize(net.num_biases());
+      std::string output_name = "net";
+      for (const auto &output : output_inputs[i].first) {
+        output_name += "_" + output;
+      }
+      std::string net_prefix = output_name + "_";
+      for (int wi = 0; wi < net.num_weights(); ++wi) {
+        std::string pname = net_prefix + "w_" + std::to_string(wi);
+        if (named_params.find(pname) == named_params.end()) {
+          std::cerr << "Error: Could not find value for NN weight \"" << pname
+                    << "\".\n";
+          net.weights[wi] = Algebra::zero();
+        } else {
+          net.weights[wi] = Algebra::from_double(named_params.at(pname));
+        }
+      }
+      for (int bi = 0; bi < net.num_biases(); ++bi) {
+        std::string pname = net_prefix + "b_" + std::to_string(bi);
+        if (named_params.find(pname) == named_params.end()) {
+          std::cerr << "Error: Could not find value for NN bias \"" << pname
+                    << "\".\n";
+          net.biases[bi] = Algebra::zero();
+        } else {
+          net.biases[bi] = Algebra::from_double(named_params.at(pname));
+        }
+      }
+      result.push_back(net);
+    }
+    return result;
   }
 
   std::size_t num_total_parameters() const {
