@@ -540,6 +540,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
         "model_" + std::to_string(++cpp_ad_codegen_model_counter);
     CppAD::cg::ModelCSourceGen<Scalar> cgen(tape, model_name);
     cgen.setCreateSparseJacobian(true);
+    // cgen.setCreateJacobian(true);
     if (settings.default_nograd_x.size() > 0) {
       if (settings.verbose) {
         printf(
@@ -627,6 +628,8 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     rows_.resize(kDim);
     cols_.resize(kDim);
     model_->SparseJacobian(x, gradient_, rows_, cols_);
+    // gradient_ = model_->Jacobian(x);
+    // gradient_.resize(kDim);
     // #ifndef NDEBUG
     //     // In debug mode, verify the gradient matches the (slower) Ceres
     //     gradient.

@@ -58,6 +58,8 @@ struct NeuralAugmentation {
       const std::vector<std::string> &outputs,
       const std::vector<std::string> &inputs,
       const NeuralNetworkSpecification &spec) {
+    assert(spec.input_dim() == static_cast<int>(inputs.size()));
+    assert(spec.output_dim() == static_cast<int>(outputs.size()));
     output_inputs.push_back(std::make_pair(outputs, inputs));
     specs.push_back(spec);
     return specs.back();

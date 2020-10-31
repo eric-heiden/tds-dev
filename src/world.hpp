@@ -131,6 +131,10 @@ class World {
     mb_constraint_solver_ = solver;
   }
 
+  MultiBodyConstraintSolver<Algebra>* mb_constraint_solver() const {
+    return mb_constraint_solver_;
+  }
+
   void clear() {
     for (std::size_t i = 0; i < geoms_.size(); i++) {
       delete geoms_[i];

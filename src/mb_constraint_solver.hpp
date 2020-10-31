@@ -119,7 +119,7 @@ class MultiBodyConstraintSolver {
         Scalar s = Algebra::one();
         if (!limit_dependency_.empty() && limit_dependency_[i] >= 0) {
           s = x[limit_dependency_[i]];
-          s = where_lt(s, Algebra::zero(), Algebra::one(), s);
+          s = where_lt(s, Algebra::zero(), Algebra::zero(), s);
         }
 
         if (lo) {
