@@ -452,7 +452,7 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
   using Dual = typename CppAD::AD<Scalar>;
   static const int kDim = F<ScalarAlgebra>::kDim;
 
-  GradientFunctional() { Init(); }
+  GradientFunctional(const std::vector<Scalar>& x_init = {}) { Init(x_init); }
   GradientFunctional(const GradientFunctional& other) { Init(); }
   GradientFunctional(GradientFunctional& f) { Init(); }
   GradientFunctional& operator=(const GradientFunctional& other) = delete;
@@ -464,16 +464,21 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
   }
 
  private:
-  void Init() {
-    std::vector<Dual> ax(F<ScalarAlgebra>::kDim);
-    for (auto& axi : ax) {
-      axi = ScalarAlgebra::zero();
+  void Init(const std::vector<Scalar>& x_init = {}) {
+    std::vector<Dual> ax(kDim);
+    for (int i = 0; i < kDim; ++i) {
+      if (i < static_cast<int>(x_init.size())) {
+        ax[i] = x_init[i];
+      } else {
+        ax[i] = ScalarAlgebra::zero();
+      }
     }
     CppAD::Independent(ax);
     std::vector<Dual> ay(1);
     ay[0] = f_ad_(ax);
+    std::cout << "CppAD value: " << ay[0] << std::endl;
     tape_.Dependent(ax, ay);
-    tape_.optimize();
+    // tape_.optimize();
   }
 
   F<ScalarAlgebra> f_scalar_;
@@ -610,16 +615,15 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
 
   Scalar value(const std::vector<Scalar>& x) const {
     const auto fx = model_->ForwardZero(x);
-    // #ifndef NDEBUG
-    //     const auto fx_slow = f_scalar_(x);
-    //     const bool close = std::fabs(fx_slow - fx[0]) < 1e-6;
-    //     if (!close) {
-    //       std::cout << "Scalar/CodeGen 0th order mismatch: " << fx_slow << "
-    //       vs "
-    //                 << fx[0] << "\n";
-    //     }
-    //     assert(close);
-    // #endif
+    #ifndef NDEBUG
+        const auto fx_slow = f_scalar_(x);
+        const bool close = std::fabs(fx_slow - fx[0]) < 1e-6;
+        if (!close) {
+          std::cout << "Scalar/CodeGen 0th order mismatch: " << fx_slow << " vs "
+                    << fx[0] << "\n";
+        }
+        assert(close);
+    #endif
     return fx[0];
   }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
@@ -635,8 +639,7 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
     //     gradient.
     //     // This can help catch if/else branches that CppAD isn't aware of.
     //     if (kDim != static_cast<int>(x.size())) {
-    //       std::cout << "Cannot compare codegen gradient against Ceres at the
-    //       "
+    //       std::cout << "Cannot compare codegen gradient against Ceres at the"
     //                    "moment if the functor has non-grad variables as
     //                    input.\n";
     //     } else {
@@ -694,10 +697,10 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   // file name of the dynamic library to load
   std::string library_name_{""};
 
-  // #ifndef NDEBUG
+  #ifndef NDEBUG
+    F<ScalarAlgebra> f_scalar_;
   //   GradientFunctional<tds::DIFF_CERES, F, ScalarAlgebra> ceres_functional_;
-  // #endif
-  // F<ScalarAlgebra> f_scalar_;
+  #endif
   mutable std::vector<Scalar> gradient_;
   mutable std::vector<std::size_t> rows_;
   mutable std::vector<std::size_t> cols_;

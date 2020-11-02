@@ -310,12 +310,12 @@ class Experiment {
                 << std::endl;
       log["episodes"][evolution]["best_cost"] = best_cost;
       std::cout << "Training cost: " << best_cost << std::endl;
-      std::cout << "Gradient: ";
-      const auto& gradient = problem.gradient(best_params);
-      for (std::size_t i = 0; i < problem.kParameterDim; ++i) {
-        std::cout << gradient[i] << "  ";
-      }
-      std::cout << std::endl;
+      // std::cout << "Gradient: ";
+      // const auto& gradient = problem.gradient(best_params);
+      // for (std::size_t i = 0; i < problem.kParameterDim; ++i) {
+      //   std::cout << gradient[i] << "  ";
+      // }
+      // std::cout << std::endl;
 
       for (const auto& p : problem.parameters()) {
         log["episodes"][evolution]["parameters"][p.name] = p.value;

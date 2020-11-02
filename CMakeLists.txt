@@ -148,7 +148,7 @@ ENDIF(WIN32)
 
 ADD_DEFINITIONS(-DSTATIC_LINK_SPD_PLUGIN)
 
-OPTION(USE_STAN "Use Stan Math" OFF)
+OPTION(USE_STAN "Use Stan Math" ON)
 if(USE_STAN)
 	add_definitions(-pthread -D_REENTRANT -DBOOST_DISABLE_ASSERTS -DUSE_STAN)
 	set(STAN_LIBRARIES ${CMAKE_CURRENT_LIST_DIR}/third_party/stan_math/lib/tbb/libtbb.so.2)
