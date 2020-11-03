@@ -89,6 +89,11 @@ target_link_libraries(adtest
 )
 
 
+if (USE_STAN)
+  target_link_libraries(adtest PRIVATE ${STAN_LIBRARIES})
+endif (USE_STAN)
+
+
 add_executable(test_codegen test_codegen.cpp)
 target_include_directories(test_codegen PRIVATE ../src)
 target_link_libraries(test_codegen

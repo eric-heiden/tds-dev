@@ -302,12 +302,12 @@ class TinyMatrixXxX_ {
     const TinyMatrixXxX_<TinyScalar, TinyConstants, TinyVectorX>& A = *this;
 
     bool is_positive_definite;
-    if constexpr (tds::is_cppad_scalar<TinyScalar>::value) {
+    // if constexpr (tds::is_cppad_scalar<TinyScalar>::value) {
       // the comparisons cannot be traced, we assume the matrix is always PD
       is_positive_definite = true;
-    } else {
-      is_positive_definite = inverse_cholesky_decomposition(A, a);
-    }
+    // } else {
+    //   is_positive_definite = inverse_cholesky_decomposition(A, a);
+    // }
     if (is_positive_definite) {
       int n = m_cols;
       int i, j, k;
