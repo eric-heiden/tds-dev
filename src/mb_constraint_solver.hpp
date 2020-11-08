@@ -187,10 +187,10 @@ class MultiBodyConstraintSolver {
       //   mass_matrix_a_inv = mat_inv_op_a.op(mass_matrix_a);
       //   is_positive_definite_a = true;
       // } else {
-        submit_profile_timing("inverse_mass_matrix_a");
-        is_positive_definite_a =
-            Algebra::symmetric_inverse(mass_matrix_a, mass_matrix_a_inv);
-        submit_profile_timing("");
+      submit_profile_timing("inverse_mass_matrix_a");
+      is_positive_definite_a =
+          Algebra::symmetric_inverse(mass_matrix_a, mass_matrix_a_inv);
+      submit_profile_timing("");
       // }
     }
 
@@ -206,10 +206,10 @@ class MultiBodyConstraintSolver {
       //   mass_matrix_b_inv = mat_inv_op_b.op(mass_matrix_b);
       //   is_positive_definite_b = true;
       // } else {
-        submit_profile_timing("inverse_mass_matrix_b");
-        is_positive_definite_b =
-            Algebra::symmetric_inverse(mass_matrix_b, mass_matrix_b_inv);
-        submit_profile_timing("");
+      submit_profile_timing("inverse_mass_matrix_b");
+      is_positive_definite_b =
+          Algebra::symmetric_inverse(mass_matrix_b, mass_matrix_b_inv);
+      submit_profile_timing("");
       // }
     }
     if (!is_positive_definite_a) {
@@ -383,8 +383,8 @@ class MultiBodyConstraintSolver {
       submit_profile_timing("");
     }
 
-    //    lcp_A.print("MLCP A");
-    //    lcp_b.print("MLCP b");
+    //  Algebra::print("MLCP A", lcp_A);
+    //  Algebra::print("MLCP b", lcp_b);
 
     VectorX lcp_p(dof_per_contact * n_c);
     Algebra::set_zero(lcp_p);
@@ -467,6 +467,7 @@ class MultiBodyConstraintSolver {
         delta_qd_b -= fr_qd;
       }
 
+      // Algebra::print("delta_qd_b", delta_qd_b);
       for (int i = 0; i < n_b; ++i) {
         mb_b->qd(i) -= delta_qd_b[i];
       }

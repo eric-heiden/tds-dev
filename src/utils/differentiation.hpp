@@ -476,9 +476,9 @@ class GradientFunctional<DIFF_CPPAD_AUTO, F, ScalarAlgebra> {
     CppAD::Independent(ax);
     std::vector<Dual> ay(1);
     ay[0] = f_ad_(ax);
-    std::cout << "CppAD value: " << ay[0] << std::endl;
+    // std::cout << "CppAD value: " << ay[0] << std::endl;
     tape_.Dependent(ax, ay);
-    // tape_.optimize();
+    tape_.optimize();
   }
 
   F<ScalarAlgebra> f_scalar_;

@@ -34,10 +34,12 @@ class Experiment {
   const std::filesystem::path logdir;
   nlohmann::json log;
 
-  NeuralAugmentation augmentation;
+  NeuralAugmentation augmentation_;
 
   Stopwatch watch_evolution;
   Stopwatch watch_total;
+
+  std::size_t evolution{0};
 
  public:
   virtual ~Experiment() {}
@@ -84,9 +86,13 @@ class Experiment {
     log["settings"]["augmentation"]["weight_limit"] = 0.5;
     log["settings"]["augmentation"]["bias_limit"] = 0.5;
     log["settings"]["augmentation"]["augmentation_is_residual"] = true;
-    log["settings"]["separate_log_per_episode"] = true;
+    log["settings"]["separate_log_per_episode"] = false;
+    log["settings"]["separate_graphviz_per_episode"] = true;
     log["settings"]["log_prefix"] = "";
   }
+
+  NeuralAugmentation& augmentation() { return augmentation_; }
+  const NeuralAugmentation& augmentation() const { return augmentation_; }
 
   bool save_log(const std::string& filename) const {
     namespace fs = std::filesystem;
@@ -144,7 +150,7 @@ class Experiment {
     return log[key];
   }
 
-  virtual void after_iteration() {}
+  virtual void after_iteration(const std::vector<double>&) {}
 
   template <typename OptimizationProblem>
   void run(OptimizationProblem& problem) {
@@ -164,7 +170,7 @@ class Experiment {
     std::cout << "Running experiment \"" << name << "\" with "
               << OptimizationProblem::kParameterDim
               << " parameters, consisting of "
-              << augmentation.num_total_parameters()
+              << augmentation_.num_total_parameters()
               << " neural network parameters." << std::endl;
 
     if (!problem.parameters().empty()) {
@@ -279,7 +285,7 @@ class Experiment {
     std::size_t num_individuals = log["settings"]["pagmo"]["num_individuals"];
     std::size_t num_evolutions = log["settings"]["pagmo"]["num_evolutions"];
     pagmo::archipelago archi{num_islands, algo, prob, num_individuals};
-    for (std::size_t evolution = 0; evolution < num_evolutions; ++evolution) {
+    for (evolution = 0; evolution < num_evolutions; ++evolution) {
       std::cout << "###### EVOLUTION " << evolution << " ######\n";
       watch_evolution.start();
       archi.evolve();
@@ -323,12 +329,12 @@ class Experiment {
 
       std::string log_prefix = log["settings"]["log_prefix"];
       std::string dotfilename = log_prefix + name;
-      if (log["settings"]["separate_log_per_episode"]) {
+      if (log["settings"]["separate_graphviz_per_episode"]) {
         dotfilename += "_" + std::to_string(evolution);
       }
-      augmentation.save_graphviz(best_params, logdir / dotfilename);
+      augmentation_.save_graphviz(best_params, logdir / dotfilename);
 
-      after_iteration();
+      after_iteration(best_params);
 
       std::string logfilename = log_prefix + name;
       if (log["settings"]["separate_log_per_episode"]) {
