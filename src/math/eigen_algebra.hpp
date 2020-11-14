@@ -687,10 +687,10 @@ struct EigenAlgebraT {
 #endif
         if constexpr (std::is_same_v<std::remove_cv_t<Scalar>,
                                      CppAD::AD<CppAD::cg::CG<double>>>) {
-      return CppAD::Value(s).getValue();
+      return CppAD::Value(CppAD::Var2Par(s)).getValue();
     } else if constexpr (std::is_same_v<std::remove_cv_t<Scalar>,
                                         CppAD::AD<double>>) {
-      return CppAD::Value(s);
+      return CppAD::Value(CppAD::Var2Par(s));
     } else {
       return static_cast<double>(s);
     }

@@ -397,7 +397,6 @@ function(enoki_test NAME SOURCE)
   endif()
 endfunction()
 
-message("HIHIHIHIHIE!!!!!!!!!!!!!!!!!")
 if (Bullet_FOUND)
     enoki_test(enoki_hello_world enoki_hello_world.cpp)
     set_target_properties(enoki_hello_world_none PROPERTIES FOLDER autodiff)
@@ -419,3 +418,22 @@ if (Bullet_FOUND)
 ELSE()
 message("BULLET NOT FOUND????")
 ENDIF()
+
+add_executable(cuda_codegen cuda_codegen.cpp ${TDS_HDRS})
+  target_link_libraries(
+    cuda_codegen
+    PRIVATE
+      ${CMAKE_DL_LIBS}
+      pybullet_visualizer_api
+      ${DL}
+      CppADCodeGen
+      ${CERES_LIBRARIES}
+      ${PYTHON_LIBRARIES}
+      python2.7
+      cxxopts::cxxopts
+      Pagmo::pagmo
+      gflags
+  )
+  if (USE_STAN)
+    target_link_libraries(cuda_codegen PRIVATE ${STAN_LIBRARIES})
+  endif(USE_STAN)
