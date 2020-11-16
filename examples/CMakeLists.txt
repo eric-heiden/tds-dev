@@ -424,7 +424,8 @@ add_executable(cuda_codegen cuda_codegen.cpp ${TDS_HDRS})
     cuda_codegen
     PRIVATE
       ${CMAKE_DL_LIBS}
-      pybullet_visualizer_api
+      opengl_window
+      tinyxml2
       ${DL}
       CppADCodeGen
       ${CERES_LIBRARIES}
