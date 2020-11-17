@@ -5,7 +5,7 @@
 
 // right-associative means transforms are multiplied like parent_transform *
 // child_transform. RBDL uses left-associative transforms
-#define RIGHT_ASSOCIATIVE_TRANSFORMS false
+#define RIGHT_ASSOCIATIVE_TRANSFORMS true
 
 namespace tds {
 template <typename Algebra>

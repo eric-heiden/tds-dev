@@ -5,6 +5,8 @@
 #include "../multi_body.hpp"
 #include "kinematics.hpp"
 
+// #define DEBUG 1
+
 namespace tds {
 template <typename Algebra>
 void forward_dynamics(MultiBody<Algebra> &mb,

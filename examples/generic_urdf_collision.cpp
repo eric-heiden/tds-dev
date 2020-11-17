@@ -55,7 +55,8 @@ int main(int argc, char *argv[]) {
   //"sphere2.urdf"
   // tds::FileUtils::find_file("sphere8cube.urdf", urdf_filename);
   // bool floating_base = true;
-  tds::FileUtils::find_file("pendulum5.urdf", urdf_filename);
+  // tds::FileUtils::find_file("pendulum5.urdf", urdf_filename);
+  tds::FileUtils::find_file("franka_panda/panda.urdf", urdf_filename);
   bool floating_base = false;
   std::string plane_filename;
   tds::FileUtils::find_file("plane_implicit.urdf", plane_filename);
@@ -123,8 +124,8 @@ int main(int argc, char *argv[]) {
   }
 #endif
 
-  world.set_mb_constraint_solver(
-      new tds::MultiBodyConstraintSolverSpring<Algebra>);
+  // world.set_mb_constraint_solver(
+  //     new tds::MultiBodyConstraintSolverSpring<Algebra>);
 
   fflush(stdout);
 
@@ -133,33 +134,40 @@ int main(int argc, char *argv[]) {
     start_rot.set_euler_rpy(Vector3(0.8, 1.1, 0.9));
     const double initial_height = 1.2;
     const Vector3 initial_velocity(0.7, 2., 0.);
-    system->q()[0] = start_rot.x();
-    system->q()[1] = start_rot.y();
-    system->q()[2] = start_rot.z();
-    system->q()[3] = start_rot.w();
-    system->q()[4] = 0.;
-    system->q()[5] = 0.;
-    system->q()[6] = initial_height;
+    system->q(0) = start_rot.x();
+    system->q(1) = start_rot.y();
+    system->q(2) = start_rot.z();
+    system->q(3) = start_rot.w();
+    system->q(4) = 0.;
+    system->q(5) = 0.;
+    system->q(6) = initial_height;
 
-    system->qd()[0] = 0.;
-    // system->qd()[1] = 2;
-    system->qd()[2] = 0.;
-    system->qd()[3] = initial_velocity.x();
-    system->qd()[4] = initial_velocity.y();
-    system->qd()[5] = initial_velocity.z();
+    system->qd(0) = 0.;
+    // system->qd(1) = 2;
+    system->qd(2) = 0.;
+    system->qd(3) = initial_velocity.x();
+    system->qd(4) = initial_velocity.y();
+    system->qd(5) = initial_velocity.z();
 
     // apply some "random" rotation
-    // system->q()[0] = 0.06603363263475902;
-    // system->q()[1] = 0.2764891273883223;
-    // system->q()[2] = 0.2477976811032405;
-    // system->q()[3] = 0.9261693317298725;
-    // system->q()[6] = 2;
+    // system->q(0) = 0.06603363263475902;
+    // system->q(1) = 0.2764891273883223;
+    // system->q(2) = 0.2477976811032405;
+    // system->q(3) = 0.9261693317298725;
+    // system->q(6) = 2;
   } else {
-    system->base_X_world().translation = Algebra::unit3_z();
+    // system->base_X_world().translation = Algebra::unit3_z();
+    // for (int i = 0; i < system->dof(); ++i) {
+    //   system->q(i) =  0.2 + (i%2) * 0.5;
+    // }
   }
+  for (auto& link : *system) {
+    link.damping = 0.5;
+  }
+  
   system->print_state();
 
-  double dt = 1. / 1000.;
+  double dt = 1. / 10000.;
   double time = 0;
   int step = 0;
   while (true) {
@@ -224,7 +232,7 @@ int main(int argc, char *argv[]) {
 
     {
       // sim->submitProfileTiming("world_step");
-      world.step(dt);
+      // world.step(dt);
       // sim->submitProfileTiming("");
       time += dt;
     }
@@ -232,7 +240,8 @@ int main(int argc, char *argv[]) {
     {
       // sim->submitProfileTiming("integrate");
       integrate_euler(*system, dt);
-      system->print_state();
+      // forward_kinematics(*system);
+      // system->print_state();
       // sim->submitProfileTiming("");
     }
     // sim->setGravity(btVector3(0, 0, gravZ));
