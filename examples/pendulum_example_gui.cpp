@@ -18,27 +18,25 @@
 #include <chrono>  // std::chrono::seconds
 #include <thread>  // std::this_thread::sleep_for
 
-
-#include "math/tiny/fix64_scalar.h"
-#include "dynamics/kinematics.hpp"
+#include "base.hpp"
 #include "dynamics/forward_dynamics.hpp"
 #include "dynamics/integrator.hpp"
-#include "utils/pendulum.hpp"
-
-
+#include "dynamics/kinematics.hpp"
+#include "math/eigen_algebra.hpp"
+#include "math/tiny/fix64_scalar.h"
 #include "math/tiny/tiny_double_utils.h"
-#include "utils/file_utils.hpp"
 #include "multi_body.hpp"
+#include "utils/file_utils.hpp"
+#include "utils/pendulum.hpp"
 #include "world.hpp"
 
 using namespace TINY;
 using namespace tds;
-#include "visualizer/opengl/tiny_opengl3_app.h"
 #include "math/tiny/tiny_algebra.hpp"
+#include "visualizer/opengl/tiny_opengl3_app.h"
 
 int main(int argc, char* argv[]) {
-
-  typedef TinyAlgebra<double, DoubleUtils> Algebra;
+  typedef EigenAlgebra Algebra;
   typedef typename Algebra::Vector3 Vector3;
   typedef typename Algebra::Quaternion Quarternion;
   typedef typename Algebra::VectorX VectorX;
@@ -57,13 +55,12 @@ int main(int argc, char* argv[]) {
   app.m_renderer->get_active_camera()->set_camera_distance(4);
   app.m_renderer->get_active_camera()->set_camera_pitch(-30);
   app.m_renderer->get_active_camera()->set_camera_target_position(0, 0, 0);
-  //install ffmpeg in path and uncomment, to enable video recording
-  //app.dump_frames_to_video("test.mp4");
- 
+  // install ffmpeg in path and uncomment, to enable video recording
+  // app.dump_frames_to_video("test.mp4");
 
   // Set NaN trap
-  //feenableexcept(FE_INVALID | FE_OVERFLOW);
-  
+  // feenableexcept(FE_INVALID | FE_OVERFLOW);
+
   tds::World<Algebra> world;
 
   std::vector<RigidBody*> bodies;
@@ -80,33 +77,27 @@ int main(int argc, char* argv[]) {
   mbbodies.push_back(mb);
 
   int sphere_shape = app.register_graphics_unit_sphere_shape(SPHERE_LOD_HIGH);
-  
 
-  for (int i = 0; i < num_spheres; i++)
-  {
-      TinyVector3f pos(0, i*0.1, 0);
-      TinyQuaternionf orn(0, 0, 0, 1);
-      TinyVector3f color(0.6, 0.6, 1);
-      TinyVector3f scaling(0.05, 0.05, 0.05);
-      int instance = app.m_renderer->register_graphics_instance(sphere_shape, pos, orn, color, scaling);
-      mbvisuals.push_back(instance);
+  for (int i = 0; i < num_spheres; i++) {
+    TinyVector3f pos(0, i * 0.1, 0);
+    TinyQuaternionf orn(0, 0, 0, 1);
+    TinyVector3f color(0.6, 0.6, 1);
+    TinyVector3f scaling(0.05, 0.05, 0.05);
+    int instance = app.m_renderer->register_graphics_instance(
+        sphere_shape, pos, orn, color, scaling);
+    mbvisuals.push_back(instance);
   }
-  
 
-  mb->q() = std::vector<double>(mb->dof(), DoubleUtils::zero());
-  mb->qd() = std::vector<double>(mb->dof_qd(), DoubleUtils::zero());
-  mb->tau() = std::vector<double>(mb->dof_qd(), DoubleUtils::zero());
-  mb->qdd() = std::vector<double>(mb->dof_qd(), DoubleUtils::zero());
+  mb->initialize();
 
   Vector3 gravity(0., 0., -9.81);
 
   MatrixX M(mb->links().size(), mb->links().size());
 
   double dt = 1. / 240.;
-  app.set_mp4_fps(1./dt);
+  app.set_mp4_fps(1. / dt);
   int upAxis = 2;
-  while (!app.m_window->requested_exit()) 
-  {
+  while (!app.m_window->requested_exit()) {
     app.m_renderer->update_camera(upAxis);
     DrawGridData data;
     data.drawAxis = true;
@@ -122,62 +113,57 @@ int main(int argc, char* argv[]) {
 
     {
       tds::integrate_euler(*mb, mb->q(), mb->qd(), mb->qdd(), dt);
-    
 
       // printf("q: [%.3f %.3f] \tqd: [%.3f %.3f]\n", q[0], q[1], qd[0], qd[1]);
       tds::mass_matrix(*mb, &M);
-      
-      //M.print("M");
+
+      // M.print("M");
       if (mb->qd()[0] < -1e4) {
         assert(0);
       }
     }
 
-    
     std::this_thread::sleep_for(std::chrono::duration<double>(dt));
     // sync transforms
     int visual_index = 0;
-    TinyVector3f prev_pos(0,0,0);
-    TinyVector3f color(0,0,1);
+    TinyVector3f prev_pos(0, 0, 0);
+    TinyVector3f color(0, 0, 1);
     float line_width = 1;
 
     if (!mbvisuals.empty()) {
-    for (int b = 0; b < mbbodies.size(); b++) {
-        for (int l = 0; l<mbbodies[b]->links().size();l++) {
-        const MultiBody* body = mbbodies[b];
-        if (body->links()[l].X_visuals.empty()) continue;
+      for (int b = 0; b < mbbodies.size(); b++) {
+        for (int l = 0; l < mbbodies[b]->links().size(); l++) {
+          const MultiBody* body = mbbodies[b];
+          if (body->links()[l].X_visuals.empty()) continue;
 
-        int sphereId = mbvisuals[visual_index++];
+          int sphereId = mbvisuals[visual_index++];
 
-        Quarternion rot;
-        const Transform& geom_X_world = 
-               body->links()[l].X_world * body->links()[l].X_visuals[0];
+          Quarternion rot;
+          const Transform& geom_X_world =
+              body->links()[l].X_world * body->links()[l].X_visuals[0];
 
-        TinyVector3f base_pos(geom_X_world.translation.getX(),
-                            geom_X_world.translation.getY(),
-                            geom_X_world.translation.getZ());
-        geom_X_world.rotation.getRotation(rot);
-        TinyQuaternionf base_orn(rot.getX(), rot.getY(), rot.getZ(),
-                                rot.getW());
-        if (l>=0)
-        {
-          //printf("b=%d\n",b);
-          app.m_renderer->draw_line(prev_pos, base_pos,color, line_width);
+          TinyVector3f base_pos(geom_X_world.translation[0],
+                                geom_X_world.translation[1],
+                                geom_X_world.translation[2]);
+          rot = Algebra::matrix_to_quat(geom_X_world.rotation);
+          TinyQuaternionf base_orn(Algebra::quat_x(rot), Algebra::quat_y(rot),
+                                   Algebra::quat_z(rot), Algebra::quat_w(rot));
+          if (l >= 0) {
+            // printf("b=%d\n",b);
+            app.m_renderer->draw_line(prev_pos, base_pos, color, line_width);
+          } else {
+            printf("!! b=%d\n", b);
+          }
+          prev_pos = base_pos;
+          app.m_renderer->write_single_instance_transform_to_cpu(
+              base_pos, base_orn, sphereId);
         }
-        else
-	{
-		printf("!! b=%d\n",b);
-	}
-        prev_pos = base_pos;
-        app.m_renderer->write_single_instance_transform_to_cpu(base_pos, base_orn, sphereId);
-        }
-    }
+      }
     }
     app.m_renderer->render_scene();
     app.m_renderer->write_transforms();
     app.swap_buffer();
   }
 
-  
   return 0;
 }
