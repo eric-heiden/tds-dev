@@ -3,9 +3,13 @@
 #include "inertia.hpp"
 #include "spatial_vector.hpp"
 
-// right-associative means transforms are multiplied like parent_transform *
-// child_transform. RBDL uses left-associative transforms
-#define RIGHT_ASSOCIATIVE_TRANSFORMS true
+// right-associative means transforms are multiplied like parent_transform * child_transform.
+// RBDL uses left-associative transforms
+#ifdef TDS_USE_LEFT_ASSOCIATIVE_TRANSFORMS
+    #define RIGHT_ASSOCIATIVE_TRANSFORMS false
+#else
+    #define RIGHT_ASSOCIATIVE_TRANSFORMS true
+#endif
 
 namespace tds {
 template <typename Algebra>
@@ -133,19 +137,23 @@ struct Transform {
   TINY_INLINE Vector3 apply_inverse(const Vector3 &point) const {
     return Algebra::transpose(rotation) * (point - translation);
   }
+  TINY_INLINE Vector3 apply_inverse2(const Vector3& point) const {
+      return Algebra::transpose(rotation) * (point - translation);
+  }
 #else
-  // Transform operator*(const Transform &t) const {
-  //   Transform tr = *this;
-  //   tr.translation = t.translation + t.rotation * translation;
-  //   // tr.translation = t.translation + Algebra::transpose(t.rotation) *
-  //   translation; tr.rotation *= t.rotation; return tr;
-  // }
-  // Transform operator*(const Transform &t) const {
-  //   Transform tr = *this;
-  //   tr.translation = t.translation + t.rotation * translation;
-  //   tr.rotation *= t.rotation;
-  //   return tr;
-  // }
+// Transform operator*(const Transform &t) const {
+//   Transform tr = *this;
+//   tr.translation = t.translation + t.rotation * translation;
+//   // tr.translation = t.translation + Algebra::transpose(t.rotation) * translation;
+//   tr.rotation *= t.rotation;
+//   return tr;
+// }
+// Transform operator*(const Transform &t) const {
+//   Transform tr = *this;
+//   tr.translation = t.translation + t.rotation * translation;
+//   tr.rotation *= t.rotation;
+//   return tr;
+// }
   Transform operator*(const Transform &t) const {
     /// XXX this is different from Featherstone: we assume transforms are
     /// right-associative

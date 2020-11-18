@@ -16,31 +16,23 @@
 #include <iostream>
 #include <thread>
 
-#define BULLET_VISUALIZER true
-
-#if !BULLET_VISUALIZER
-#include "visualizer/opengl/visualizer.h"
-#endif
-
 #include "dynamics/forward_dynamics.hpp"
 #include "dynamics/integrator.hpp"
 #include "math/tiny/tiny_algebra.hpp"
 #include "math/tiny/tiny_double_utils.h"
 #include "mb_constraint_solver_spring.hpp"
 #include "multi_body.hpp"
-#include "visualizer/pybullet/pybullet_visualizer_api.h"
-#include "urdf/pybullet_urdf_import.hpp"
+#include "opengl_urdf_visualizer.h"
 #include "urdf/system_constructor.hpp"
 #include "urdf/urdf_cache.hpp"
 #include "utils/file_utils.hpp"
+#include "visualizer/opengl/visualizer.h"
 #include "world.hpp"
 
-typedef PyBulletVisualizerAPI VisualizerAPI;
-
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   std::string connection_mode = "gui";
 
-  typedef TinyAlgebra<double, DoubleUtils> Algebra;
+  typedef TinyAlgebra<double, TINY::DoubleUtils> Algebra;
   typedef typename Algebra::Vector3 Vector3;
   typedef typename Algebra::Quaternion Quaternion;
   typedef typename Algebra::VectorX VectorX;
@@ -65,64 +57,67 @@ int main(int argc, char *argv[]) {
 
   tds::activate_nan_trap();
 
-#if BULLET_VISUALIZER
-  printf("floating_base=%d\n", floating_base);
-  printf("urdf_filename=%s\n", urdf_filename.c_str());
-  VisualizerAPI *sim2 = new VisualizerAPI();
-  bool isConnected2 = sim2->connect(eCONNECT_DIRECT);
-
-  VisualizerAPI *sim = new VisualizerAPI();
-
-  printf("connection_mode=%s\n", connection_mode.c_str());
-  int mode = eCONNECT_DIRECT;
-  if (connection_mode == "direct") mode = eCONNECT_DIRECT;
-  if (connection_mode == "gui") mode = eCONNECT_GUI;
-  if (connection_mode == "shared_memory") mode = eCONNECT_SHARED_MEMORY;
-
-  bool isConnected = sim->connect(mode);
-  if (!isConnected) {
-    printf("Cannot connect\n");
-    return -1;
-  }
-
-  sim->resetSimulation();
-  sim->setTimeOut(10);
-  int grav_id = sim->addUserDebugParameter("gravity", -10, 10, -2.);
-#endif
-
   tds::World<Algebra> world;
-  MultiBody *system = nullptr;
+  MultiBody* system = nullptr;
+  tds::UrdfParser<Algebra> parser;
 
-  if (true) {
-    system = world.create_multi_body();
-    tds::SystemConstructor constructor(urdf_filename, plane_filename);
-    constructor.is_floating = floating_base;
-#if BULLET_VISUALIZER
-    constructor(sim2, sim, world, &system);
-#else
-    VisualizerAPI *sim_ = new VisualizerAPI();
-    sim_->connect(eCONNECT_DIRECT);
-    constructor(sim_, sim_, world, &system);
-#endif
-  } else {
-    tds::UrdfCache<Algebra> cache;
-    system = cache.construct(urdf_filename, world, false, floating_base);
+  // create graphics
+  OpenGLUrdfVisualizer<Algebra> visualizer;
+
+  visualizer.delete_all();
+
+  char plane_search_path[TINY_MAX_EXE_PATH_LEN];
+  tds::FileUtils::extract_path(plane_filename.c_str(), plane_search_path,
+                               TINY_MAX_EXE_PATH_LEN);
+  MultiBody& plane_mb = *world.create_multi_body();
+  plane_mb.set_floating_base(false);
+  {
+    tds::UrdfStructures<Algebra> plane_urdf_structures =
+        parser.load_urdf(plane_filename);
+    tds::UrdfToMultiBody<Algebra>::convert_to_multi_body(plane_urdf_structures,
+                                                         world, plane_mb);
+    std::string texture_path = "checker_purple.png";
+    visualizer.m_path_prefix = plane_search_path;
+    visualizer.convert_visuals(plane_urdf_structures, texture_path);
   }
 
-#if !BULLET_VISUALIZER
-  TinyOpenGL3App app("generic_urdf_collision", 1024, 768);
-  app.m_renderer->init();
-  app.set_up_axis(2);
-  app.m_renderer->get_active_camera()->set_camera_distance(4);
-  app.m_renderer->get_active_camera()->set_camera_pitch(-30);
-  app.m_renderer->get_active_camera()->set_camera_target_position(0, 0, 0);
-  std::vector<int> tiny_visual_ids;
-  for (std::size_t i = 0; i < system->size(); ++i) {
-    int cube_shape = app.register_cube_shape(0.05f, 0.05f, 0.05f);
-    int cube_id = app.m_renderer->register_graphics_instance(cube_shape);
-    tiny_visual_ids.push_back(cube_id);
-  }
-#endif
+  tds::StdLogger logger;
+  tds::UrdfStructures<Algebra> urdf_structures;
+  int flags = 0;
+  parser.load_urdf_from_string(urdf_filename, flags, logger, urdf_structures);
+  // create graphics structures
+  std::string texture_path = "laikago_tex.jpg";
+  char search_path[TINY_MAX_EXE_PATH_LEN];
+  std::string file_name;
+  tds::FileUtils::find_file(urdf_filename, file_name);
+  tds::FileUtils::extract_path(file_name.c_str(), search_path,
+                               TINY_MAX_EXE_PATH_LEN);
+  visualizer.m_path_prefix = search_path;
+  // visualizer.convert_visuals(urdf_structures, texture_path);
+
+  system = world.create_multi_body();
+  system->set_floating_base(true);
+  tds::UrdfToMultiBody<Algebra>::convert_to_multi_body(urdf_structures, world,
+                                                       *system);
+  system->initialize();
+
+  // tds::UrdfCache<Algebra> cache;
+  // system = cache.construct(urdf_filename, world, false, floating_base);
+
+  // #if !BULLET_VISUALIZER
+  //   TinyOpenGL3App app("generic_urdf_collision", 1024, 768);
+  //   app.m_renderer->init();
+  //   app.set_up_axis(2);
+  //   app.m_renderer->get_active_camera()->set_camera_distance(4);
+  //   app.m_renderer->get_active_camera()->set_camera_pitch(-30);
+  //   app.m_renderer->get_active_camera()->set_camera_target_position(0, 0, 0);
+  //   std::vector<int> tiny_visual_ids;
+  //   for (std::size_t i = 0; i < system->size(); ++i) {
+  //     int cube_shape = app.register_cube_shape(0.05f, 0.05f, 0.05f);
+  //     int cube_id = app.m_renderer->register_graphics_instance(cube_shape);
+  //     tiny_visual_ids.push_back(cube_id);
+  //   }
+  // #endif
 
   // world.set_mb_constraint_solver(
   //     new tds::MultiBodyConstraintSolverSpring<Algebra>);
@@ -164,18 +159,14 @@ int main(int argc, char *argv[]) {
   for (auto& link : *system) {
     link.damping = 0.5;
   }
-  
+
   system->print_state();
 
   double dt = 1. / 10000.;
   double time = 0;
   int step = 0;
   while (true) {
-#if BULLET_VISUALIZER
-    double gravZ = sim->readUserDebugParameter(grav_id);
-#else
     double gravZ = -9.81;
-#endif
     world.set_gravity(Vector3(0, 0, gravZ));
 
     {
@@ -185,49 +176,49 @@ int main(int argc, char *argv[]) {
       system->clear_forces();
     }
 
-#if BULLET_VISUALIZER
-    tds::PyBulletUrdfImport<Algebra>::sync_graphics_transforms(system, sim);
-#else
-    if (step % 10 == 0) {
-      auto &mb = *system;
-      TinyVector3f parent_pos(
-          static_cast<float>(mb.base_X_world().translation[0]),
-          static_cast<float>(mb.base_X_world().translation[1]),
-          static_cast<float>(mb.base_X_world().translation[2]));
-      for (const auto &link : mb) {
-        app.m_renderer->update_camera(2);
-        DrawGridData data;
-        data.upAxis = 2;
-        app.draw_grid(data);
+    visualizer.sync_visual_transforms(system);
+    visualizer.render();
 
-        TinyVector3f link_pos(static_cast<float>(link.X_world.translation[0]),
-                              static_cast<float>(link.X_world.translation[1]),
-                              static_cast<float>(link.X_world.translation[2]));
+    // if (step % 10 == 0) {
+    //   auto &mb = *system;
+    //   TinyVector3f parent_pos(
+    //       static_cast<float>(mb.base_X_world().translation[0]),
+    //       static_cast<float>(mb.base_X_world().translation[1]),
+    //       static_cast<float>(mb.base_X_world().translation[2]));
+    //   for (const auto &link : mb) {
+    //     app.m_renderer->update_camera(2);
+    //     DrawGridData data;
+    //     data.upAxis = 2;
+    //     app.draw_grid(data);
 
-        app.m_renderer->draw_line(link_pos, parent_pos,
-                                  TinyVector3f(0.5, 0.5, 0.5), 2.f);
-        parent_pos = link_pos;
-        std::size_t j = 0;
-        tds::Transform<Algebra> X_visual = link.X_world * link.X_visuals[j];
-        // sync transform
-        TinyVector3f geom_pos(static_cast<float>(X_visual.translation[0]),
-                              static_cast<float>(X_visual.translation[1]),
-                              static_cast<float>(X_visual.translation[2]));
-        auto quat = Algebra::matrix_to_quat(X_visual.rotation);
-        TinyQuaternionf geom_orn(static_cast<float>(Algebra::quat_x(quat)),
-                                 static_cast<float>(Algebra::quat_y(quat)),
-                                 static_cast<float>(Algebra::quat_z(quat)),
-                                 static_cast<float>(Algebra::quat_w(quat)));
-        app.m_renderer->write_single_instance_transform_to_cpu(
-            geom_pos, geom_orn, tiny_visual_ids[link.index]);
-        TinyVector3f color(0.1, 0.6, 0.8);
-        app.m_renderer->draw_line(link_pos, geom_pos, color, 2.f);
-      }
-      app.m_renderer->render_scene();
-      app.m_renderer->write_transforms();
-      app.swap_buffer();
-    }
-#endif
+    //     TinyVector3f
+    //     link_pos(static_cast<float>(link.X_world.translation[0]),
+    //                           static_cast<float>(link.X_world.translation[1]),
+    //                           static_cast<float>(link.X_world.translation[2]));
+
+    //     app.m_renderer->draw_line(link_pos, parent_pos,
+    //                               TinyVector3f(0.5, 0.5, 0.5), 2.f);
+    //     parent_pos = link_pos;
+    //     std::size_t j = 0;
+    //     tds::Transform<Algebra> X_visual = link.X_world * link.X_visuals[j];
+    //     // sync transform
+    //     TinyVector3f geom_pos(static_cast<float>(X_visual.translation[0]),
+    //                           static_cast<float>(X_visual.translation[1]),
+    //                           static_cast<float>(X_visual.translation[2]));
+    //     auto quat = Algebra::matrix_to_quat(X_visual.rotation);
+    //     TinyQuaternionf geom_orn(static_cast<float>(Algebra::quat_x(quat)),
+    //                              static_cast<float>(Algebra::quat_y(quat)),
+    //                              static_cast<float>(Algebra::quat_z(quat)),
+    //                              static_cast<float>(Algebra::quat_w(quat)));
+    //     app.m_renderer->write_single_instance_transform_to_cpu(
+    //         geom_pos, geom_orn, tiny_visual_ids[link.index]);
+    //     TinyVector3f color(0.1, 0.6, 0.8);
+    //     app.m_renderer->draw_line(link_pos, geom_pos, color, 2.f);
+    //   }
+    //   app.m_renderer->render_scene();
+    //   app.m_renderer->write_transforms();
+    //   app.swap_buffer();
+    // }
     std::this_thread::sleep_for(std::chrono::duration<double>(dt / 5.));
 
     {

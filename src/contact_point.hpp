@@ -43,7 +43,7 @@ int contact_sphere_sphere(const tds::Geometry<Algebra>* geomA,
   Sphere* sphereA = (Sphere*)geomA;
   Sphere* sphereB = (Sphere*)geomB;
 
-  Vector3 diff = poseA.position - poseB.position;
+  Vector3 diff = poseA.position_ - poseB.position_;
   Scalar length = Algebra::norm(diff);
   Scalar distance = length - (sphereA->get_radius() + sphereB->get_radius());
   Vector3 normal_on_b;
@@ -65,7 +65,7 @@ int contact_sphere_sphere(const tds::Geometry<Algebra>* geomA,
     if (Algebra::greater_than(length, CONTACT_EPSILON)) {
       Vector3 normal_on_b = Algebra::one() / length * diff;
       Vector3 point_a_world =
-          poseA.position - sphereA->get_radius() * normal_on_b;
+          poseA.position_ - sphereA->get_radius() * normal_on_b;
       Vector3 point_b_world = point_a_world - distance * normal_on_b;
       ContactPoint pt;
       pt.world_normal_on_b = normal_on_b;
@@ -95,12 +95,12 @@ int contact_plane_sphere(const tds::Geometry<Algebra>* geomA,
   Plane* planeA = (Plane*)geomA;
   Sphere* sphereB = (Sphere*)geomB;
 
-  Scalar t = -(Algebra::dot(poseB.position, -planeA->get_normal()) +
-               planeA->get_constant());
-  Vector3 pointAWorld = poseB.position + t * -planeA->get_normal();
+  Scalar t =
+      -(Algebra::dot(poseB.position_, -planeA->get_normal()) + planeA->get_constant());
+  Vector3 pointAWorld = poseB.position_ + t * -planeA->get_normal();
   Scalar distance = t - sphereB->get_radius();
   Vector3 pointBWorld =
-      poseB.position - sphereB->get_radius() * planeA->get_normal();
+      poseB.position_ - sphereB->get_radius() * planeA->get_normal();
   ContactPoint pt;
   pt.world_normal_on_b = -planeA->get_normal();
   pt.world_point_on_a = pointAWorld;
@@ -131,17 +131,17 @@ int contact_plane_capsule(const tds::Geometry<Algebra>* geomA,
   Sphere sphere(capsule->get_radius());
   // shift the sphere to each end-point
   Pose offset;
-  Algebra::set_identity(offset.orientation);
-  offset.position = Vector3(Algebra::zero(), Algebra::zero(),
-                            Algebra::fraction(1, 2) * capsule->get_length());
+  Algebra::set_identity(offset.orientation_);
+  offset.position_ = Vector3(Algebra::zero(), Algebra::zero(),
+                             Algebra::fraction(1, 2) * capsule->get_length());
   Pose poseEndSphere = poseB * offset;
   contact_plane_sphere<Algebra>(geomA, poseA, &sphere, poseEndSphere,
-                                contactsOut);
-  offset.position = Vector3(Algebra::zero(), Algebra::zero(),
-                            Algebra::fraction(-1, 2) * capsule->get_length());
+                              contactsOut);
+  offset.position_ = Vector3(Algebra::zero(), Algebra::zero(),
+                             Algebra::fraction(-1, 2) * capsule->get_length());
   poseEndSphere = poseB * offset;
   contact_plane_sphere<Algebra>(geomA, poseA, &sphere, poseEndSphere,
-                                contactsOut);
+                              contactsOut);
 
   return 2;
 }
@@ -187,7 +187,7 @@ class CollisionDispatcher {
     return 0;
   }
 
-  inline std::vector<ContactPoint> compute_contacts(const Geometry* geomA,
+  inline std::vector<ContactPoint> compute_contacts2(const Geometry* geomA,
                                                     const Pose& poseA,
                                                     const Geometry* geomB,
                                                     const Pose& poseB) {

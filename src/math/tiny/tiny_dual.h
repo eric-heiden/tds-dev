@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef _TINYDUAL_H_
-#define _TINYDUAL_H_
+#ifndef __TINYDUAL_H_
+#define __TINYDUAL_H_
 
+#include <math.h>
+
+namespace TINY
+{
 template <typename Scalar>
 class TinyDual {
  public:
@@ -59,7 +63,7 @@ class TinyDual {
   inline friend bool operator>(const TinyDual& lhs, const TinyDual& rhs) {
     return lhs.real() > rhs.real();
   }
-
+  
   inline friend bool operator==(const TinyDual& lhs, const TinyDual& rhs) {
     return lhs.real() == rhs.real();
   }
@@ -102,12 +106,12 @@ class TinyDual {
 
 template <typename Scalar>
 inline TinyDual<Scalar> sin(const TinyDual<Scalar>& z) {
-  return TinyDual<Scalar>(sin(z.real()), z.dual() * cos(z.real()));
+  return TinyDual<Scalar>(::sin(z.real()), z.dual() * ::cos(z.real()));
 }
 
 template <typename Scalar>
 inline TinyDual<Scalar> cos(const TinyDual<Scalar>& z) {
-  return TinyDual<Scalar>(cos(z.real()), -z.dual() * sin(z.real()));
+  return TinyDual<Scalar>(::cos(z.real()), -z.dual() * ::sin(z.real()));
 }
-
-#endif  // _TINYDUAL_H_
+};
+#endif  // __TINYDUAL_H_

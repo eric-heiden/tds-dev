@@ -64,8 +64,8 @@ def parallelCCompile(self,
             return
         newcc_args = cc_args
         if _platform == "darwin":
-            if src.endswith('.cpp'):
-                newcc_args = cc_args + ["-mmacosx-version-min=10.7", "-stdlib=libc++"]
+            if src.endswith('.cpp') or src.endswith('.cc'):
+                newcc_args = cc_args + ["-mmacosx-version-min=10.7", "-std=c++17", "-stdlib=libc++"]
         self._compile(obj, src, ext, newcc_args, extra_postargs, pp_opts)
 
     # convert to list, imap is evaluated on-demand
@@ -87,10 +87,14 @@ print(platform)
 CXX_FLAGS = ''
 CXX_FLAGS += '-fpermissive '
 
+
 # libraries += [current_python]
 
 libraries = []
-include_dirs = ['.','python', 'third_party/tinyxml2/include', 'third_party/pybind11/include']
+include_dirs = ['src', '.','python', 'third_party/eigen3', 'third_party/tinyxml2/include', 'third_party/pybind11/include']
+
+pytinyopengl3_libraries = []
+pytinyopengl3_include_dirs = ['src']
 
 try:
     import numpy
@@ -105,7 +109,25 @@ else:
         print("numpy_include_dirs = %s" % d)
     include_dirs += NP_DIRS
 
-sources = ["python/pytinydiffsim.cc", "third_party/tinyxml2/tinyxml2.cpp"]
+sources = ["third_party/tinyxml2/tinyxml2.cpp"]
+
+pytinyopengl3_sources = ["python/pytinyopengl3.cc",\
+"src/visualizer/opengl/tiny_camera.cpp",\
+"src/visualizer/opengl/tiny_font_stash.cpp",\
+"src/visualizer/opengl/tiny_fonts.cpp",\
+"src/visualizer/opengl/tiny_gl_instancing_renderer.cpp",\
+"src/visualizer/opengl/tiny_gl_primitive_renderer.cpp",\
+"src/visualizer/opengl/tiny_gl_render_to_texture.cpp",\
+"src/visualizer/opengl/tiny_glfw_opengl_window.cpp",\
+"src/visualizer/opengl/tiny_load_shader.cpp",\
+"src/visualizer/opengl/tiny_open_sans.cpp",\
+"src/visualizer/opengl/tiny_opengl_fontstashcallbacks.cpp",\
+"src/visualizer/opengl/tiny_opengl3_app.cpp",\
+"third_party/stb_image/stb_image_write.cpp",\
+"third_party/glad/gl.c",\
+]
+
+
 
 if _platform == "linux" or _platform == "linux2":
     print("linux")
@@ -115,6 +137,7 @@ if _platform == "linux" or _platform == "linux2":
     CXX_FLAGS += '-DGLEW_INIT_OPENGL11_FUNCTIONS=1 '
     CXX_FLAGS += '-DGLEW_DYNAMIC_LOAD_ALL_GLX_FUNCTIONS=1 '
     CXX_FLAGS += '-DDYNAMIC_LOAD_X11_FUNCTIONS '
+
     CXX_FLAGS += '-DHAS_SOCKLEN_T '
     CXX_FLAGS += '-fno-inline-functions-called-once '
     CXX_FLAGS += '-fvisibility=hidden '
@@ -125,6 +148,9 @@ if _platform == "linux" or _platform == "linux2":
     CXX_FLAGS += '-Wno-unused-local-typedefs '
     CXX_FLAGS += '-Wno-unused-variable '
     CXX_FLAGS += '-Wno-unused-but-set-variable '
+    pytinyopengl3_libraries += ['dl','pthread']
+    pytinyopengl3_sources += ["src/visualizer/opengl/tiny_x11_opengl_window.cpp",\
+      "third_party/glad/glx.c"]
 
 
 elif _platform == "win32":
@@ -133,16 +159,23 @@ elif _platform == "win32":
     CXX_FLAGS += '-DWIN32 '
     CXX_FLAGS += '-DGLEW_STATIC '
     CXX_FLAGS += '/std:c++17 '
+    
+    pytinyopengl3_libraries = ['Ws2_32', 'Winmm', 'User32', 'Opengl32', 'kernel32', 'glu32', 'Gdi32', 'Comdlg32']
+ 
+    pytinyopengl3_sources += ["src/visualizer/opengl/tiny_win32_opengl_window.cpp",\
+    "src/visualizer/opengl/tiny_win32_window.cpp"]
+    
 elif _platform == "darwin":
     print("darwin!")
     os.environ['LDFLAGS'] = '-framework Cocoa -mmacosx-version-min=10.7 -stdlib=libc++ -framework OpenGL'
     CXX_FLAGS += '-DB3_NO_PYTHON_FRAMEWORK '
     CXX_FLAGS += '-DHAS_SOCKLEN_T '
     CXX_FLAGS += '-D_DARWIN '
-    CXX_FLAGS += '-std=c++17 '
-    CXX_FLAGS += '-stdlib=libc++ '
     CXX_FLAGS += '-mmacosx-version-min=10.7 '
     #    CXX_FLAGS += '-framework Cocoa '
+    pytinyopengl3_sources += ["src/visualizer/opengl/tiny_mac_opengl_window.cpp",\
+       "src/visualizer/opengl/tiny_mac_opengl_window_objc.m"]
+    
 else:
     print("bsd!")
     libraries = ['GL', 'GLEW', 'pthread']
@@ -178,22 +211,45 @@ extensions = []
 
 pytinydiffsim_ext = Extension(
     "pytinydiffsim",
-    sources=sources,
+    sources=sources+["python/pytinydiffsim.cc"],
     libraries=libraries,
     extra_compile_args=CXX_FLAGS.split(),
     include_dirs=include_dirs + ["."])
 
 extensions.append(pytinydiffsim_ext)
 
+pytinydiffsim_dual_ext = Extension(
+    "pytinydiffsim_dual",
+    sources=sources+["python/pytinydiffsim_dual.cc"],
+    libraries=libraries,
+    extra_compile_args=CXX_FLAGS.split(),
+    include_dirs=include_dirs + ["."])
+
+extensions.append(pytinydiffsim_dual_ext)
+
+pytinyopengl3_ext = Extension(
+    "pytinyopengl3",
+    sources=pytinyopengl3_sources,
+    libraries=pytinyopengl3_libraries,
+    extra_compile_args=CXX_FLAGS.split(),
+    include_dirs=pytinyopengl3_include_dirs + [
+        ".", "third_party/pybind11/include", 
+        "third_party/optionalX11",
+        "third_party/glad",
+        "third_party",
+    ])
+extensions.append(pytinyopengl3_ext)
+
+
 setup(
     name='pytinydiffsim',
-    version='0.0.1',
+    version='0.0.3',
     description=
     'Tiny Differentiable Physics Library for Robotics Simulation and Reinforcement Learning',
     long_description=
     'tbd',
     url='https://github.com/bulletphysics/bullet3',
-    author='Eric Heiden, Erwin Coumans',
+    author='Eric Heiden, David Millard, Erwin Coumans',
     author_email='erwincoumans@google.com',
     license='zlib',
     platforms='any',

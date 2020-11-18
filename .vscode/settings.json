@@ -110,6 +110,6 @@
     "git.ignoreLimitWarning": true,
     "cmake.configureOnOpen": true,
     "cmake.configureSettings": {
-		"CMAKE_TOOLCHAIN_FILE" : "${workspaceFolder}/tools/vcpkg/scripts/buildsystems/vcpkg.cmake"
+		// "CMAKE_TOOLCHAIN_FILE" : "${workspaceFolder}/tools/vcpkg/scripts/buildsystems/vcpkg.cmake"
 	}
 }

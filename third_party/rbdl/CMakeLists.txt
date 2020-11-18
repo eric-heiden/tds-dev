@@ -21,7 +21,7 @@ ADD_LIBRARY(rbdl-static
   src/Kinematics.cc
 )
 
-target_include_directories( rbdl-static PUBLIC include )
+target_include_directories( rbdl-static PUBLIC include ${EIGEN3_INCLUDE_DIRS})
 
 IF(WIN32)
 target_compile_definitions( rbdl-static PUBLIC -DNOMINMAX PRIVATE -DNOMINMAX )

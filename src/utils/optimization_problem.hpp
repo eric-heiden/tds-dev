@@ -13,11 +13,18 @@ namespace tds {
 template <DiffMethod Method, template <typename> typename F>
 class OptimizationProblem {
  public:
+<<<<<<< HEAD
   static const inline int kParameterDim = F<EigenAlgebra>::kDim;
   static_assert(kParameterDim >= 1);
   typedef std::array<EstimationParameter, kParameterDim> ParameterVector;
   typedef GradientFunctional<Method, F> CostFunctor;
   static const DiffMethod kDiffMethod = Method;
+=======
+  static const int kParameterDim = F<EigenAlgebra>::kDim;
+  static_assert(kParameterDim >= 1);
+  typedef std::array<EstimationParameter, kParameterDim> ParameterVector;
+  typedef GradientFunctional<Method, F> CostFunctor;
+>>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
 
 #if USE_PAGMO
   typedef pagmo::vector_double DoubleVector;
@@ -44,10 +51,16 @@ class OptimizationProblem {
   TINY_INLINE const CostFunctor& cost() const { return cost_; }
 
   void set_params(const std::array<double, kParameterDim>& params) {
+<<<<<<< HEAD
     parameters_ = params;
     // for (int i = 0; i < kParameterDim; ++i) {
     //   parameters_[i].value = params[i];
     // }
+=======
+    for (int i = 0; i < kParameterDim; ++i) {
+      parameters_[i].value = params[i];
+    }
+>>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
   }
 
   OptimizationProblem() = default;

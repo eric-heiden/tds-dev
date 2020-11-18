@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef TINY_VECTOR_X_H
-#define TINY_VECTOR_X_H
+#ifndef _TINY_VECTOR_X_H
+#define _TINY_VECTOR_X_H
 
-#include <assert.h>
 #include <stdio.h>
 
 #include <vector>
 
+namespace TINY
+{
 /**
  * Represents a vector with arbitrary number of dimensions.
  */
@@ -55,6 +56,8 @@ class TinyVectorX {
   inline const TinyScalar* data() const { return m_data; }
 
   TinyVectorX& operator=(const TinyVectorX& v) {
+    if (m_data == v.m_data)
+        return *this;
     delete[] m_data;
     m_size = v.m_size;
     m_data = new TinyScalar[m_size];
@@ -192,6 +195,14 @@ class TinyVectorX {
     }
     return v;
   }
+  int size() const
+  {
+      return m_size;
+  }
+  bool empty() const
+  {
+      return m_size == 0;
+  }
 };
-
-#endif  // TINY_VECTOR_X_H
+};
+#endif  // _TINY_VECTOR_X_H

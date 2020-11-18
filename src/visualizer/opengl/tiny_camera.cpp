@@ -14,7 +14,12 @@
 
 #include "tiny_camera.h"
 
+#include "math/tiny/tiny_float_utils.h"
+
+using namespace TINY;
+
 struct TinyCameraInternalData {
+  
   TinyCameraInternalData()
       : m_cameraTargetPosition(TinyVector3f(0, 0, 0)),
         m_cameraDistance(20),
@@ -150,13 +155,13 @@ void TinyCamera::update() {
       forwardAxis = 2;
       m_data->m_cameraUp = TinyVector3f(0, 1, 0);
       // gLightPos = TinyVector3f(-50.f,100,30);
-      eyeRot.set_euler_rpy(TinyVector3f(rollRad, yawRad, -pitchRad));
+      eyeRot.set_euler_rpy(TinyVector3f(-pitchRad, yawRad,0));
       break;
     case 2:
       forwardAxis = 1;
       m_data->m_cameraUp = TinyVector3f(0, 0, 1);
       // gLightPos = TinyVector3f(-50.f,30,100);
-      eyeRot.set_euler_rpy(TinyVector3f(yawRad, rollRad, pitchRad));
+      eyeRot.set_euler_rpy(TinyVector3f(pitchRad, 0, yawRad));
       break;
     default: {
       // b3Assert(0);

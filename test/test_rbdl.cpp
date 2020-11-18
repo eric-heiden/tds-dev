@@ -3,6 +3,11 @@
 #include "rbdl_test_utils.hpp"
 
 using namespace tds;
+<<<<<<< HEAD
+=======
+using namespace TINY;
+
+>>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
 using Algebra = TinyAlgebra<double, DoubleUtils>;
 using Tf = Transform<Algebra>;
 using Vector3 = Algebra::Vector3;
@@ -14,14 +19,39 @@ void TestOnURDF(std::string filename)
 {
   Vector3 gravity(0., 0., -9.81);
 
+<<<<<<< HEAD
   UrdfCache<Algebra> cache;
+=======
+  
+>>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
   World<Algebra> world;
   MultiBody<Algebra> *mb = nullptr;
 
   std::string urdf_filename;
   bool is_floating = false;
+<<<<<<< HEAD
   FileUtils::find_file(filename, urdf_filename);
   mb = cache.construct(urdf_filename, world, false, is_floating);
+=======
+  bool result = FileUtils::find_file(filename, urdf_filename);
+  ASSERT_TRUE(result);
+  printf("urdf_filename=%s\n", urdf_filename.c_str());
+#ifdef USE_BULLET_URDF_PARSER
+  UrdfCache<Algebra> cache;
+  mb = cache.construct(urdf_filename, world, false, is_floating);
+#else //USE_BULLET_URDF_PARSER
+ UrdfParser<Algebra> parser;
+  MultiBody<Algebra> mb1;
+  mb = &mb1;
+  std::string full_path;
+  FileUtils::find_file(filename, full_path);
+  UrdfStructures<Algebra> urdf_structures =
+      parser.load_urdf(full_path);
+  UrdfToMultiBody<Algebra>::convert_to_multi_body(
+      urdf_structures, world, mb1);
+  mb1.initialize();
+#endif//USE_BULLET_URDF_PARSER
+>>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
 
   std::string fail_message = "Failure at iteration ";
 
@@ -177,7 +207,11 @@ void TestOnURDF(std::string filename)
       tds::forward_kinematics(*mb);
       int jac_link_id = 2;
       Algebra::Vector3 world_point(1., 2., 3.);
+<<<<<<< HEAD
       auto tds_jac = tds::point_jacobian(*mb, jac_link_id, world_point);
+=======
+      auto tds_jac = tds::point_jacobian2(*mb, jac_link_id, world_point, false);
+>>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
       RigidBodyDynamics::Math::MatrixNd rbdl_jac(Algebra::num_rows(tds_jac),
                                                  Algebra::num_cols(tds_jac));
       rbdl_jac.setZero();
@@ -206,3 +240,12 @@ TEST(RBDLTest, Swimmer05) {
 TEST(RBDLTest, Pendulum) {
   TestOnURDF("pendulum5.urdf");
 }
+<<<<<<< HEAD
+=======
+
+int main(int argc, char** argv)
+{
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+>>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01

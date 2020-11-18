@@ -23,7 +23,9 @@
 #include <cstdlib>
 
 #include "fix64_types.h"
+#include "fix64_sin_lookup_table.h"
 
+namespace TINY {
 const smInt64_t INVALID_VALUE = 9223372036854775807;
 const smInt64_t MAX_VALUE = 9223372036854775806;
 const smInt64_t LARGE_VALUE = 3037000499;
@@ -45,8 +47,6 @@ const smInt64_t LOG2MAX = 0x1F00000000;
 const smInt64_t LOG2MIN = -0x2000000000;
 const int LUT_SIZE = (int)(PI_OVER_2 >> 15);
 //#define LutInterval (Fix64Scalar::fromRawInt64(884273636704256))
-
-#include "fix64_sin_lookup_table.h"
 
 static int CountLeadingZeroes(smInt64_t x) {
   int result = 0;
@@ -729,5 +729,6 @@ struct Fix64Scalar {
     return b;
   }
 };
+}
 
 #endif  // FIX64_SCALAR_H

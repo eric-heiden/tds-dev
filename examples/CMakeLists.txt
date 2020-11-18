@@ -1,22 +1,15 @@
-#
-# Copyright 2020 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# first the examples that have no dependencies 
+# then examples with only included third_party dependencies
+# at the end, optional complex examples with complicated dependencies (PyTorch, STAN, BOOST etc)
 
+add_executable(pendulum_example_gui pendulum_example_gui.cpp  ${TDS_HDRS})
+target_link_libraries(pendulum_example_gui opengl_window ${CMAKE_DL_LIBS})
+target_include_directories(pendulum_example_gui PRIVATE ../src)
 
-include_directories(.)
+add_executable(billiard_opt_example_gui billiard_opt_example_gui.cpp  ${TDS_HDRS})
+target_link_libraries(billiard_opt_example_gui opengl_window ${CMAKE_DL_LIBS})
+target_include_directories(billiard_opt_example_gui PRIVATE ../src)
 
-set(DL ${CMAKE_DL_LIBS})
 
 find_package(ct_core)
 find_package(ct_optcon)
@@ -44,20 +37,6 @@ else()
   include_directories(${crossguid_INCLUDE_DIRS})
 endif()
 
-#find_package(zeromq)
-#find_package(cppzmq)
-
-if(cppzmq_FOUND)
-  message("USING system zmq")
-else()
-  message("USING third_party/zmq")
-  set(cppzmq_FOUND TRUE)
-  subdirs(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/zeromq)
-  set(cppzmq_INCLUDE_DIRS ../third_party/zeromq/include)
-  include_directories(${cppzmq_INCLUDE_DIRS})
-  add_definitions(-DZMQ_STATIC)
-endif()
-
 find_package(nlohmann_json)
 if(nlohmann_json_FOUND)
 else()
@@ -65,19 +44,31 @@ else()
   set(nlohmann_json_INCLUDE_DIRS ../third_party/nlohmann/include)
   include_directories(${nlohmann_json_INCLUDE_DIRS})
 endif()
+add_executable(tiny_urdf_parser_opengl_example tiny_urdf_parser_opengl_example.cpp ../third_party/stb_image/stb_image.cpp ../third_party/tinyobjloader/tiny_obj_loader.cc  ${TDS_HDRS}) 
+target_link_libraries(tiny_urdf_parser_opengl_example  tinyxml2 opengl_window ${CMAKE_DL_LIBS}) 
+target_include_directories(tiny_urdf_parser_opengl_example PRIVATE ../third_party/tinyobjloader)
+target_include_directories(tiny_urdf_parser_opengl_example PRIVATE ../third_party ../src)
 
-#find_library(zmq_location NAMES libzmq.a)
-#message(STATUS ${zmq_location})
-#add_library(zmq STATIC IMPORTED)
-#set_target_properties(zmq PROPERTIES IMPORTED_LOCATION ${zmq_location})
+add_executable(opengl_imgui_test opengl_imgui_test.cpp ../third_party/dear_imgui/opengl3/imgui_impl_opengl3.cpp  ${TDS_HDRS})
+target_link_libraries(opengl_imgui_test opengl_window dear_imgui TinyAudio ${CMAKE_DL_LIBS})
+target_include_directories(opengl_imgui_test PRIVATE ../third_party/glad ../third_party/dear_imgui ../src)
 
-# show all cmake variables, for debugging
-# get_cmake_property(_variableNames VARIABLES)
-# list (SORT _variableNames)
-# foreach (_variableName ${_variableNames})
-#    message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()
+IF(Bullet_FOUND)
+  add_executable(laikago_footstep_ik laikago_footstep_ik.cpp ${TDS_HDRS})
+  target_include_directories(laikago_footstep_ik PRIVATE ../src ${EIGEN3_INCLUDE_DIRS})
+  target_link_libraries(laikago_footstep_ik pybullet_visualizer_api)
+ENDIF()
 
+add_executable(tiny_urdf_parser_example tiny_urdf_parser_example.cpp ${TDS_HDRS})
+target_link_libraries(tiny_urdf_parser_example tinyxml2)
+target_include_directories(tiny_urdf_parser_example PRIVATE ../third_party ../src)
+
+IF(WIN32)
+    target_link_libraries(pendulum_example_gui Opengl32)
+    target_link_libraries(billiard_opt_example_gui Opengl32)
+    target_link_libraries(tiny_urdf_parser_opengl_example Opengl32)
+    target_link_libraries(opengl_imgui_test Opengl32)
+ENDIF(WIN32)
 
 set(MESHCAT_LIBRARIES crossguid cpp_base64 zmq)
 if(WIN32)
@@ -97,9 +88,6 @@ if(Bullet_FOUND)
       ${PYTHON_INCLUDE_DIRS}
       ${PYTHON_NUMPY_INCLUDE_DIR}
     )
-
-    add_executable(billiard_opt_gui billiard_opt_gui.cpp ${TDS_HDRS})
-    target_link_libraries(billiard_opt_gui pybullet_visualizer_api ${DL} ${CERES_LIBRARIES})
 
     #add_executable(cartpole_opt cartpole_opt.cpp ${TDS_HDRS})
     #target_link_libraries(cartpole_opt pybullet_visualizer_api ${DL}
@@ -182,7 +170,9 @@ if(Bullet_FOUND)
 
 
   add_executable(generic_urdf_collision generic_urdf_collision.cpp ${TDS_HDRS})
-  target_link_libraries(generic_urdf_collision pybullet_visualizer_api tinyxml2)
+  target_link_libraries(generic_urdf_collision pybullet_visualizer_api opengl_window tinyxml2)
+  target_include_directories(generic_urdf_collision PRIVATE ../third_party/tinyobjloader)
+  target_include_directories(generic_urdf_collision PRIVATE ../third_party ../src)
   IF(WIN32)
    target_link_libraries(generic_urdf_collision Opengl32)
   ENDIF(WIN32)
@@ -230,9 +220,6 @@ endif(tinyxml2_FOUND)
 # add_executable(world_example world_example.cpp ${TDS_HDRS})
 # add_executable(test_xarm test_xarm.cpp ${TDS_HDRS})
 
-add_executable(pendulum_example_gui pendulum_example_gui.cpp ${TDS_HDRS})
-target_link_libraries(pendulum_example_gui opengl_window ${DL})
-
 add_executable(pendulum_example_eigen pendulum_example_eigen.cpp ${TDS_HDRS})
 target_link_libraries(pendulum_example_eigen opengl_window ${DL})
 if(USE_STAN)
@@ -245,15 +232,9 @@ target_link_libraries(opengl_test opengl_window ${DL})
 #add_executable(tiny_urdf_parser_opengl_example tiny_urdf_parser_opengl_example.cpp ../third_party/stb_image/stb_image.cpp ../third_party/tinyobjloader/tiny_obj_loader.cc ${TDS_HDRS})
 #target_link_libraries(tiny_urdf_parser_opengl_example  tinyxml2 opengl_window)
 
-subdirs(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/dear_imgui)
-
-add_executable(opengl_imgui_test opengl_imgui_test.cpp ../third_party/dear_imgui/opengl3/imgui_impl_opengl3.cpp  ${TDS_HDRS})
-target_link_libraries(opengl_imgui_test opengl_window dear_imgui ${DL})
-target_include_directories(opengl_imgui_test PRIVATE ../third_party/glad ../third_party/dear_imgui)
-
+# subdirs(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/dear_imgui)
 
 if(WIN32)
-  target_link_libraries(pendulum_example_gui Opengl32)
   target_link_libraries(pendulum_example_eigen Opengl32)
   
   #target_link_libraries(tiny_urdf_parser_opengl_example Opengl32)
@@ -438,3 +419,17 @@ add_executable(cuda_codegen cuda_codegen.cpp ${TDS_HDRS})
   if (USE_STAN)
     target_link_libraries(cuda_codegen PRIVATE ${STAN_LIBRARIES})
   endif(USE_STAN)
+
+set(MESHCAT_LIBRARIES crossguid cpp_base64 zmq )
+IF(WIN32)
+    set(MESHCAT_LIBRARIES ${MESHCAT_LIBRARIES} ws2_32 Winmm iphlpapi)
+ENDIF()
+
+add_executable(tiny_urdf_parser_meshcat_example tiny_urdf_parser_meshcat_example.cpp ${TDS_HDRS}) 
+target_link_libraries(tiny_urdf_parser_meshcat_example  tinyxml2 ${MESHCAT_LIBRARIES}) 
+target_include_directories(tiny_urdf_parser_meshcat_example PRIVATE ../third_party ../third_party/nlohmann/include ../src)
+
+add_executable(meshcat_zmq_example meshcat_zmq_example.cpp ${TDS_HDRS})
+target_link_libraries(meshcat_zmq_example  ${MESHCAT_LIBRARIES})
+target_include_directories(meshcat_zmq_example PRIVATE ../third_party ../third_party/nlohmann/include ../src)
+

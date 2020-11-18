@@ -4,10 +4,10 @@ def apply(mb, desired_q):
     #use PD controller to compute tau
     qd_offset = 6
     q_offset = 7
-    num_targets = len(mb.tau)
+    num_targets = mb.tau.size()
     #print("num_targets=",num_targets)
-    kp = 150
-    kd = 3
+    kp = 220
+    kd = 2
     max_force = 550
     pose_index = 0
     tau=mb.tau

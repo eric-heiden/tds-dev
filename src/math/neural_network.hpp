@@ -159,7 +159,7 @@ class NeuralNetworkSpecification {
   static void print_states(
       const std::vector<typename Algebra::Scalar>& numbers) {
     for (const auto& n : numbers) {
-      printf("%.2f ", Algebra::from_double(n));
+      printf("%.2f ", Algebra::to_double(n));
     }
     printf("\n");
   }

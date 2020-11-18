@@ -62,7 +62,7 @@ class MultiBody {
   // offset of geometry (relative to the base frame)
   std::vector<Transform> X_visuals_;
 
-  std::vector<Geometry *> collision_geometries_;
+  std::vector<const Geometry *> collision_geometries_;
   // offset of collision geometries (relative to this link frame)
   std::vector<Transform> X_collisions_;
 
@@ -198,27 +198,34 @@ class MultiBody {
   TINY_INLINE const ArticulatedBodyInertia &base_abi() const {
     return base_abi_;
   }
-  TINY_INLINE Transform &base_X_world() { return base_X_world_; }
-  TINY_INLINE const Transform &base_X_world() const { return base_X_world_; }
+  
+  TINY_INLINE Transform &base_X_world() { 
+      return base_X_world_; 
+  }
+  TINY_INLINE const Transform &base_X_world() const { 
+      return base_X_world_; 
+  }
 
   TINY_INLINE std::vector<int> &visual_ids() { return visual_ids_; }
   TINY_INLINE const std::vector<int> &visual_ids() const { return visual_ids_; }
+
   TINY_INLINE std::vector<Transform> &X_visuals() { return X_visuals_; }
   TINY_INLINE const std::vector<Transform> &X_visuals() const {
     return X_visuals_;
   }
 
-  TINY_INLINE std::vector<Geometry *> &collision_geometries() {
+  TINY_INLINE std::vector<const Geometry *> &collision_geometries() {
     return collision_geometries_;
   }
-  TINY_INLINE const std::vector<Geometry *> &collision_geometries() const {
+  TINY_INLINE const std::vector<const Geometry *> &collision_geometries()
+      const {
     return collision_geometries_;
   }
-  TINY_INLINE std::vector<Geometry *> &collision_geometries(int link_id) {
+  TINY_INLINE std::vector<const Geometry *> &collision_geometries(int link_id) {
     if (link_id == -1) return collision_geometries_;
     return links_[link_id].collision_geometries;
   }
-  TINY_INLINE const std::vector<Geometry *> &collision_geometries(
+  TINY_INLINE const std::vector<const Geometry *> &collision_geometries(
       int link_id) const {
     if (link_id == -1) return collision_geometries_;
     return links_[link_id].collision_geometries;
@@ -251,6 +258,26 @@ class MultiBody {
     }
   }
 
+  void set_orientation(const Quaternion& initial_orientation) {
+      base_X_world_.rotation = Algebra::quat_to_matrix(initial_orientation);
+      if (is_floating_) {
+          q_[0] = initial_orientation[0];
+          q_[1] = initial_orientation[1];
+          q_[2] = initial_orientation[2];
+          q_[3] = initial_orientation[3];
+      }
+  }
+
+  Vector3 get_position() const
+  {
+      return get_world_transform(-1).translation;
+  }
+
+  Quaternion get_orientation() const
+  {
+      return Algebra::matrix_to_quat(get_world_transform(-1).rotation);
+  }
+  
   /**
    * Ensures that the joint coordinates q, qd, qdd, tau are initialized
    * properly in the MultiBody member variables.
@@ -283,6 +310,7 @@ class MultiBody {
     }
 
     base_abi_ = base_rbi_;
+    
     if (is_floating_ && !base_abi_.is_invertible()) {
       fprintf(stderr,
               "Error: floating-base inertia matrix (ABI) is not invertible. "
@@ -360,6 +388,21 @@ class MultiBody {
     } else {
       return links_[link].X_world;
     }
+  }
+
+  /**
+   * Transforms a point in body coordinates to world coordinates.
+   */
+  inline Vector3 body_to_world(int link_index,
+      const Vector3& point) const {
+      return get_world_transform(link_index).apply(point);
+  }
+  /**
+   * Transforms a point in world coordinates to bodyt coordinates.
+   */
+  inline Vector3 world_to_body(int link_index,
+      const Vector3& point) const {
+      return get_world_transform(link_index).apply_inverse(point);
   }
 
   /**
@@ -442,7 +485,11 @@ class MultiBody {
     if (!links_.empty()) parent_index = static_cast<int>(links_.size()) - 1;
     attach(link, parent_index, is_controllable);
   }
-
+  
+  void attach_link(Link& link, int parent_index,
+      bool is_controllable = true) {
+      attach(link, parent_index, is_controllable);
+  }
   void attach(Link &link, int parent_index, bool is_controllable = true) {
     int sz = static_cast<int>(links_.size());
     assert(parent_index < sz);

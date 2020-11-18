@@ -32,8 +32,7 @@ struct Link {
 
   JointType joint_type{JOINT_REVOLUTE_Z};
 
-  Transform X_T;  // parent_link_to_joint
-
+  Transform X_T;               // parent_link_to_joint
   mutable Transform X_J;       // joint_to_child_link    //depends on q
   mutable Transform X_parent;  // parent_link_to_child_link
 
@@ -60,7 +59,7 @@ struct Link {
   int parent_index{-1};  // index of parent link in MultiBody
   int index{-1};         // index of this link in MultiBody
 
-  std::vector<Geometry<Algebra> *> collision_geometries;
+  std::vector<const Geometry<Algebra> *> collision_geometries;
   std::vector<Transform> X_collisions;  // offset of collision geometries
   // (relative to this link frame)
   std::vector<int> visual_ids;
@@ -159,14 +158,20 @@ struct Link {
                 "Error: unknown joint type encountered in " __FILE__ ":%i\n",
                 __LINE__);
     }
-    if (Algebra::norm(S) == Algebra::zero()) {
-      fprintf(stderr,
-              "Error: subspace matrix S is zero after setting joint type on "
-              "link.\n");
-      assert(0);
-      exit(1);
+
+    if (joint_type != JOINT_FIXED)
+    {
+        if (Algebra::norm(S) == Algebra::zero()) {
+            fprintf(stderr,
+                "Error: subspace matrix S is zero after setting joint type on "
+                "link.\n");
+            assert(0);
+            exit(1);
+        }
     }
   }
+
+  inline void jcalc1(Scalar q) { jcalc(q, &X_J, &X_parent); }
 
   void jcalc(const Scalar &q, Transform *X_J, Transform *X_parent) const {
     X_J->set_identity();

@@ -33,6 +33,7 @@ class RigidBody {
   typedef tds::Geometry<Algebra> Geometry;
   typedef tds::Pose<Algebra> Pose;
 
+ public:
   Pose world_pose_;
   Vector3 linear_velocity_;
   Vector3 angular_velocity_;
@@ -44,17 +45,16 @@ class RigidBody {
   Scalar inv_mass_;
   int user_index_;
 
-  Geometry* geometry_;
+  const Geometry* geometry_;
 
- public:
-  RigidBody(const Scalar& mass, Geometry* geometry)
+  RigidBody(const Scalar& mass, const Geometry* geometry)
       : mass_(mass), user_index_(-1), geometry_(geometry) {
     inv_mass_ =
         mass_ == Algebra::zero() ? Algebra::zero() : Algebra::one() / mass_;
     inv_inertia_world_ =
         mass_ == Algebra::zero() ? Algebra::zero33() : Algebra::eye3();
-    Algebra::set_zero(world_pose_.position);
-    Algebra::set_identity(world_pose_.orientation);
+    Algebra::set_zero(world_pose_.position_);
+    Algebra::set_identity(world_pose_.orientation_);
     Algebra::set_zero(linear_velocity_);
     Algebra::set_zero(angular_velocity_);
     Algebra::set_zero(total_force_);
@@ -81,7 +81,7 @@ class RigidBody {
   TINY_INLINE Pose& world_pose() { return world_pose_; }
   TINY_INLINE const Pose& world_pose() const { return world_pose_; }
 
-  Geometry* geometry() const { return geometry_; }
+  const Geometry* geometry() const { return geometry_; }
 
   /// Apply gravity force given the acceleration.
   void apply_gravity(const Vector3& gravity_acceleration) {
@@ -90,7 +90,6 @@ class RigidBody {
   }
 
   const Scalar& mass() const { return mass_; }
-
   const Scalar& inv_mass() const { return inv_mass_; }
   const Matrix3& inv_inertia_world() const { return inv_inertia_world_; }
 
@@ -121,11 +120,11 @@ class RigidBody {
   }
 
   void integrate(const Scalar& dt) {
-    world_pose_.position += linear_velocity_ * dt;
+    world_pose_.position_ += linear_velocity_ * dt;
     Algebra::quat_increment(
-        world_pose_.orientation,
-        Algebra::quat_velocity(world_pose_.orientation, angular_velocity_, dt));
-    world_pose_.orientation = Algebra::normalize(world_pose_.orientation);
+        world_pose_.orientation_,
+        Algebra::quat_velocity(world_pose_.orientation_, angular_velocity_, dt));
+    world_pose_.orientation_ = Algebra::normalize(world_pose_.orientation_);
   }
 };
 
