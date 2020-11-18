@@ -4,6 +4,7 @@
 #include <cppad/cg/support/cppadcg_eigen.hpp>
 
 #include "file_utils.hpp"
+#include "stopwatch.hpp"
 
 namespace tds {
 template <class Base>
@@ -443,16 +444,42 @@ class CudaLibraryProcessor {
   }
 
   void create_library() const {
-    // compile shared library
-    std::string stdout_msg, stderr_msg;
-    CppAD::cg::system::callExecutable(
-        nvcc_path_,
-        {"--ptxas-options=-O" + std::to_string(optimization_level_) + ",-v",
-         "--compiler-options", "-fPIC", "-o", cgen_->getName() + ".so",
-         "--shared", forward_zero_src_name_},
-        &stdout_msg, &stderr_msg);
-    std::cout << stdout_msg << std::endl;
-    std::cerr << stderr_msg << std::endl;
+    std::stringstream cmd;
+    std::cout << "Compiling CUDA library via " << nvcc_path_ << std::endl;
+    cmd << nvcc_path_ << " ";
+    cmd << "--ptxas-options=-O" << std::to_string(optimization_level_) << ",-v "
+        << "--compiler-options "
+        << "-fPIC "
+        << "-o " << cgen_->getName() << ".so "
+        << "--shared " << forward_zero_src_name_;
+    tds::Stopwatch timer;
+    timer.start();
+    int return_code = std::system(cmd.str().c_str());
+    timer.stop();
+    std::cout << "CUDA compilation process terminated after " << timer.elapsed()
+              << " seconds.\n";
+    if (return_code) {
+      throw std::runtime_error("CUDA compilation failed with return code " +
+                               std::to_string(return_code) + ".");
+    }
+
+    // // compile shared library
+    // std::string stdout_msg, stderr_msg;
+    // try {
+    //   CppAD::cg::system::callExecutable(
+    //       nvcc_path_,
+    //       {"--ptxas-options=-O" + std::to_string(optimization_level_) +
+    //       ",-v",
+    //        "--compiler-options", "-fPIC", "-o", cgen_->getName() + ".so",
+    //        "--shared", forward_zero_src_name_},
+    //       &stdout_msg, &stderr_msg);
+    // } catch (const CppAD::cg::CGException& e) {
+    //   std::cout << stdout_msg << std::endl;
+    //   std::cerr << stderr_msg << std::endl;
+    //   throw e;
+    // }
+    // std::cout << stdout_msg << std::endl;
+    // std::cerr << stderr_msg << std::endl;
   }
 };
 }  // namespace tds
