@@ -1,10 +1,6 @@
 #pragma once
 
 #include <cmath>
-<<<<<<< HEAD
-=======
-#include <limits>
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
 
 // clang-format off
 // Stan Math needs to be included first to get its Eigen plugins
@@ -15,7 +11,6 @@
 #include <ceres/autodiff_cost_function.h>
 // clang-format on
 
-<<<<<<< HEAD
 #include <cppad/cg.hpp>
 #include <cppad/cg/support/cppadcg_eigen.hpp>
 #include <cppad/example/cppad_eigen.hpp>
@@ -27,20 +22,11 @@
 #include "base.hpp"
 #include "math/tiny/tiny_dual.h"
 #include "math/tiny/tiny_dual_utils.h"
-#include "math/tiny/tiny_dual_double_utils.h"
 #include "math/eigen_algebra.hpp"
 #include "math/tiny/tiny_algebra.hpp"
 #include "math/tiny/ceres_utils.h"
 #include "math/tiny/cppad_utils.h"
 #include "stopwatch.hpp"
-=======
-#include "base.hpp"
-#include "math/tiny/tiny_dual.h"
-#include "math/tiny/tiny_dual_utils.h"
-#include "math/eigen_algebra.hpp"
-#include "math/tiny/tiny_algebra.hpp"
-#include "math/tiny/ceres_utils.h"
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
 
 namespace tds {
 enum DiffMethod {
@@ -49,7 +35,6 @@ enum DiffMethod {
   DIFF_DUAL,
   DIFF_STAN_REVERSE,
   DIFF_STAN_FORWARD,
-<<<<<<< HEAD
   DIFF_CPPAD_AUTO,
   DIFF_CPPAD_CODEGEN_AUTO,
 };
@@ -131,8 +116,6 @@ struct default_diff_algebra<DIFF_CPPAD_CODEGEN_AUTO, Dim, Scalar> {
   using type = std::conditional_t<DiffCppAdCodeGenUsesTinyAlgebra,
                                   TinyAlgebra<ADScalar, CppADUtils<CGScalar>>,
                                   EigenAlgebraT<ADScalar>>;
-=======
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
 };
 
 /**
@@ -202,12 +185,8 @@ static std::enable_if_t<Method == DIFF_CERES, void> compute_gradient(
 template <DiffMethod Method, typename F, typename Scalar = double>
 static std::enable_if_t<Method == DIFF_DUAL, void> compute_gradient(
     F f, const std::vector<Scalar>& x, std::vector<Scalar>& dfx) {
-<<<<<<< HEAD
   // typedef TinyDual<Scalar> Dual;
   typedef TinyDualDouble Dual;
-=======
-  typedef TinyDual<Scalar> Dual;
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
   dfx.resize(x.size());
   std::vector<Dual> x_dual(x.size());
   for (std::size_t i = 0; i < x.size(); ++i) {
@@ -242,18 +221,11 @@ static std::enable_if_t<Method == DIFF_STAN_REVERSE, void> compute_gradient(
     dfx[i] = x_var[i].adj();
   }
   stan::math::recover_memory();
-<<<<<<< HEAD
   stan::math::zero_adjoints();
 #else
   throw std::runtime_error(
       "Variable 'USE_STAN' must be set to use automatic "
       "differentiation functions from Stan Math.");
-=======
-#else
-  static_assert(false,
-                "Variable 'USE_STAN' must be set to use automatic "
-                "differentiation functions from Stan Math.");
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
 #endif
 }
 
@@ -278,25 +250,16 @@ static std::enable_if_t<Method == DIFF_STAN_FORWARD, void> compute_gradient(
     x_dual[i].d_ = 0.;
   }
 #else
-<<<<<<< HEAD
   throw std::runtime_error(
       "Variable 'USE_STAN' must be set to use automatic "
       "differentiation functions from Stan Math.");
-=======
-  static_assert(false,
-                "Variable 'USE_STAN' must be set to use automatic "
-                "differentiation functions from Stan Math.");
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
 #endif
 }
 
 template <DiffMethod Method, template <typename> typename F,
           typename ScalarAlgebra = EigenAlgebra>
 struct GradientFunctional {
-<<<<<<< HEAD
   static const int kDim = F<ScalarAlgebra>::kDim;
-=======
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
   using Scalar = typename ScalarAlgebra::Scalar;
   virtual Scalar value(const std::vector<Scalar>&) const = 0;
   virtual const std::vector<Scalar>& gradient(
@@ -310,10 +273,7 @@ class GradientFunctional<DIFF_NUMERICAL, F, ScalarAlgebra> {
   mutable std::vector<Scalar> gradient_;
 
  public:
-<<<<<<< HEAD
   static const int kDim = F<ScalarAlgebra>::kDim;
-=======
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     tds::compute_gradient<tds::DIFF_NUMERICAL>(f_scalar_, x, gradient_);
@@ -323,14 +283,10 @@ class GradientFunctional<DIFF_NUMERICAL, F, ScalarAlgebra> {
 
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_CERES, F, ScalarAlgebra> {
-<<<<<<< HEAD
  public:
   static const int kDim = F<ScalarAlgebra>::kDim;
 
  private:
-=======
-  static const int kDim = F<ScalarAlgebra>::kDim;
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
   using Scalar = typename ScalarAlgebra::Scalar;
   using ADScalar = ceres::Jet<Scalar, kDim>;
   mutable std::vector<Scalar> gradient_;
@@ -339,11 +295,7 @@ class GradientFunctional<DIFF_CERES, F, ScalarAlgebra> {
     GradientFunctional* parent;
 
     F<ScalarAlgebra> f_scalar;
-<<<<<<< HEAD
     F<TinyAlgebra<ADScalar, CeresUtils<kDim, Scalar>>> f_jet;
-=======
-    F<TinyAlgebra<ADScalar, CeresUtils<kDim>>> f_jet;
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
 
     CostFunctional(GradientFunctional* parent) : parent(parent) {}
 
@@ -398,19 +350,12 @@ template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_DUAL, F, ScalarAlgebra> {
   using Scalar = typename ScalarAlgebra::Scalar;
   F<ScalarAlgebra> f_scalar_;
-<<<<<<< HEAD
   // F<TinyAlgebra<TinyDual<Scalar>, TinyDualUtils<Scalar>>> f_ad_;
   F<TinyAlgebra<TinyDualDouble, TinyDualDoubleUtils>> f_ad_;
   mutable std::vector<Scalar> gradient_;
 
  public:
   static const int kDim = F<ScalarAlgebra>::kDim;
-=======
-  F<TinyAlgebra<TinyDual<Scalar>, TinyDualUtils<Scalar>>> f_ad_;
-  mutable std::vector<Scalar> gradient_;
-
- public:
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
   const std::vector<Scalar>& gradient(const std::vector<Scalar>& x) const {
     tds::compute_gradient<tds::DIFF_DUAL>(f_ad_, x, gradient_);
@@ -420,15 +365,9 @@ class GradientFunctional<DIFF_DUAL, F, ScalarAlgebra> {
 
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_STAN_REVERSE, F, ScalarAlgebra> {
-<<<<<<< HEAD
   using Scalar = typename ScalarAlgebra::Scalar;
   F<ScalarAlgebra> f_scalar_;
 #if USE_STAN
-=======
-#if USE_STAN
-  using Scalar = typename ScalarAlgebra::Scalar;
-  F<ScalarAlgebra> f_scalar_;
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
   F<EigenAlgebraT<stan::math::var>> f_ad_;
   mutable std::vector<Scalar> gradient_;
 
@@ -439,7 +378,6 @@ class GradientFunctional<DIFF_STAN_REVERSE, F, ScalarAlgebra> {
     return gradient_;
   }
 #else
-<<<<<<< HEAD
  public:
   static const int kDim = F<ScalarAlgebra>::kDim;
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
@@ -448,25 +386,14 @@ class GradientFunctional<DIFF_STAN_REVERSE, F, ScalarAlgebra> {
         "Variable 'USE_STAN' must be set to use automatic "
         "differentiation functions from Stan Math.");
   }
-=======
-  static_assert(false,
-                "Variable 'USE_STAN' must be set to use automatic "
-                "differentiation functions from Stan Math.");
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
 #endif
 };
 
 template <template <typename> typename F, typename ScalarAlgebra>
 class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
-<<<<<<< HEAD
   using Scalar = typename ScalarAlgebra::Scalar;
   F<ScalarAlgebra> f_scalar_;
 #if USE_STAN
-=======
-#if USE_STAN
-  using Scalar = typename ScalarAlgebra::Scalar;
-  F<ScalarAlgebra> f_scalar_;
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
   F<EigenAlgebraT<stan::math::fvar<Scalar>>> f_ad_;
   mutable std::vector<Scalar> gradient_;
 
@@ -477,7 +404,6 @@ class GradientFunctional<DIFF_STAN_FORWARD, F, ScalarAlgebra> {
     return gradient_;
   }
 #else
-<<<<<<< HEAD
  public:
   static const int kDim = F<ScalarAlgebra>::kDim;
   Scalar value(const std::vector<Scalar>& x) const { return f_scalar_(x); }
@@ -781,11 +707,3 @@ class GradientFunctional<DIFF_CPPAD_CODEGEN_AUTO, F, ScalarAlgebra> {
   std::unique_ptr<CppAD::cg::GenericModel<Scalar>> model_;
 };
 }  // namespace tds
-=======
-  static_assert(false,
-                "Variable 'USE_STAN' must be set to use automatic "
-                "differentiation functions from Stan Math.");
-#endif
-};
-}  // namespace tds
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01

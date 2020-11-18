@@ -63,11 +63,19 @@ add_executable(tiny_urdf_parser_example tiny_urdf_parser_example.cpp ${TDS_HDRS}
 target_link_libraries(tiny_urdf_parser_example tinyxml2)
 target_include_directories(tiny_urdf_parser_example PRIVATE ../third_party ../src)
 
+find_package(pagmo)
+add_executable(policy_optimization policy_optimization.cpp ../third_party/stb_image/stb_image.cpp ../third_party/tinyobjloader/tiny_obj_loader.cc  ${TDS_HDRS}) 
+target_link_libraries(policy_optimization  tinyxml2 opengl_window ${CMAKE_DL_LIBS}) 
+target_include_directories(policy_optimization PRIVATE ../third_party/tinyobjloader)
+target_include_directories(policy_optimization PRIVATE ../third_party ../src)
+target_link_libraries(policy_optimization ${CERES_LIBRARIES} cxxopts::cxxopts Pagmo::pagmo)
+
 IF(WIN32)
     target_link_libraries(pendulum_example_gui Opengl32)
     target_link_libraries(billiard_opt_example_gui Opengl32)
     target_link_libraries(tiny_urdf_parser_opengl_example Opengl32)
     target_link_libraries(opengl_imgui_test Opengl32)
+    target_link_libraries(policy_optimization Opengl32)
 ENDIF(WIN32)
 
 set(MESHCAT_LIBRARIES crossguid cpp_base64 zmq)

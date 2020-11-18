@@ -17,16 +17,6 @@
 
 #include <chrono>  // std::chrono::seconds
 #include <thread>  // std::this_thread::sleep_for
-<<<<<<< HEAD
-#include "visualizer/opengl/tiny_opengl3_app.h"
-
-#include "math/tiny/fix64_scalar.h"
-#include "dynamics/kinematics.hpp"
-#include "dynamics/forward_dynamics.hpp"
-#include "dynamics/integrator.hpp"
-#include "utils/pendulum.hpp"
-
-=======
 
 
 #include "math/tiny/fix64_scalar.h"
@@ -36,20 +26,15 @@
 #include "utils/pendulum.hpp"
 
 
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
 #include "math/tiny/tiny_double_utils.h"
 #include "utils/file_utils.hpp"
 #include "multi_body.hpp"
 #include "world.hpp"
-<<<<<<< HEAD
-=======
 
 using namespace TINY;
 using namespace tds;
 #include "visualizer/opengl/tiny_opengl3_app.h"
 #include "math/tiny/tiny_algebra.hpp"
-
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
 
 int main(int argc, char* argv[]) {
 
@@ -112,17 +97,9 @@ int main(int argc, char* argv[]) {
   mb->qd() = std::vector<double>(mb->dof_qd(), DoubleUtils::zero());
   mb->tau() = std::vector<double>(mb->dof_qd(), DoubleUtils::zero());
   mb->qdd() = std::vector<double>(mb->dof_qd(), DoubleUtils::zero());
-<<<<<<< HEAD
-
 
   Vector3 gravity(0., 0., -9.81);
 
-=======
-
-
-  Vector3 gravity(0., 0., -9.81);
-
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
   MatrixX M(mb->links().size(), mb->links().size());
 
   double dt = 1. / 240.;
@@ -150,11 +127,7 @@ int main(int argc, char* argv[]) {
       // printf("q: [%.3f %.3f] \tqd: [%.3f %.3f]\n", q[0], q[1], qd[0], qd[1]);
       tds::mass_matrix(*mb, &M);
       
-<<<<<<< HEAD
-      M.print("M");
-=======
       //M.print("M");
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
       if (mb->qd()[0] < -1e4) {
         assert(0);
       }

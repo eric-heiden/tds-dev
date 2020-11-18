@@ -800,6 +800,15 @@ struct is_cppad_scalar<NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>>> {
   static constexpr bool value = true;
 };
 
+template <typename Algebra>
+struct is_eigen_algebra {
+  static constexpr bool value = false;
+};
+template <typename Algebra>
+struct is_eigen_algebra<EigenAlgebraT<Algebra>> {
+  static constexpr bool value = true;
+};
+
 template <typename Scalar>
 static TINY_INLINE NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> where_gt(
     const NeuralScalar<EigenAlgebraT<CppAD::AD<Scalar>>> &x,

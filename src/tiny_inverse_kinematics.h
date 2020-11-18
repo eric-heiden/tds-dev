@@ -17,7 +17,7 @@
 #ifndef TINY_INVERSE_KINEMATICS_H
 #define TINY_INVERSE_KINEMATICS_H
 
-#include "multi_body.hpp
+#include "multi_body.hpp"
 #ifdef USE_EIGEN
 #include "tiny_eigen_helper.h"
 #endif
