@@ -13,7 +13,11 @@
 
 #include "math/tiny/tiny_matrix3x3.h"
 #include "math/tiny/tiny_matrix_x.h"
+<<<<<<< HEAD
 #include "mb_constraint_solver_spring.hpp"
+=======
+//#include "mb_constraint_solver_spring.hpp"
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 #include "multi_body.hpp"
 #include "math/pose.hpp"
 #include "math/tiny/tiny_quaternion.h"
@@ -28,6 +32,10 @@
 #include "dynamics/integrator.hpp"
 #include "dynamics/jacobian.hpp"
 #include "math/neural_network.hpp"
+<<<<<<< HEAD
+=======
+#include "utils/file_utils.hpp"
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 
 template <typename Algebra>
 struct UrdfToMultiBody2 {
@@ -48,6 +56,16 @@ inline MyScalar fraction(int a, int b)
     return MyTinyConstants::fraction(a, b);
 }
 
+<<<<<<< HEAD
+=======
+inline MyScalar copy(MyScalar v)
+{
+    return MyTinyConstants::copy(v);
+}
+
+
+
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 inline void MyMassMatrix(tds::MultiBody<MyAlgebra>& mb, MyAlgebra::VectorX& q,
     MyAlgebra::MatrixX* M)
 {
@@ -116,4 +134,29 @@ inline MyAlgebra::VectorX MyInverseKinematics(tds::MultiBody<MyAlgebra>& mb, int
     return q_target;
 }
 
+<<<<<<< HEAD
+=======
+std::string MyFindFile(std::string& org_name)
+{
+    std::string result_path;
+    bool has_result = tds::FileUtils::find_file(org_name, result_path);
+    return result_path;
+}
+
+MyScalar MyPi()
+{
+    return MyAlgebra::pi();
+}
+
+MyScalar MyCos(MyScalar v)
+{
+    return MyAlgebra::cos(v);
+}
+
+MyScalar MySin(MyScalar v)
+{
+    return MyAlgebra::sin(v);
+}
+
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 

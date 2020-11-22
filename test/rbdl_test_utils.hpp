@@ -17,15 +17,21 @@
 #include "math/tiny/tiny_double_utils.h"
 #include "multi_body.hpp"
 <<<<<<< HEAD
+<<<<<<< HEAD
 #include "urdf/urdf_cache.hpp"
 =======
+=======
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 #ifdef USE_BULLET_URDF_PARSER
 #include "urdf/urdf_cache.hpp"
 #else
 #include "urdf/urdf_parser.hpp"
 #include "urdf/urdf_to_multi_body.hpp"
 #endif //USE_BULLET_URDF_PARSER
+<<<<<<< HEAD
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 #include "utils/file_utils.hpp"
 #include "world.hpp"
 
@@ -176,14 +182,20 @@ bool is_equal(const typename Algebra::Matrix3 &a,
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
 <<<<<<< HEAD
+<<<<<<< HEAD
       if (std::abs(Algebra::to_double(a(i, j)) - b(i, j)) > ERROR_TOLERANCE) {
 =======
+=======
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 #ifdef TDS_USE_LEFT_ASSOCIATIVE_TRANSFORMS
       if (std::abs(Algebra::to_double(a(i, j)) - b(i, j)) > ERROR_TOLERANCE) {
 #else
       if (std::abs(Algebra::to_double(a(i, j)) - b(j, i)) > ERROR_TOLERANCE) {
 #endif
+<<<<<<< HEAD
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
         std::cout << "a[" << i << "," << j
                   << "] = " << Algebra::to_double(a(i, j));
         std::cout << "\tb[" << i << "," << j << "] = " << b(i, j);
@@ -274,10 +286,14 @@ bool is_equal(const MultiBody<Algebra> &tds,
               static_cast<int>(j));
       Algebra::print("TDS:  ", tds[j].X_world);
 <<<<<<< HEAD
+<<<<<<< HEAD
       std::cerr << "RBDL:\n" << rbdl.X_base[rbdl_j] << std::endl;
 =======
       std::cout << "RBDL:\n" << rbdl.X_base[rbdl_j] << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+      std::cout << "RBDL:\n" << rbdl.X_base[rbdl_j] << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
       return false;
     }
     if (!is_equal<Algebra>(tds[j].X_parent, rbdl.X_lambda[rbdl_j])) {
@@ -285,100 +301,140 @@ bool is_equal(const MultiBody<Algebra> &tds,
               static_cast<int>(j));
       Algebra::print("TDS:  ", tds[j].X_parent);
 <<<<<<< HEAD
+<<<<<<< HEAD
       std::cerr << "RBDL:\n" << rbdl.X_lambda[rbdl_j] << std::endl;
 =======
       std::cout << "RBDL:\n" << rbdl.X_lambda[rbdl_j] << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+      std::cout << "RBDL:\n" << rbdl.X_lambda[rbdl_j] << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
       return false;
     }
     if (!is_equal<Algebra>(tds[j].abi, rbdl.IA[rbdl_j])) {
       fprintf(stderr, "Mismatch in ABI at link %i.\n", static_cast<int>(j));
       Algebra::print("TDS:  ", tds[j].abi);
 <<<<<<< HEAD
+<<<<<<< HEAD
       std::cerr << "RBDL:\n" << rbdl.IA[rbdl_j] << std::endl;
 =======
       std::cout << "RBDL:\n" << rbdl.IA[rbdl_j] << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+      std::cout << "RBDL:\n" << rbdl.IA[rbdl_j] << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
       return false;
     }
     if (!is_equal<Algebra>(tds[j].S, rbdl.S[rbdl_j])) {
       fprintf(stderr, "Mismatch in S at link %i.\n", static_cast<int>(j));
       Algebra::print("TDS:  ", tds[j].S);
 <<<<<<< HEAD
+<<<<<<< HEAD
       std::cerr << "RBDL: " << rbdl.S[rbdl_j].transpose() << std::endl;
 =======
       std::cout << "RBDL: " << rbdl.S[rbdl_j].transpose() << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+      std::cout << "RBDL: " << rbdl.S[rbdl_j].transpose() << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
       return false;
     }
     if (!is_equal<Algebra>(tds[j].v, rbdl.v[rbdl_j])) {
       fprintf(stderr, "Mismatch in v at link %i.\n", static_cast<int>(j));
       Algebra::print("TDS:  ", tds[j].v);
 <<<<<<< HEAD
+<<<<<<< HEAD
       std::cerr << "RBDL: " << rbdl.v[rbdl_j].transpose() << std::endl;
 =======
       std::cout << "RBDL: " << rbdl.v[rbdl_j].transpose() << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+      std::cout << "RBDL: " << rbdl.v[rbdl_j].transpose() << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
       return false;
     }
     if (!is_equal<Algebra>(tds[j].c, rbdl.c[rbdl_j])) {
       fprintf(stderr, "Mismatch in c at link %i.\n", static_cast<int>(j));
       Algebra::print("TDS:  ", tds[j].c);
 <<<<<<< HEAD
+<<<<<<< HEAD
       std::cerr << "RBDL: " << rbdl.c[rbdl_j].transpose() << std::endl;
 =======
       std::cout << "RBDL: " << rbdl.c[rbdl_j].transpose() << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+      std::cout << "RBDL: " << rbdl.c[rbdl_j].transpose() << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
       return false;
     }
     if (!is_equal<Algebra>(tds[j].U, rbdl.U[rbdl_j])) {
       fprintf(stderr, "Mismatch in U at link %i.\n", static_cast<int>(j));
       Algebra::print("TDS:  ", tds[j].U);
 <<<<<<< HEAD
+<<<<<<< HEAD
       std::cerr << "RBDL: " << rbdl.U[rbdl_j].transpose() << std::endl;
 =======
       std::cout << "RBDL: " << rbdl.U[rbdl_j].transpose() << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+      std::cout << "RBDL: " << rbdl.U[rbdl_j].transpose() << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
       return false;
     }
     if (!is_equal<Algebra>(tds[j].pA, rbdl.pA[rbdl_j])) {
       fprintf(stderr, "Mismatch in pA at link %i.\n", static_cast<int>(j));
       Algebra::print("TDS:  ", tds[j].pA);
 <<<<<<< HEAD
+<<<<<<< HEAD
       std::cerr << "RBDL: " << rbdl.pA[rbdl_j].transpose() << std::endl;
 =======
       std::cout << "RBDL: " << rbdl.pA[rbdl_j].transpose() << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+      std::cout << "RBDL: " << rbdl.pA[rbdl_j].transpose() << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
       return false;
     }
     if (!is_equal<Algebra>(tds[j].u, rbdl.u[rbdl_j])) {
       fprintf(stderr, "Mismatch in u at link %i.\n", static_cast<int>(j));
       Algebra::print("TDS:  ", tds[j].u);
 <<<<<<< HEAD
+<<<<<<< HEAD
       std::cerr << "RBDL: " << rbdl.u[rbdl_j] << std::endl;
 =======
       std::cout << "RBDL: " << rbdl.u[rbdl_j] << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+      std::cout << "RBDL: " << rbdl.u[rbdl_j] << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
       // return false;
     }
     if (!is_equal<Algebra>(tds[j].D, rbdl.d[rbdl_j])) {
       fprintf(stderr, "Mismatch in D at link %i.\n", static_cast<int>(j));
       Algebra::print("TDS:  ", tds[j].D);
 <<<<<<< HEAD
+<<<<<<< HEAD
       std::cerr << "RBDL: " << rbdl.d[rbdl_j] << std::endl;
 =======
       std::cout << "RBDL: " << rbdl.d[rbdl_j] << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+      std::cout << "RBDL: " << rbdl.d[rbdl_j] << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
       // return false;
     }
     if (!is_equal<Algebra>(tds[j].a, rbdl.a[rbdl_j])) {
       fprintf(stderr, "Mismatch in a at link %i.\n", static_cast<int>(j));
       Algebra::print("TDS:  ", tds[j].a);
 <<<<<<< HEAD
+<<<<<<< HEAD
       std::cerr << "RBDL: " << rbdl.a[rbdl_j].transpose() << std::endl;
 =======
       std::cout << "RBDL: " << rbdl.a[rbdl_j].transpose() << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+      std::cout << "RBDL: " << rbdl.a[rbdl_j].transpose() << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
       // return false;
     }
   }
@@ -426,30 +482,42 @@ bool is_equal(const MultiBody<Algebra> &tds,
     fprintf(stderr, "Mismatch in q.\n");
     Algebra::print("TDS:  ", tds.q());
 <<<<<<< HEAD
+<<<<<<< HEAD
     std::cerr << "RBDL: " << rbdl_q.transpose() << std::endl;
 =======
     std::cout << "RBDL: " << rbdl_q.transpose() << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+    std::cout << "RBDL: " << rbdl_q.transpose() << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
     return false;
   }
   if (!is_equal<Algebra>(tds.qd(), rbdl_qd)) {
     fprintf(stderr, "Mismatch in qd.\n");
     Algebra::print("TDS:  ", tds.qd());
 <<<<<<< HEAD
+<<<<<<< HEAD
     std::cerr << "RBDL: " << rbdl_qd.transpose() << std::endl;
 =======
     std::cout << "RBDL: " << rbdl_qd.transpose() << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+    std::cout << "RBDL: " << rbdl_qd.transpose() << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
     return false;
   }
   if (!is_equal<Algebra>(tds.qdd(), rbdl_qdd)) {
     fprintf(stderr, "Mismatch in qdd.\n");
     Algebra::print("TDS:  ", tds.qdd());
 <<<<<<< HEAD
+<<<<<<< HEAD
     std::cerr << "RBDL: " << rbdl_qdd.transpose() << std::endl;
 =======
     std::cout << "RBDL: " << rbdl_qdd.transpose() << std::endl;
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+    std::cout << "RBDL: " << rbdl_qdd.transpose() << std::endl;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
     return false;
   }
   return true;

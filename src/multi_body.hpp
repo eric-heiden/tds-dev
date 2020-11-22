@@ -1,3 +1,6 @@
+#ifndef _MULTI_BODY_HPP
+#define _MULTI_BODY_HPP
+
 #pragma once
 
 #include <vector>
@@ -35,6 +38,7 @@ class MultiBody {
   int dof_{0};
 
   LinkCollection links_;
+ 
 
   /**
    * Whether this system is floating or fixed to the world frame.
@@ -59,6 +63,8 @@ class MultiBody {
   mutable Transform base_X_world_;
 
   std::vector<int> visual_ids_;
+  std::vector<int> visual_ids2_;
+  
   // offset of geometry (relative to the base frame)
   std::vector<Transform> X_visuals_;
 
@@ -66,6 +72,7 @@ class MultiBody {
   // offset of collision geometries (relative to this link frame)
   std::vector<Transform> X_collisions_;
 
+public:
   VectorX q_, qd_, qdd_, tau_;
 
   std::string name_;
@@ -209,6 +216,9 @@ class MultiBody {
   TINY_INLINE std::vector<int> &visual_ids() { return visual_ids_; }
   TINY_INLINE const std::vector<int> &visual_ids() const { return visual_ids_; }
 
+  TINY_INLINE std::vector<int>& visual_ids2() { return visual_ids2_; }
+  TINY_INLINE const std::vector<int>& visual_ids2() const { return visual_ids2_; }
+
   TINY_INLINE std::vector<Transform> &X_visuals() { return X_visuals_; }
   TINY_INLINE const std::vector<Transform> &X_visuals() const {
     return X_visuals_;
@@ -277,7 +287,7 @@ class MultiBody {
   {
       return Algebra::matrix_to_quat(get_world_transform(-1).rotation);
   }
-  
+
   /**
    * Ensures that the joint coordinates q, qd, qdd, tau are initialized
    * properly in the MultiBody member variables.
@@ -310,7 +320,7 @@ class MultiBody {
     }
 
     base_abi_ = base_rbi_;
-    
+
     if (is_floating_ && !base_abi_.is_invertible()) {
       fprintf(stderr,
               "Error: floating-base inertia matrix (ABI) is not invertible. "
@@ -417,6 +427,11 @@ class MultiBody {
     } else {
       return tf.apply(links_[link].I.com);
     }
+  }
+
+  TINY_INLINE void set_q(const VectorX& q)
+  {
+      q_ = q;
   }
 
   TINY_INLINE Scalar get_q_for_link(const VectorX &q, int link_index) const {
@@ -529,3 +544,4 @@ static TINY_INLINE MultiBody<AlgebraTo> clone(
   return mb.template clone<AlgebraTo>();
 }
 }  // namespace tds
+#endif //_MULTI_BODY_HPP

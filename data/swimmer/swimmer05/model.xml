@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 <mujoco model="swimmer">
   <include file="./common/visual.xml"/>
   <include file="./common/skybox.xml"/>
@@ -57,6 +58,8 @@
 
 <actuator><motor name="motor_0" joint="joint_0"/><motor name="motor_1" joint="joint_1"/><motor name="motor_2" joint="joint_2"/><motor name="motor_3" joint="joint_3"/></actuator><sensor><velocimeter name="velocimeter_0" site="site_0"/><gyro name="gyro_0" site="site_0"/><velocimeter name="velocimeter_1" site="site_1"/><gyro name="gyro_1" site="site_1"/><velocimeter name="velocimeter_2" site="site_2"/><gyro name="gyro_2" site="site_2"/><velocimeter name="velocimeter_3" site="site_3"/><gyro name="gyro_3" site="site_3"/></sensor></mujoco>
 =======
+=======
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 <mujoco model="swimmer">
   <include file="./common/visual.xml"/>
   <include file="./common/skybox.xml"/>
@@ -114,4 +117,7 @@
   </sensor>
 
 <actuator><motor name="motor_0" joint="joint_0"/><motor name="motor_1" joint="joint_1"/><motor name="motor_2" joint="joint_2"/><motor name="motor_3" joint="joint_3"/></actuator><sensor><velocimeter name="velocimeter_0" site="site_0"/><gyro name="gyro_0" site="site_0"/><velocimeter name="velocimeter_1" site="site_1"/><gyro name="gyro_1" site="site_1"/><velocimeter name="velocimeter_2" site="site_2"/><gyro name="gyro_2" site="site_2"/><velocimeter name="velocimeter_3" site="site_3"/><gyro name="gyro_3" site="site_3"/></sensor></mujoco>
+<<<<<<< HEAD
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83

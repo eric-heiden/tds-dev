@@ -8,16 +8,16 @@
 
 template <typename Algebra>
 void init_compound_pendulum(
-    tds::MultiBody<Algebra> &mb, tds::World<Algebra> &world, int num_links = 2,
+    ::tds::MultiBody<Algebra> &mb, ::tds::World<Algebra> &world, int num_links = 2,
     std::vector<typename Algebra::Scalar> link_lengths = {},
     std::vector<typename Algebra::Scalar> masses = {}) {
   typedef typename Algebra::Scalar Scalar;
   typedef typename Algebra::Vector3 Vector3;
   typedef typename Algebra::Matrix3 Matrix3;
-  using Link = tds::Link<Algebra>;
-  using Sphere = tds::Sphere<Algebra>;
-  using RigidBodyInertia = tds::RigidBodyInertia<Algebra>;
-  using Transform = tds::Transform<Algebra>;
+  using Link = ::tds::Link<Algebra>;
+  using Sphere = ::tds::Sphere<Algebra>;
+  using RigidBodyInertia = ::tds::RigidBodyInertia<Algebra>;
+  using Transform = ::tds::Transform<Algebra>;
 
   for (int i = 0; i < num_links; i++) {
     Link l;

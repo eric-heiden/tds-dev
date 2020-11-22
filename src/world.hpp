@@ -35,17 +35,17 @@ class World {
   using Scalar = typename Algebra::Scalar;
   using Vector3 = typename Algebra::Vector3;
   using Matrix3 = typename Algebra::Matrix3;
-  typedef tds::RigidBody<Algebra> RigidBody;
-  typedef tds::MultiBody<Algebra> MultiBody;
-  typedef tds::Geometry<Algebra> Geometry;
-  typedef tds::Transform<Algebra> Transform;
-  typedef tds::RigidBodyContactPoint<Algebra> RigidBodyContactPoint;
-  typedef tds::MultiBodyContactPoint<Algebra> MultiBodyContactPoint;
-  typedef tds::Pose<Algebra> Pose;
+  typedef RigidBody<Algebra> RigidBody;
+  typedef MultiBody<Algebra> MultiBody;
+  typedef Geometry<Algebra> Geometry;
+  typedef Transform<Algebra> Transform;
+  typedef RigidBodyContactPoint<Algebra> RigidBodyContactPoint;
+  typedef MultiBodyContactPoint<Algebra> MultiBodyContactPoint;
+  typedef Pose<Algebra> Pose;
 
-  typedef tds::Capsule<Algebra> Capsule;
-  typedef tds::Sphere<Algebra> Sphere;
-  typedef tds::Plane<Algebra> Plane;
+  typedef Capsule<Algebra> Capsule;
+  typedef Sphere<Algebra> Sphere;
+  typedef Plane<Algebra> Plane;
 
   // std::list because the references/iterators remain stable
   std::list<RigidBody> rigid_bodies_;
@@ -68,7 +68,7 @@ class World {
   int num_solver_iterations{50};
 
   // default contact settings
-  Scalar default_friction{Algebra::fraction(2, 10)};
+  Scalar default_friction{Algebra::fraction(5, 10)};
   Scalar default_restitution{Algebra::zero()};
 
   explicit World(Scalar gravity_z = Algebra::fraction(-981, 100))
@@ -141,7 +141,14 @@ class World {
     }
     geoms_.clear();
 
+    for (std::size_t i = 0; i < rigid_bodies_.size(); i++) {
+      delete rigid_bodies_[i];
+    }
     rigid_bodies_.clear();
+
+    for (std::size_t i = 0; i < multi_bodies_.size(); i++) {
+      delete multi_bodies_[i];
+    }
     multi_bodies_.clear();
 
     if (rb_constraint_solver_) {
@@ -151,7 +158,7 @@ class World {
     if (mb_constraint_solver_) {
       delete mb_constraint_solver_;
       mb_constraint_solver_ = nullptr;
-    }
+  }
   }
 
   const Vector3& get_gravity() const { return gravity_acceleration_; }
@@ -264,7 +271,7 @@ class World {
       std::vector<std::vector<MultiBodyContactPoint>>& contacts_out,
       const Scalar& restitution, const Scalar& friction) {
     typedef typename std::list<MultiBody>::iterator iter;
-    std::vector<ContactPoint<Algebra>> contacts;
+        std::vector<ContactPoint<Algebra>> contacts;
     for (iter i = multi_bodies.begin(); i != multi_bodies.end(); ++i) {
       MultiBody& mb_a = *i;
       auto num_links_a = static_cast<int>(mb_a.size());
@@ -344,9 +351,13 @@ class World {
  public:
   void step(const Scalar& dt) {
     {
+      
+
       rb_contacts_.reserve(1024);
+      
 
       rb_contacts_.resize(0);
+      
 
       mb_contacts_.reserve(1024);
       mb_contacts_.resize(0);
@@ -358,14 +369,17 @@ class World {
       }
       submit_profile_timing("");
     }
+
     {
       submit_profile_timing("compute contacts");
+      
 
       compute_contacts_rigid_body_internal(rigid_bodies_, &dispatcher_,
                                            rb_contacts_, default_restitution,
                                            default_friction);
       submit_profile_timing("");
     }
+
     {
       submit_profile_timing("compute multi body contacts");
       compute_contacts_multi_body_internal(multi_bodies_, &dispatcher_,
@@ -381,6 +395,8 @@ class World {
       submit_profile_timing("solve constraints");
       for (int i = 0; i < num_solver_iterations; i++) {
         for (std::size_t c = 0; c < rb_contacts_.size(); c++) {
+          
+
           rb_constraint_solver_->resolve_collision(rb_contacts_[c], dt);
         }
       }

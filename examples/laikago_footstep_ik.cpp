@@ -22,7 +22,10 @@
 #include <thread>
 
 #include "Utils/b3Clock.h"
+<<<<<<< HEAD
 
+=======
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 #include "math/tiny/tiny_double_utils.h"
 #include "tiny_inverse_kinematics.h"
 #include "dynamics/kinematics.hpp"
@@ -280,7 +283,10 @@ int main(int argc, char* argv[]) {
       }
     }
   }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
   world.default_friction = 0.1;
   world.set_mb_constraint_solver(
       //new MultiBodyConstraintSolverSpring<TinyAlgebra<double, DoubleUtils> >);
@@ -348,7 +354,10 @@ int main(int argc, char* argv[]) {
 
   sim->setTimeStep(dt);
   double time = 0;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
   double zrot = 0;
   ::tds::forward_kinematics<TinyAlgebra<double, DoubleUtils> >(*mb);
   
@@ -477,6 +486,7 @@ int main(int argc, char* argv[]) {
             mb->q_ = q_target;
             mb->qd_.set_zero();
         }
+<<<<<<< HEAD
       }
 
       if (1)
@@ -494,6 +504,31 @@ int main(int argc, char* argv[]) {
               sim->submitProfileTiming("");
           }
 
+=======
+
+
+
+
+
+
+      }
+
+      if (1)
+      {
+          {
+              sim->submitProfileTiming("forwardDynamics");
+              ::tds::forward_dynamics<TinyAlgebra<double, DoubleUtils> >(*mb, world.get_gravity());
+              sim->submitProfileTiming("");
+              mb->clear_forces();
+          }
+
+          {
+              sim->submitProfileTiming("integrate_q");
+              ::tds::integrate_euler_qdd<TinyAlgebra<double, DoubleUtils> >(*mb, dt);
+              sim->submitProfileTiming("");
+          }
+
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
           {
               if (step % 1000 == 0) {
                   printf("Step %06d \t Time: %.3f\n", step, time);

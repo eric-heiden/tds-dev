@@ -21,6 +21,7 @@
 #include "utils/file_utils.hpp"
 #include "urdf/urdf_parser.hpp"
 #include "math/tiny/tiny_algebra.hpp"
+#include "world.hpp"
 typedef TinyAlgebra<double, ::TINY::DoubleUtils> MyAlgebra;
 
 using namespace TINY;

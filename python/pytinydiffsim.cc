@@ -15,6 +15,7 @@
 #include "math/tiny/tiny_double_utils.h"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 #include "examples/motion_import.h"
 #include "examples/tiny_urdf_parser.h"
 #include "fix64_scalar.h"
@@ -33,6 +34,8 @@
 #include "world.hpp
 =======
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 
 typedef double TinyDualScalar;
 typedef double MyScalar;

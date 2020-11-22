@@ -28,8 +28,8 @@ struct UrdfToMultiBody {
   using Scalar = typename Algebra::Scalar;
   using Vector3 = typename Algebra::Vector3;
   using Matrix3 = typename Algebra::Matrix3;
-  typedef tds::UrdfStructures<Algebra> UrdfStructures;
-  typedef tds::RigidBodyInertia<Algebra> RigidBodyInertia;
+  typedef UrdfStructures<Algebra> UrdfStructures;
+  typedef RigidBodyInertia<Algebra> RigidBodyInertia;
 
   static int convert_to_multi_body(const UrdfStructures& urdf_structures,
                                    World<Algebra>& world,

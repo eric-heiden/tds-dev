@@ -7,7 +7,20 @@
 #include "urdf/urdf_cache.hpp"
 #include "utils/stopwatch.hpp"
 #include "visualizer/opengl/visualizer.h"
+<<<<<<< HEAD
 // clang-format on
+=======
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <array>
+
+
+// clang-format on
+using namespace TINY;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 
 // function to be converted to CUDA code
 template <typename Algebra>
@@ -86,6 +99,26 @@ struct ContactSimulation {
   }
 };
 
+<<<<<<< HEAD
+=======
+std::string exec(const char* cmd) {
+    std::array<char, 128> buffer;
+    std::string result;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
+    }
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+    result.erase(std::remove(result.begin(), result.end(), '\n'), result.end());
+
+    return result;
+}
+
+
+
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 int main(int argc, char* argv[]) {
   using Scalar = double;
   using CGScalar = typename CppAD::cg::CG<Scalar>;
@@ -113,6 +146,12 @@ int main(int argc, char* argv[]) {
   cgen.setCreateForwardZero(true);
 
   tds::CudaLibraryProcessor p(&cgen);
+<<<<<<< HEAD
+=======
+  std::string nvcc_path = exec("which nvcc");
+  std::cout << "Using ["<< nvcc_path << "]" << std::endl;
+  p.nvcc_path()=nvcc_path;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
   p.generate_code();
   p.create_library();
 
@@ -130,7 +169,11 @@ int main(int argc, char* argv[]) {
   tds::CudaModel<Scalar> model(model_name);
 
   // how many threads to run on the GPU
+<<<<<<< HEAD
   int num_total_threads = 400;
+=======
+  int num_total_threads = 2048;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 
   std::vector<std::vector<Scalar>> outputs(
       num_total_threads, std::vector<Scalar>(simulation.output_dim()));
@@ -139,7 +182,12 @@ int main(int argc, char* argv[]) {
 
   TinyOpenGL3App app("CUDA Pendulum", 1024, 768);
   app.m_renderer->init();
+<<<<<<< HEAD
   app.set_up_axis(2);
+=======
+  int upAxis = 2;
+  app.set_up_axis(upAxis);
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
   app.m_renderer->get_active_camera()->set_camera_distance(4);
   app.m_renderer->get_active_camera()->set_camera_pitch(-30);
   app.m_renderer->get_active_camera()->set_camera_target_position(0, 0, 0);
@@ -147,7 +195,11 @@ int main(int argc, char* argv[]) {
   // app.dump_frames_to_video("test.mp4");
 
   int sphere_shape = app.register_graphics_unit_sphere_shape(SPHERE_LOD_LOW);
+<<<<<<< HEAD
   typedef tds::Conversion<DiffAlgebra, tds::TinyAlgebraf> Conversion;
+=======
+  //typedef tds::Conversion<DiffAlgebra, tds::TinyAlgebraf> Conversion;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
   std::vector<int> visuals;
   for (int i = 0; i < num_total_threads * simulation.system->size(); ++i) {
     TinyVector3f pos(0, 0, 0);
@@ -198,15 +250,27 @@ int main(int argc, char* argv[]) {
           pos[1] += radius * (i / square_id) - square_id * radius / 2;
           TinyQuaternionf orn(0, 0, 0, 1);
           if (l > 0) {
+<<<<<<< HEAD
             app.m_renderer->draw_line(prev_pos, pos, line_color, line_width);
+=======
+            //app.m_renderer->draw_line(prev_pos, pos, line_color, line_width);
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
           }
           prev_pos = pos;
           app.m_renderer->write_single_instance_transform_to_cpu(pos, orn,
                                                                  sphereId);
         }
       }
+<<<<<<< HEAD
       DrawGridData data;
       data.upAxis = 2;
+=======
+      app.m_renderer->update_camera(upAxis);
+    
+      DrawGridData data;
+      data.drawAxis = true;
+      data.upAxis = upAxis;
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
       app.draw_grid(data);
       app.m_renderer->render_scene();
       app.m_renderer->write_transforms();
@@ -224,4 +288,8 @@ int main(int argc, char* argv[]) {
   }
 
   return EXIT_SUCCESS;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83

@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-#include "visualizer/opengl/visualizer.h"
-#include "utils/file_utils.hpp"
-=======
-
 #include "visualizer/opengl/tiny_opengl3_app.h"
 #include "visualizer/opengl/utils/tiny_chrome_trace_util.h"
 #include "visualizer/opengl/utils/tiny_logging.h"
@@ -10,7 +5,6 @@
 #include "utils/file_utils.hpp"
 #include "visualizer/opengl/utils/tiny_mesh_utils.h"
 #include "stb_image/stb_image.h"
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
 
 using namespace TINY;
 
@@ -76,13 +70,8 @@ int main(int argc, char* argv[]) {
   char basepath[1024];
   bool triangulate = true;
   std::string laikago_urdf_filename;
-<<<<<<< HEAD
-  tds::FileUtils::find_file("laikago/chassis_zup.obj", laikago_urdf_filename);
-  tds::FileUtils::extract_path(laikago_urdf_filename.c_str(), basepath, 1024);
-=======
   ::tds::FileUtils::find_file("laikago/chassis_zup.obj", laikago_urdf_filename);
   ::tds::FileUtils::extract_path(laikago_urdf_filename.c_str(), basepath, 1024);
->>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
   bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, laikago_urdf_filename.c_str(),
       basepath, triangulate);
 

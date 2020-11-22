@@ -35,6 +35,18 @@ using namespace tds;
 #include "math/tiny/tiny_algebra.hpp"
 #include "visualizer/opengl/tiny_opengl3_app.h"
 
+
+#include "math/tiny/tiny_double_utils.h"
+#include "utils/file_utils.hpp"
+#include "multi_body.hpp"
+#include "world.hpp"
+
+#ifdef USE_TINY
+  #include "math/tiny/tiny_algebra.hpp"
+#else
+  #include "math/eigen_algebra.hpp"
+#endif
+
 int main(int argc, char* argv[]) {
   typedef EigenAlgebra Algebra;
   typedef typename Algebra::Vector3 Vector3;

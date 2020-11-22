@@ -22,6 +22,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For LLVM tooling
 # set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 
+if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
+  if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+  endif()
+endif()
+
 
 if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0003 NEW)
@@ -229,7 +235,9 @@ ENDIF(USE_ENOKI)
 OPTION(USE_PAGMO "Use Pagmo" ON)
 if(USE_PAGMO)
   find_package(pagmo)
-  add_definitions(-DUSE_PAGMO)
+  if (pagma_FOUND)
+    add_definitions(-DUSE_PAGMO)
+  endif()
 endif(USE_PAGMO)
 
 OPTION(USE_OPTIM "Use OptimLib" ON)
@@ -240,41 +248,49 @@ if(USE_OPTIM)
 endif(USE_OPTIM)
 
 include(ExternalProject)
-# Add CppAD as an external project and an imported target.
-ExternalProject_Add(CppAD-Project
-  PREFIX CppAD
-  SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party/CppAD
-  CMAKE_ARGS
-    -Dcppad_prefix=${CMAKE_CURRENT_BINARY_DIR}/CppAD
-)
-add_library(CppAD INTERFACE IMPORTED)
-add_dependencies(CppAD CppAD-Project)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include)
-target_include_directories(CppAD INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include)
 
-# Same for CppADCodeGen
-ExternalProject_Add(CppADCodeGen-Project
-  PREFIX CppADCodeGen
-  SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party/CppADCodeGen
-  CMAKE_ARGS
-    -DCPPAD_INCLUDE_DIR=${CMAKE_CURRENT_BINARY_DIR}/CppAD/include
-    -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen
-    -DGOOGLETEST_GIT=ON
-)
-add_dependencies(CppADCodeGen-Project CppAD)
-add_library(CppADCodeGen INTERFACE IMPORTED)
-add_dependencies(CppADCodeGen CppAD-Project CppADCodeGen-Project)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen/include)
-target_include_directories(CppADCodeGen
-  INTERFACE
-    ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include
-    ${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen/include
-)
+OPTION(USE_CPPAD "Use CppAD" OFF)
+
+IF(USE_CPPAD)
+  # Add CppAD as an external project and an imported target.
+  
+  ExternalProject_Add(CppAD-Project
+    PREFIX CppAD
+    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party/CppAD
+    CMAKE_ARGS
+      -Dcppad_prefix=${CMAKE_CURRENT_BINARY_DIR}/CppAD
+  )
+  add_library(CppAD INTERFACE IMPORTED)
+  add_dependencies(CppAD CppAD-Project)
+  file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include)
+  target_include_directories(CppAD INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include)
+  
+  # Same for CppADCodeGen
+  ExternalProject_Add(CppADCodeGen-Project
+    PREFIX CppADCodeGen
+    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party/CppADCodeGen
+    CMAKE_ARGS
+      -DCPPAD_INCLUDE_DIR=${CMAKE_CURRENT_BINARY_DIR}/CppAD/include
+      -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen
+      -DGOOGLETEST_GIT=ON
+  )
+  add_dependencies(CppADCodeGen-Project CppAD)
+  add_library(CppADCodeGen INTERFACE IMPORTED)
+  add_dependencies(CppADCodeGen CppAD-Project CppADCodeGen-Project)
+  file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include)
+  file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen/include)
+  target_include_directories(CppADCodeGen
+    INTERFACE
+      ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include
+      ${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen/include
+  )
+ENDIF(USE_CPPAD)
 
 set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/benchmark)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/HighFive)
+#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/benchmark)
+#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/HighFive)
+
+
 # set(MINIGLOG ON)
 # set(BUILD_TESTING OFF)
 # set(BUILD_EXAMPLES OFF)
@@ -283,7 +299,7 @@ set(CXXOPTS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(CXXOPTS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(CXXOPTS_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/cxxopts)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/fmt)
+#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/fmt)
 
 subdirs(${CMAKE_CURRENT_LIST_DIR}/src/visualizer/opengl)
 subdirs(${CMAKE_CURRENT_LIST_DIR}/src/visualizer/pybullet)

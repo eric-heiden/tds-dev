@@ -14,7 +14,7 @@ Multiple visualizers are available, see below.
 ![](https://github.com/erwincoumans/tiny-differentiable-simulator/blob/master/data/trb_meshcat.jpg)
 
 ## Related Papers
-
+* "NeuralSim: Augmenting Differentiable Simulators with Neural Networks", Eric Heiden, David Millard, Erwin Coumans, Yizhou Sheng, Gaurav S. Sukhatme. [PDF on Arxiv](https://arxiv.org/abs/2011.04217)
 * “Augmenting Differentiable Simulators with Neural Networks to Close the Sim2Real Gap”, RSS 2020 sim-to-real workshop, Eric Heiden, David Millard, Erwin Coumans, Gaurav Sukhatme. [PDF on Arxiv](https://sim2real.github.io/assets/papers/2020/heiden.pdf) and [video](https://www.youtube.com/watch?v=awhkI5xtFa0)
 * "Interactive Differentiable Simulation", 2020, Eric Heiden, David Millard, Hejia Zhang, Gaurav S. Sukhatme. [PDF on Arxiv](https://arxiv.org/abs/1905.10706)
 
@@ -45,6 +45,7 @@ cmake -DCMAKE_TOOLCHAIN_FILE=tools\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAK
 
 For visualization, two options are supported:
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 - MeshCat, a web-based visualizer that uses WebGL
 
@@ -249,10 +250,29 @@ and open the web browser (Chrome is recommended for a good three.js experience.)
 ```
 pip install meshcat
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+### OpenGL 3+ Visualization
+
+* tiny_opengl3_app, an OpenGL3 visualizer
+
+This visualizer is native part of this library under src/visualizer/opengl
+
+### MeshCat Visualization
+
+* [MeshCat](https://github.com/rdeits/meshcat), a web-based visualizer that uses WebGL
+
+A C++ ZMQ interface is provided.
+
+Before running the example, install python, pip and meshcat, run the meshcat-server 
+and open the web browser (Chrome is recommended for a good three.js experience.)
+```
+pip install meshcat
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 meshcat-server --open
 This should open Chrome at http://localhost:7000/static/
 Then compile and run tiny_urdf_parser_meshcat_example in optimized/release build.
 ```
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 This will start MeshCat with ZMQ listening on port 7000 which is the default setting in the C++ MeshCat visualization client.
@@ -293,6 +313,12 @@ make -j
 make install
 ```
 =======
+=======
+
+URDF files can be loaded using a provided parser based on TinyXML2.
+
+All dependencies for meshcat visualization are included in third_party.
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 
 URDF files can be loaded using a provided parser based on TinyXML2.
 

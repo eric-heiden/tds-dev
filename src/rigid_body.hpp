@@ -30,8 +30,8 @@ class RigidBody {
   using Scalar = typename Algebra::Scalar;
   using Vector3 = typename Algebra::Vector3;
   using Matrix3 = typename Algebra::Matrix3;
-  typedef tds::Geometry<Algebra> Geometry;
-  typedef tds::Pose<Algebra> Pose;
+  typedef Geometry<Algebra> Geometry;
+  typedef Pose<Algebra> Pose;
 
  public:
   Pose world_pose_;

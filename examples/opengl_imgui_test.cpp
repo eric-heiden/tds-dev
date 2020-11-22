@@ -1,6 +1,9 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 #include "visualizer/opengl/visualizer.h"
 =======
+=======
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 #include "visualizer/opengl/utils/tiny_clock.h"
 #include <fstream>
 #include <iostream>
@@ -233,7 +236,10 @@ static void finish(int ignore)
 #include "visualizer/opengl/utils/tiny_chrome_trace_util.h"
 #include "visualizer/opengl/utils/tiny_logging.h"
 
+<<<<<<< HEAD
 >>>>>>> c02b5b90cba08605a0c5e292d1da0a9ee8450a01
+=======
+>>>>>>> 776e2b158d51d830026cc391f0f4ff2370817f83
 
 #include "imgui.h"
 //#include "imgui_impl_glfw.h"

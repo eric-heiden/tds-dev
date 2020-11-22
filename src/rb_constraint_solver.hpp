@@ -121,6 +121,7 @@ class RigidBodyConstraintSolver {
     }
   }
 };
+
 template <typename AlgebraFrom, typename AlgebraTo = AlgebraFrom>
 static TINY_INLINE RigidBodyConstraintSolver<AlgebraTo> clone(
     const RigidBodyConstraintSolver<AlgebraFrom>& s) {
