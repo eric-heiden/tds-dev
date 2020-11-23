@@ -55,6 +55,7 @@ else(Eigen3_FOUND)
     message("Using third_party/eigen3")
     add_definitions(-DUSE_EIGEN)
     set(EIGEN3_INCLUDE_DIRS  ${DIFF_PHYSICS_SOURCE_DIR}/third_party/eigen3)
+    set(EIGEN3_DIR  ${DIFF_PHYSICS_SOURCE_DIR}/third_party/eigen3)
     message("Eigen=")
     message(${EIGEN3_INCLUDE_DIRS})
     #include_directories(${EIGEN3_INCLUDE_DIRS})
@@ -79,8 +80,7 @@ else()
   OPTION(SYSTEM_BULLET_IS_DOUBLE_PRECISION "System version of Bullet is double precision" OFF)
   if (SYSTEM_BULLET_IS_DOUBLE_PRECISION)
     add_definitions(-DBT_USE_DOUBLE_PRECISION)
-  endif()
-  
+  endif()  
 endif()
 
 
@@ -164,6 +164,10 @@ IF(Bullet_FOUND)
   	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244 /wd4267")
   ENDIF(MSVC)
 ENDIF(Bullet_FOUND)
+
+if(MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /std:c++17")
+endif(MSVC)
 
 OPTION (USE_RBDL "Compare against RBDL" ON)
 if(USE_RBDL)
@@ -249,16 +253,32 @@ endif(USE_OPTIM)
 
 include(ExternalProject)
 
-OPTION(USE_CPPAD "Use CppAD" OFF)
+OPTION(USE_CPPAD "Use CppAD" ON)
 
 IF(USE_CPPAD)
-  # Add CppAD as an external project and an imported target.
-  
+  # Add CppAD as an external project and an imported target.  
+  #add_subdirectory(third_party/CppAD)
+  #set(CPPAD_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/third_party/CppAD/include)
+  #set(CPPAD_HOME ${CMAKE_CURRENT_LIST_DIR}/third_party/CppAD)
+  #set(CPPAD_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party/CppAD/include)
+  #set(GOOGLETEST_GIT ON)
+  #add_subdirectory(third_party/CppADCodeGen)
+  #set(CPPAD_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/third_party/CppADCodeGen/include)
+  #add_library(CppADCodeGen INTERFACE IMPORTED)
+  #target_include_directories(CppADCodeGen
+  #  INTERFACE
+  #    ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include
+  #    ${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen/include
+  #)
   ExternalProject_Add(CppAD-Project
     PREFIX CppAD
     SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party/CppAD
     CMAKE_ARGS
       -Dcppad_prefix=${CMAKE_CURRENT_BINARY_DIR}/CppAD
+    # cmake will use the same generator as the main project, unless we override it
+    # CMAKE_GENERATOR Ninja
+    ## build options
+    # BUILD_COMMAND ninja
   )
   add_library(CppAD INTERFACE IMPORTED)
   add_dependencies(CppAD CppAD-Project)
@@ -273,6 +293,10 @@ IF(USE_CPPAD)
       -DCPPAD_INCLUDE_DIR=${CMAKE_CURRENT_BINARY_DIR}/CppAD/include
       -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen
       -DGOOGLETEST_GIT=ON
+    # cmake will use the same generator as the main project, unless we override it
+    # CMAKE_GENERATOR Ninja
+    ## build options
+    # BUILD_COMMAND ninja
   )
   add_dependencies(CppADCodeGen-Project CppAD)
   add_library(CppADCodeGen INTERFACE IMPORTED)
@@ -284,6 +308,7 @@ IF(USE_CPPAD)
       ${CMAKE_CURRENT_BINARY_DIR}/CppAD/include
       ${CMAKE_CURRENT_BINARY_DIR}/CppADCodeGen/include
   )
+  message("Added CppADCodeGen")
 ENDIF(USE_CPPAD)
 
 set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
@@ -294,7 +319,10 @@ set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
 # set(MINIGLOG ON)
 # set(BUILD_TESTING OFF)
 # set(BUILD_EXAMPLES OFF)
-# add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/ceres-solver)
+set(Eigen3_FOUND true)
+set(MINIGLOG true)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/glog)
+include_directories(${CMAKE_CURRENT_LIST_DIR}/third_party/ceres-solver/include)
 set(CXXOPTS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(CXXOPTS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(CXXOPTS_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
